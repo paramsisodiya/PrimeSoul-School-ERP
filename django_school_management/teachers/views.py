@@ -1,4 +1,5 @@
-from django.http import HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseNotFound
+from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import ListView
@@ -75,11 +76,25 @@ class teacher_update_view(LoginRequiredNoPermissionMixin, UserPassesTestMixin, U
         return reverse_lazy('teachers:teacher_details', kwargs={'pk': teacher_id})
 
 
+from django.views.decorators.http import require_POST
+from django_school_management.accounts.permissions import school_admin_required
+
+
+@require_POST
 @user_passes_test(user_is_admin_or_su)
-def teacher_delete_view(requset, pk):
-    teacher = Teacher.objects.get(pk=pk)
+def teacher_delete_view(request, pk):
+    """
+    Safely delete a teacher record via POST only.
+    Validates tenant ownership before deletion.
+    """
+    teacher = get_object_or_404(Teacher, pk=pk)
+    tenant = getattr(request, 'tenant', None) or getattr(request.user, 'school', None)
+    if tenant and not request.user.is_superuser:
+        if teacher.school and teacher.school != tenant:
+            raise PermissionDenied("Cannot delete teacher from another school.")
     teacher.delete()
     return redirect('teachers:all_teacher')
+
 
 
 @user_passes_test(user_is_admin_or_su)
@@ -111,3 +126,55 @@ def teacher_my_portal(request, teacher_id: str):
 
     ctx = dict()
     return render(request, "teachers/my-portal.html", ctx)
+
+
+@user_passes_test(user_is_admin_or_su)
+def import_teachers_csv_view(request):
+    """
+    Handles CSV bulk import for teachers and faculty with validation.
+    """
+    from django_school_management.core.services.csv_import_service import TeacherCSVImporter
+    school = getattr(request, 'school', None) or getattr(request.user, 'school', None)
+
+    if request.method == "POST" and request.FILES.get("csv_file"):
+        csv_file = request.FILES["csv_file"]
+        if not csv_file.name.endswith(".csv"):
+            messages.error(request, "Please upload a valid .csv file.")
+            return redirect("teachers:import_teachers_csv")
+
+        try:
+            content = csv_file.read().decode("utf-8-sig")
+            dry_run = request.POST.get("dry_run") == "1"
+            result = TeacherCSVImporter.import_csv(school=school, file_content=content, dry_run=dry_run)
+            
+            if result.errors:
+                messages.error(request, f"Import validation found {len(result.errors)} errors. No records were modified.")
+            elif result.duplicates:
+                messages.warning(request, f"Found {len(result.duplicates)} duplicates.")
+            
+            if result.imported_rows > 0:
+                messages.success(request, f"Successfully imported {result.imported_rows} faculty members!")
+                return redirect("teachers:all_teacher")
+
+            context = {
+                "result": result.to_dict(),
+                "dry_run": dry_run,
+                "school": school,
+            }
+            return render(request, "teachers/import_teachers_csv.html", context)
+        except Exception as exc:
+            messages.error(request, f"Error processing CSV file: {str(exc)}")
+
+    return render(request, "teachers/import_teachers_csv.html", {"school": school})
+
+
+@user_passes_test(user_is_admin_or_su)
+def download_sample_teachers_csv_view(request):
+    """
+    Returns downloadable sample CSV template for teachers import.
+    """
+    from django_school_management.core.services.csv_import_service import TeacherCSVImporter
+    sample = TeacherCSVImporter.get_sample_csv()
+    response = HttpResponse(sample, content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="teachers_import_sample.csv"'
+    return response

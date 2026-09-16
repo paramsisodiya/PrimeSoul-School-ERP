@@ -1,0 +1,233 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'inventory:asset_list' %}" class="text-decoration-none">Assets</a></li>
+          <li class="breadcrumb-item active" aria-current="page">{{ asset.asset_tag }}</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">{{ asset.name }}</h4>
+        <span class="badge badge-primary">{{ asset.asset_tag }}</span>
+        {% if asset.status == 'AVAILABLE' %}
+          <span class="badge badge-info ml-1">Available in Stock</span>
+        {% elif asset.status == 'ASSIGNED' %}
+          <span class="badge badge-success ml-1">Assigned / In Use</span>
+        {% elif asset.status == 'IN_REPAIR' %}
+          <span class="badge badge-warning ml-1">Under Maintenance</span>
+        {% elif asset.status == 'LOST' or asset.status == 'DAMAGED' %}
+          <span class="badge badge-danger ml-1">{{ asset.get_status_display }}</span>
+        {% else %}
+          <span class="badge badge-secondary ml-1">{{ asset.get_status_display }}</span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">{{ asset.category.name }} | Manufacturer: {{ asset.manufacturer|default:"N/A" }} | Model: {{ asset.model_number|default:"N/A" }} | Serial: {{ asset.serial_number|default:"N/A" }}</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      {% if is_admin %}
+        {% if asset.status == 'AVAILABLE' or asset.status == 'ASSIGNED' %}
+          <a href="{% url 'inventory:asset_assign' asset.pk %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-user-tag mr-1"></i> Assign Asset
+          </a>
+        {% endif %}
+        {% if asset.status == 'ASSIGNED' %}
+          <a href="{% url 'inventory:asset_return' asset.pk %}" class="btn btn-outline-info btn-sm">
+            <i class="fas fa-undo mr-1"></i> Return to Stock
+          </a>
+        {% endif %}
+        <a href="{% url 'inventory:maintenance_create_for_asset' asset.pk %}" class="btn btn-outline-warning btn-sm">
+          <i class="fas fa-tools mr-1"></i> Log Maintenance
+        </a>
+        <a href="{% url 'inventory:asset_lifecycle' asset.pk %}" class="btn btn-outline-danger btn-sm">
+          <i class="fas fa-ban mr-1"></i> Status / Lifecycle
+        </a>
+      {% endif %}
+      <a href="{% url 'inventory:asset_list' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Assets
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row">
+    <!-- Asset Details Card -->
+    <div class="col-lg-5 mb-4">
+      <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-info-circle mr-2 text-primary"></i> Asset Specifications & Ownership</h6>
+        </div>
+        <div class="card-body" style="font-size: 0.88rem;">
+          <dl class="row mb-0">
+            <dt class="col-sm-5 text-muted">Asset Tag:</dt>
+            <dd class="col-sm-7 font-weight-bold text-primary">{{ asset.asset_tag }}</dd>
+
+            <dt class="col-sm-5 text-muted">Category:</dt>
+            <dd class="col-sm-7">{{ asset.category.name }}</dd>
+
+            <dt class="col-sm-5 text-muted">Current Custodian:</dt>
+            <dd class="col-sm-7 font-weight-bold text-dark">
+              {% if asset.assigned_employee %}
+                <i class="fas fa-user text-muted mr-1"></i> {{ asset.assigned_employee.full_name }} (Staff)
+              {% elif asset.department %}
+                <i class="fas fa-building text-muted mr-1"></i> {{ asset.department.name }} (Dept)
+              {% else %}
+                <span class="text-muted">Unassigned (In Storage)</span>
+              {% endif %}
+            </dd>
+
+            <dt class="col-sm-5 text-muted">Current Location:</dt>
+            <dd class="col-sm-7">{{ asset.current_location|default:"Central Storage" }}</dd>
+
+            <dt class="col-sm-5 text-muted">Condition:</dt>
+            <dd class="col-sm-7"><span class="badge badge-light border">{{ asset.get_condition_display }}</span></dd>
+
+            <dt class="col-sm-5 text-muted">Purchase Cost:</dt>
+            <dd class="col-sm-7 font-weight-bold">₹{{ asset.purchase_cost }}</dd>
+
+            <dt class="col-sm-5 text-muted">Purchase Date:</dt>
+            <dd class="col-sm-7">{{ asset.purchase_date|date:"d M Y"|default:"-" }}</dd>
+
+            <dt class="col-sm-5 text-muted">Vendor / Supplier:</dt>
+            <dd class="col-sm-7">{{ asset.supplier.name|default:"-" }}</dd>
+
+            <dt class="col-sm-5 text-muted">Warranty Expiry:</dt>
+            <dd class="col-sm-7">
+              {% if asset.warranty_expiry %}
+                {{ asset.warranty_expiry|date:"d M Y" }}
+                {% if asset.is_under_warranty %}
+                  <span class="badge badge-success ml-1">In Warranty</span>
+                {% else %}
+                  <span class="badge badge-secondary ml-1">Expired</span>
+                {% endif %}
+              {% else %}
+                -
+              {% endif %}
+            </dd>
+
+            <dt class="col-sm-5 text-muted">Notes:</dt>
+            <dd class="col-sm-7 text-muted">{{ asset.notes|default:"-" }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Assignment History & Maintenance Logs -->
+    <div class="col-lg-7 mb-4">
+      <!-- Historical Assignments -->
+      <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-user-tag mr-2 text-info"></i> Assignment History Log</h6>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+            <thead class="bg-light">
+              <tr>
+                <th>Assigned To</th>
+                <th>Location</th>
+                <th>Assigned Date</th>
+                <th>Returned Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for assn in asset.assignment_history.all %}
+                <tr>
+                  <td class="font-weight-bold text-dark">
+                    {% if assn.assigned_to_employee %}
+                      {{ assn.assigned_to_employee.full_name }}
+                    {% elif assn.assigned_to_department %}
+                      {{ assn.assigned_to_department.name }}
+                    {% else %}
+                      {{ assn.location|default:"General" }}
+                    {% endif %}
+                  </td>
+                  <td>{{ assn.location|default:"-" }}</td>
+                  <td>{{ assn.assigned_date|date:"d M Y" }}</td>
+                  <td>{{ assn.returned_date|date:"d M Y"|default:"-" }}</td>
+                  <td>
+                    {% if assn.is_active %}
+                      <span class="badge badge-success">Active Custodian</span>
+                    {% else %}
+                      <span class="badge badge-secondary">Returned</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center py-3 text-muted">No prior assignments recorded.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Maintenance Logs -->
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-tools mr-2 text-warning"></i> Service & Maintenance Records</h6>
+          {% if is_admin %}
+            <a href="{% url 'inventory:maintenance_create_for_asset' asset.pk %}" class="btn btn-outline-warning btn-sm">Log Service</a>
+          {% endif %}
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+            <thead class="bg-light">
+              <tr>
+                <th>Type</th>
+                <th>Issue / Description</th>
+                <th>Start Date</th>
+                <th>Cost</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for maint in asset.maintenance_records.all %}
+                <tr>
+                  <td><span class="badge badge-light border">{{ maint.get_maintenance_type_display }}</span></td>
+                  <td class="text-truncate" style="max-width: 160px;">{{ maint.issue_description }}</td>
+                  <td>{{ maint.start_date|date:"d M Y" }}</td>
+                  <td>₹{{ maint.cost }}</td>
+                  <td>
+                    {% if maint.status == 'COMPLETED' %}
+                      <span class="badge badge-success">Completed</span>
+                    {% elif maint.status == 'IN_PROGRESS' %}
+                      <span class="badge badge-warning">In Progress</span>
+                    {% else %}
+                      <span class="badge badge-secondary">{{ maint.status }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center py-3 text-muted">No maintenance records logged for this asset.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

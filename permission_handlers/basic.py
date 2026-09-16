@@ -20,17 +20,15 @@ def permission_error(request):
 
 
 def user_is_verified(user):
-    return (
-        user.approval_status == ProfileApprovalStatusEnum.approved.value
-        if user.is_authenticated
-        else False
-    )
+    if not user.is_authenticated:
+        return False
+    return user.is_superuser or user.approval_status == ProfileApprovalStatusEnum.approved.value or user.approval_status == 'a'
 
 
 def user_is_student(user):
     return (
         user_is_verified(user)
-        and user.requested_role == AccountTypesEnum.student.value
+        and user.requested_role in [AccountTypesEnum.student.value, 'STUDENT', 'student']
         if user.is_authenticated
         else False
     )
@@ -39,16 +37,20 @@ def user_is_student(user):
 def user_is_teacher(user):
     return (
         user_is_verified(user)
-        and user.requested_role == AccountTypesEnum.teacher.value
+        and user.requested_role in [AccountTypesEnum.teacher.value, 'TEACHER', 'teacher']
         if user.is_authenticated
         else False
     )
 
 
 def can_access_dashboard(user: User):
-    restricted_roles = [AccountTypesEnum.subscriber.value]
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    restricted_roles = [AccountTypesEnum.subscriber.value, 'subscriber']
     if user.requested_role in restricted_roles:
         return False
-    if user.approval_status != ProfileApprovalStatusEnum.approved.value:
+    if user.approval_status not in [ProfileApprovalStatusEnum.approved.value, 'a']:
         return False
     return True

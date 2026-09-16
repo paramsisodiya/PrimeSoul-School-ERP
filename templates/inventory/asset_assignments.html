@@ -1,0 +1,98 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Asset Assignments</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Asset Custody & Assignment History</h4>
+      <p class="text-muted small mb-0">Full audit log of active and returned institutional fixed asset allocations.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'inventory:asset_list' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-laptop mr-1"></i> Asset Register
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Assignments Table -->
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="bg-light">
+          <tr>
+            <th>Asset Tag</th>
+            <th>Asset Name</th>
+            <th>Assigned To</th>
+            <th>Location</th>
+            <th>Assigned Date</th>
+            <th>Returned Date</th>
+            <th>Assigned By</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for assn in assignments %}
+            <tr>
+              <td>
+                <a href="{% url 'inventory:asset_detail' assn.asset.pk %}" class="font-weight-bold text-primary">
+                  {{ assn.asset.asset_tag }}
+                </a>
+              </td>
+              <td class="font-weight-bold text-dark">{{ assn.asset.name }}</td>
+              <td>
+                {% if assn.assigned_to_employee %}
+                  <div class="font-weight-bold text-dark"><i class="fas fa-user text-muted mr-1"></i>{{ assn.assigned_to_employee.full_name }}</div>
+                {% elif assn.assigned_to_department %}
+                  <div class="font-weight-bold text-dark"><i class="fas fa-building text-muted mr-1"></i>{{ assn.assigned_to_department.name }}</div>
+                {% else %}
+                  <span class="text-muted">Direct Location</span>
+                {% endif %}
+              </td>
+              <td>{{ assn.location|default:"-" }}</td>
+              <td>{{ assn.assigned_date|date:"d M Y" }}</td>
+              <td>{{ assn.returned_date|date:"d M Y"|default:"-" }}</td>
+              <td class="text-muted small">{{ assn.assigned_by.get_full_name|default:"-" }}</td>
+              <td>
+                {% if assn.is_active %}
+                  <span class="badge badge-success">Active Custodian</span>
+                {% else %}
+                  <span class="badge badge-secondary">Returned</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-5 text-muted">
+                <i class="fas fa-user-tag fa-3x mb-3 text-muted d-block"></i>
+                No asset assignments logged yet.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

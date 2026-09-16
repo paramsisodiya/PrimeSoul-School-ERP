@@ -1,0 +1,407 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'admissions:dashboard' %}" class="text-decoration-none">Admissions</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'admissions:application_list' %}" class="text-decoration-none">Applications</a></li>
+          <li class="breadcrumb-item active" aria-current="page">{{ application.application_number }}</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Application #{{ application.application_number }}</h4>
+        {% if application.status == 'ADMITTED' %}
+          <span class="badge badge-success ml-2">Admitted & Enrolled</span>
+        {% elif application.status == 'APPROVED' %}
+          <span class="badge badge-primary ml-2">Approved</span>
+        {% elif application.status == 'UNDER_REVIEW' %}
+          <span class="badge badge-warning ml-2">Under Review</span>
+        {% elif application.status == 'REJECTED' %}
+          <span class="badge badge-danger ml-2">Rejected</span>
+        {% else %}
+          <span class="badge badge-secondary ml-2">{{ application.get_status_display }}</span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">Candidate: <strong class="text-dark">{{ application.get_full_name }}</strong> • Applying for Class: <strong class="text-dark">{{ application.requested_grade.name }}</strong></p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      {% if application.status != 'ADMITTED' %}
+        <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#convertAdmissionModal">
+          <i class="fas fa-user-check mr-1"></i> Admit Student
+        </button>
+      {% endif %}
+      <a href="{% url 'admissions:application_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Roster
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Admitted Banner -->
+  {% if application.is_admitted %}
+  <div class="alert alert-success d-flex align-items-center justify-content-between mb-4 shadow-sm" style="border-radius: 8px;">
+    <div>
+      <h6 class="font-weight-bold mb-1"><i class="fas fa-check-circle mr-2"></i> Student Successfully Admitted!</h6>
+      <small>Student record created with Admission No: <strong>{{ application.admitted_student.admission_number }}</strong></small>
+    </div>
+    <a href="{% url 'students:student_details' application.admitted_student.pk %}" class="btn btn-sm btn-light font-weight-bold">
+      View Student Profile <i class="fas fa-chevron-right ml-1"></i>
+    </a>
+  </div>
+  {% endif %}
+
+  <div class="row">
+    <!-- Left Column: Details & Documents -->
+    <div class="col-lg-8 mb-4">
+      <!-- Profile Details Card -->
+      <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="font-weight-bold text-dark mb-0">Applicant Profile & Guardians</h6>
+        </div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-sm-4 text-muted small">Full Name:</div>
+            <div class="col-sm-8 font-weight-bold text-dark">{{ application.get_full_name }}</div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-sm-4 text-muted small">Date of Birth / Gender:</div>
+            <div class="col-sm-8 text-dark">{{ application.date_of_birth }} ({{ application.get_gender_display }})</div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-sm-4 text-muted small">Aadhaar National UIDAI:</div>
+            <div class="col-sm-8 text-dark">{{ application.aadhaar_number|default:"Not Provided" }}</div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-sm-4 text-muted small">Previous School / TC:</div>
+            <div class="col-sm-8 text-dark">{{ application.previous_school|default:"N/A" }} (TC: {{ application.previous_school_tc_number|default:"N/A" }})</div>
+          </div>
+          <hr>
+          <div class="row mb-3">
+            <div class="col-sm-4 text-muted small">Father's Information:</div>
+            <div class="col-sm-8 text-dark">
+              <strong>{{ application.father_name|default:"N/A" }}</strong>
+              {% if application.father_mobile %}<span class="text-muted ml-2"><i class="fas fa-phone mr-1"></i>{{ application.father_mobile }}</span>{% endif %}
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-sm-4 text-muted small">Mother's Information:</div>
+            <div class="col-sm-8 text-dark">
+              <strong>{{ application.mother_name|default:"N/A" }}</strong>
+              {% if application.mother_mobile %}<span class="text-muted ml-2"><i class="fas fa-phone mr-1"></i>{{ application.mother_mobile }}</span>{% endif %}
+            </div>
+          </div>
+          <div class="row mb-0">
+            <div class="col-sm-4 text-muted small">Residential Address:</div>
+            <div class="col-sm-8 text-dark">{{ application.current_address|default:"Not specified" }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Supporting Documents Card -->
+      <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <h6 class="font-weight-bold text-dark mb-0">Uploaded Supporting Documents</h6>
+          <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#uploadDocModal">
+            <i class="fas fa-upload mr-1"></i> Upload Document
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="bg-light text-muted small">
+                <tr>
+                  <th>Document Type</th>
+                  <th>Status</th>
+                  <th>Uploaded</th>
+                  <th class="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for doc in application.documents.all %}
+                <tr>
+                  <td>
+                    <div class="font-weight-bold text-dark">{{ doc.get_document_type_display }}</div>
+                    <small class="text-muted">{{ doc.title|default:"Proof Document" }}</small>
+                  </td>
+                  <td>
+                    {% if doc.status == 'VERIFIED' %}
+                      <span class="badge badge-success">Verified</span>
+                    {% elif doc.status == 'REJECTED' %}
+                      <span class="badge badge-danger">Rejected</span>
+                    {% else %}
+                      <span class="badge badge-warning">Pending</span>
+                    {% endif %}
+                  </td>
+                  <td class="small text-muted">{{ doc.uploaded_at|date:"d M Y" }}</td>
+                  <td class="text-right">
+                    <a href="{{ doc.file.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    {% if doc.status != 'VERIFIED' %}
+                    <form method="post" action="{% url 'admissions:document_verify' doc.pk %}" class="d-inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="verify">
+                      <button type="submit" class="btn btn-sm btn-outline-success ml-1" title="Mark Verified">
+                        <i class="fas fa-check"></i>
+                      </button>
+                    </form>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-muted">No documents uploaded yet.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Review Workflow, Interview & Assessment -->
+    <div class="col-lg-4 mb-4">
+      <!-- Status & Workflow Card -->
+      <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="font-weight-bold text-dark mb-0">Review Decision & Workflow</h6>
+        </div>
+        <div class="card-body">
+          <form method="post" action="{% url 'admissions:application_review' application.pk %}">
+            {% csrf_token %}
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-dark">Application Status</label>
+              {{ review_form.status }}
+            </div>
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-dark">Staff Review Remarks</label>
+              {{ review_form.remarks }}
+            </div>
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-dark">Rejection Reason (if applicable)</label>
+              {{ review_form.rejection_reason }}
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm btn-block font-weight-bold">
+              <i class="fas fa-save mr-1"></i> Update Status
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Interview Scheduling Card -->
+      <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <h6 class="font-weight-bold text-dark mb-0">Interviews & Interaction</h6>
+          <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#interviewModal">
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush">
+            {% for itv in application.interviews.all %}
+            <li class="list-group-item py-2 px-3">
+              <div class="font-weight-bold small text-dark">{{ itv.scheduled_at|date:"d M Y, h:i A" }}</div>
+              <small class="text-muted">{{ itv.location }} • Status: {{ itv.get_status_display }}</small>
+            </li>
+            {% empty %}
+            <li class="list-group-item text-center py-3 text-muted small">No interview scheduled.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <!-- Assessment Card -->
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <h6 class="font-weight-bold text-dark mb-0">Assessments & Scores</h6>
+          <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#assessmentModal">
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush">
+            {% for asm in application.assessments.all %}
+            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+              <div>
+                <div class="font-weight-bold small text-dark">{{ asm.subject }}</div>
+                <small class="text-muted">{{ asm.remarks|default:"Completed" }}</small>
+              </div>
+              <span class="badge badge-primary font-weight-bold">{{ asm.score }} / {{ asm.max_score }}</span>
+            </li>
+            {% empty %}
+            <li class="list-group-item text-center py-3 text-muted small">No assessment recorded.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Convert / Admit Student Modal -->
+<div class="modal fade" id="convertAdmissionModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title font-weight-bold"><i class="fas fa-user-graduate mr-2"></i> Confirm Admission & Enroll</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post" action="{% url 'admissions:application_convert' application.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <p class="text-dark small mb-3">
+            This operation will transactionally create the official <strong>Student</strong>, <strong>Parent Profile</strong>, <strong>Guardian Relationship</strong>, and <strong>Academic Enrollment</strong> records.
+          </p>
+          <div class="form-group mb-3">
+            <label class="small font-weight-bold text-dark">Assign Section (Optional)</label>
+            {{ convert_form.section }}
+          </div>
+          <div class="form-group mb-3">
+            <label class="small font-weight-bold text-dark">Class Roll Number (Optional)</label>
+            {{ convert_form.roll_number }}
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success btn-sm font-weight-bold">
+            <i class="fas fa-check mr-1"></i> Confirm & Admit
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Document Modal -->
+<div class="modal fade" id="uploadDocModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title font-weight-bold"><i class="fas fa-upload mr-2"></i> Upload Document</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post" action="{% url 'admissions:document_upload' application.pk %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="form-group mb-3">
+            <label class="small font-weight-bold text-dark">Document Type</label>
+            {{ doc_form.document_type }}
+          </div>
+          <div class="form-group mb-3">
+            <label class="small font-weight-bold text-dark">Document Title / Description</label>
+            {{ doc_form.title }}
+          </div>
+          <div class="form-group mb-3">
+            <label class="small font-weight-bold text-dark">Select File</label>
+            {{ doc_form.file }}
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm font-weight-bold">Upload File</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Interview Modal -->
+<div class="modal fade" id="interviewModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title font-weight-bold"><i class="fas fa-calendar-plus mr-2"></i> Schedule Interview</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post" action="{% url 'admissions:interview_schedule' application.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="form-group mb-3">
+            <label class="small font-weight-bold text-dark">Scheduled Date & Time</label>
+            {{ interview_form.scheduled_at }}
+          </div>
+          <div class="form-group mb-3">
+            <label class="small font-weight-bold text-dark">Location</label>
+            {{ interview_form.location }}
+          </div>
+          <div class="form-group mb-3">
+            <label class="small font-weight-bold text-dark">Interviewer / Faculty</label>
+            {{ interview_form.interviewer }}
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm font-weight-bold">Schedule Interview</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Assessment Modal -->
+<div class="modal fade" id="assessmentModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title font-weight-bold"><i class="fas fa-pen mr-2"></i> Record Assessment</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post" action="{% url 'admissions:assessment_record' application.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="form-group mb-3">
+            <label class="small font-weight-bold text-dark">Subject / Area</label>
+            {{ assessment_form.subject }}
+          </div>
+          <div class="row">
+            <div class="col-6 form-group mb-3">
+              <label class="small font-weight-bold text-dark">Score Obtained</label>
+              {{ assessment_form.score }}
+            </div>
+            <div class="col-6 form-group mb-3">
+              <label class="small font-weight-bold text-dark">Max Score</label>
+              {{ assessment_form.max_score }}
+            </div>
+          </div>
+          <div class="form-group mb-3">
+            <label class="small font-weight-bold text-dark">Remarks</label>
+            {{ assessment_form.remarks }}
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm font-weight-bold">Save Assessment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

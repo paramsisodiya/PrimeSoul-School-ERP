@@ -1,0 +1,101 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'examinations:exam_list' %}">Exams</a></li>
+          <li class="breadcrumb-item active" aria-current="page">{{ action }} Exam</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">{{ action }} Examination</h4>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0" style="border-radius: 12px; max-width: 800px;">
+    <div class="card-body p-4">
+      <form method="POST">
+        {% csrf_token %}
+        <div class="form-group mb-3">
+          <label class="form-label font-weight-bold small text-muted">Examination Name *</label>
+          {{ form.name }}
+          {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors }}</div>{% endif %}
+        </div>
+        <div class="row">
+          <div class="col-md-6 form-group mb-3">
+            <label class="form-label font-weight-bold small text-muted">Examination Session *</label>
+            {{ form.session }}
+            {% if form.session.errors %}<div class="text-danger small mt-1">{{ form.session.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6 form-group mb-3">
+            <label class="form-label font-weight-bold small text-muted">Academic Year *</label>
+            {{ form.academic_year }}
+            {% if form.academic_year.errors %}<div class="text-danger small mt-1">{{ form.academic_year.errors }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 form-group mb-3">
+            <label class="form-label font-weight-bold small text-muted">Class / Grade Level *</label>
+            {{ form.grade_level }}
+            {% if form.grade_level.errors %}<div class="text-danger small mt-1">{{ form.grade_level.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6 form-group mb-3">
+            <label class="form-label font-weight-bold small text-muted">Section (Optional — leave blank for all sections)</label>
+            {{ form.section }}
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 form-group mb-3">
+            <label class="form-label font-weight-bold small text-muted">Assessment Type *</label>
+            {{ form.assessment_type }}
+            {% if form.assessment_type.errors %}<div class="text-danger small mt-1">{{ form.assessment_type.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6 form-group mb-3">
+            <label class="form-label font-weight-bold small text-muted">Grading Scale (Optional)</label>
+            {{ form.grade_scale }}
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-4 form-group mb-3">
+            <label class="form-label font-weight-bold small text-muted">Start Date</label>
+            {{ form.start_date }}
+          </div>
+          <div class="col-md-4 form-group mb-3">
+            <label class="form-label font-weight-bold small text-muted">End Date</label>
+            {{ form.end_date }}
+          </div>
+          <div class="col-md-4 form-group mb-3">
+            <label class="form-label font-weight-bold small text-muted">Weightage (%)</label>
+            {{ form.weightage }}
+          </div>
+        </div>
+        <div class="form-group mb-3">
+          <div class="custom-control custom-checkbox">
+            {{ form.ranking_enabled }}
+            <label class="custom-control-label font-weight-bold text-dark" for="{{ form.ranking_enabled.id_for_label }}">
+              Enable Student Class & Section Ranking
+            </label>
+          </div>
+          <small class="text-muted">Computes 1st, 2nd, 3rd position ranks automatically during result calculation.</small>
+        </div>
+        <div class="form-group mb-4">
+          <label class="form-label font-weight-bold small text-muted">Status</label>
+          {{ form.status }}
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save mr-1"></i> Save Exam
+          </button>
+          <a href="{% url 'examinations:exam_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

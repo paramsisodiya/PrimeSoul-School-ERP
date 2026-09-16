@@ -1,0 +1,221 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">HR & Payroll</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Human Resources & Payroll Command Hub</h4>
+      </div>
+      <p class="text-muted small mb-0">Manage employee registry, staff attendance, leave approvals, salary structures, statutory compliance, and payroll generation.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <a href="{% url 'hr:employee_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-user-plus mr-1"></i> Add Employee
+      </a>
+      <a href="{% url 'hr:attendance' %}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-calendar-check mr-1"></i> Staff Attendance
+      </a>
+      <a href="{% url 'hr:payroll_periods' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-money-check-alt mr-1"></i> Payroll
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- KPI Row -->
+  <div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #4F46E5 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Active Employees</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ metrics.active_employees|default:0 }}</div>
+              <small class="text-muted">{{ metrics.total_employees|default:0 }} total on payroll</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-primary">
+              <i class="fas fa-users-cog fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #10B981 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Staff Present Today</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ metrics.present_today|default:0 }}</div>
+              <small class="text-success font-weight-semibold">Daily Attendance Marked</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-success">
+              <i class="fas fa-user-check fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #F59E0B !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Pending Leaves</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ metrics.pending_leaves|default:0 }}</div>
+              <small class="text-warning font-weight-semibold">Requires Approval</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-warning">
+              <i class="fas fa-envelope-open-text fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #8B5CF6 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Departments</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ metrics.total_departments|default:0 }}</div>
+              <small class="text-muted">{{ metrics.total_designations|default:0 }} designations</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-purple" style="color: #8B5CF6;">
+              <i class="fas fa-sitemap fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Recent Employees & Leaves -->
+    <div class="col-lg-8 mb-4">
+      <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+          <h6 class="font-weight-bold mb-0 text-dark">
+            <i class="fas fa-user-friends mr-2 text-primary"></i> Recently Joined Staff
+          </h6>
+          <a href="{% url 'hr:employees' %}" class="small text-primary font-weight-bold">View All Employees</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+            <thead class="thead-light">
+              <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Designation</th>
+                <th>Department</th>
+                <th>Joining Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for emp in recent_employees %}
+                <tr>
+                  <td><code>{{ emp.employee_code }}</code></td>
+                  <td>
+                    <a href="{% url 'hr:employee_detail' emp.pk %}" class="font-weight-bold text-dark text-decoration-none">
+                      {{ emp.full_name }}
+                    </a>
+                  </td>
+                  <td>{{ emp.designation.name }}</td>
+                  <td>{{ emp.department.name|default:"-" }}</td>
+                  <td>{{ emp.joining_date|date:"d M Y"|default:"-" }}</td>
+                  <td>
+                    {% if emp.status == 'ACTIVE' %}
+                      <span class="badge badge-success">Active</span>
+                    {% else %}
+                      <span class="badge badge-secondary">{{ emp.status }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">No employee records found.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Leave Requests & Alerts -->
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+          <h6 class="font-weight-bold mb-0 text-dark">
+            <i class="fas fa-calendar-minus mr-2 text-warning"></i> Pending Leave Approvals
+          </h6>
+          <a href="{% url 'hr:leaves' %}" class="small text-primary font-weight-bold">View All</a>
+        </div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush" style="font-size: 0.85rem;">
+            {% for leave in pending_leaves %}
+              <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                <div>
+                  <div class="font-weight-bold text-dark">{{ leave.employee.full_name }}</div>
+                  <small class="text-muted">{{ leave.leave_type.name }}: {{ leave.start_date|date:"d M" }} - {{ leave.end_date|date:"d M Y" }}</small>
+                </div>
+                <a href="{% url 'hr:leaves' %}" class="btn btn-outline-warning btn-sm py-0 px-2" style="font-size: 0.75rem;">
+                  Review
+                </a>
+              </li>
+            {% empty %}
+              <li class="list-group-item text-center py-4 text-muted">
+                <i class="fas fa-check-circle text-success mr-1"></i> No pending leaves.
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      {% if expiry_alerts %}
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3 font-weight-bold text-danger">
+          <i class="fas fa-exclamation-triangle mr-2"></i> Expiring Staff Documents
+        </div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush" style="font-size: 0.85rem;">
+            {% for doc in expiry_alerts %}
+              <li class="list-group-item py-2">
+                <strong>{{ doc.employee.full_name }}</strong> — {{ doc.title }}
+                <div class="small text-danger">Expires: {{ doc.expiry_date|date:"d M Y" }}</div>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

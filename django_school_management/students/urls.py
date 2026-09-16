@@ -161,4 +161,14 @@ urlpatterns = [
         views.reject_applicant,
         name=StudentsURLEnums.reject_applicant.name,
     ),
+    path(
+        "import/csv/",
+        views.import_students_csv_view,
+        name="import_students_csv",
+    ),
+    path(
+        "import/sample-csv/",
+        views.download_sample_students_csv_view,
+        name="download_sample_students_csv",
+    ),
 ]

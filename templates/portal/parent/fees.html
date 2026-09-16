@@ -1,0 +1,195 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}Fees & Payments - {{ selected_child.name|default:"Parent Portal" }}{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <h4 class="font-weight-bold text-dark mb-1">Fee Statement & Receipts</h4>
+      <p class="text-muted small mb-0">Financial summary, fee installments, and official receipts for <strong>{{ selected_child.name }}</strong>.</p>
+    </div>
+  </div>
+
+  <!-- Financial Summary Cards -->
+  <div class="row mb-4">
+    <div class="col-sm-4 mb-3">
+      <div class="portal-card stat-widget h-100">
+        <div>
+          <span class="text-muted small font-weight-bold text-uppercase">Total Fee Assigned</span>
+          <h2 class="font-weight-bold mt-1 mb-0 text-dark">₹{{ total_payable }}</h2>
+          <span class="small text-muted">Annual charges & dues</span>
+        </div>
+        <div class="icon-box" style="background: #EEF2FF; color: #4F46E5;">
+          <i class="fas fa-file-invoice"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-4 mb-3">
+      <div class="portal-card stat-widget h-100">
+        <div>
+          <span class="text-muted small font-weight-bold text-uppercase">Total Paid</span>
+          <h2 class="font-weight-bold mt-1 mb-0 text-success">₹{{ total_paid }}</h2>
+          <span class="small text-muted">Realized payments</span>
+        </div>
+        <div class="icon-box" style="background: #DCFCE7; color: #166534;">
+          <i class="fas fa-check-circle"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-4 mb-3">
+      <div class="portal-card stat-widget h-100">
+        <div>
+          <span class="text-muted small font-weight-bold text-uppercase">Outstanding Balance</span>
+          <h2 class="font-weight-bold mt-1 mb-0 {% if total_outstanding > 0 %}text-danger{% else %}text-success{% endif %}">₹{{ total_outstanding }}</h2>
+          <span class="small text-muted">Current pending dues</span>
+        </div>
+        <div class="icon-box" style="background: #FEE2E2; color: #991B1B;">
+          <i class="fas fa-exclamation-circle"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fee Installments -->
+  <div class="portal-card mb-4">
+    <div class="card-header bg-white font-weight-bold py-3">
+      <i class="fas fa-calendar-alt mr-2 text-primary"></i> Fee Installments Breakdown
+    </div>
+    <div class="card-body p-0">
+      {% if installments %}
+        <div class="table-responsive">
+          <table class="table portal-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Installment</th>
+                <th>Due Date</th>
+                <th>Base Fee</th>
+                <th>Concession</th>
+                <th>Payable</th>
+                <th>Paid</th>
+                <th>Remaining</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inst in installments %}
+                <tr>
+                  <td class="font-weight-bold text-dark">{{ inst.installment_name }}</td>
+                  <td>{{ inst.due_date|date:"d M Y" }}</td>
+                  <td>₹{{ inst.base_amount }}</td>
+                  <td>{% if inst.concession_amount > 0 %}<span class="text-success">-₹{{ inst.concession_amount }}</span>{% else %}-{% endif %}</td>
+                  <td class="font-weight-bold text-dark">₹{{ inst.payable_amount }}</td>
+                  <td class="text-success font-weight-500">₹{{ inst.paid_amount }}</td>
+                  <td class="font-weight-bold {% if inst.balance_amount > 0 %}text-danger{% else %}text-success{% endif %}">₹{{ inst.balance_amount }}</td>
+                  <td>
+                    <span class="portal-badge {% if inst.status == 'PAID' %}badge-paid{% elif inst.status == 'PARTIAL' %}badge-partial{% elif inst.status == 'OVERDUE' %}badge-overdue{% else %}badge-pending{% endif %}">
+                      {{ inst.get_status_display }}
+                    </span>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-4 text-center text-muted">No installments assigned.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Invoices and Receipts in 2 Columns -->
+  <div class="row">
+    <!-- Invoices -->
+    <div class="col-lg-6 mb-4">
+      <div class="portal-card h-100">
+        <div class="card-header bg-white font-weight-bold py-3">
+          <i class="fas fa-file-invoice mr-2 text-primary"></i> Invoices
+        </div>
+        <div class="card-body p-0">
+          {% if invoices %}
+            <div class="table-responsive">
+              <table class="table portal-table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Invoice No</th>
+                    <th>Date</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for inv in invoices %}
+                    <tr>
+                      <td><code>{{ inv.invoice_number }}</code></td>
+                      <td>{{ inv.invoice_date|date:"d M Y" }}</td>
+                      <td class="font-weight-bold text-dark">₹{{ inv.total }}</td>
+                      <td>
+                        <span class="portal-badge {% if inv.status == 'PAID' %}badge-paid{% elif inv.status == 'PARTIAL' %}badge-partial{% elif inv.status == 'OVERDUE' %}badge-overdue{% else %}badge-pending{% endif %}">
+                          {{ inv.get_status_display }}
+                        </span>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="p-4 text-center text-muted small">No invoices generated yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Official Receipts -->
+    <div class="col-lg-6 mb-4">
+      <div class="portal-card h-100">
+        <div class="card-header bg-white font-weight-bold py-3">
+          <i class="fas fa-receipt mr-2 text-success"></i> Official Receipts
+        </div>
+        <div class="card-body p-0">
+          {% if receipts %}
+            <div class="table-responsive">
+              <table class="table portal-table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Receipt No</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Mode</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for rcpt in receipts %}
+                    <tr>
+                      <td><code>{{ rcpt.receipt_number }}</code></td>
+                      <td>{{ rcpt.receipt_date|date:"d M Y" }}</td>
+                      <td class="font-weight-bold text-success">₹{{ rcpt.amount }}</td>
+                      <td><span class="badge badge-light border">{{ rcpt.payment_method }}</span></td>
+                      <td>
+                        {% if rcpt.generated_pdf %}
+                          <a href="{{ rcpt.generated_pdf.url }}" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2" title="Download PDF Receipt">
+                            <i class="fas fa-file-pdf mr-1"></i> PDF
+                          </a>
+                        {% else %}
+                          <span class="text-muted small">Verified</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="p-4 text-center text-muted small">No payment receipts available yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'hr:dashboard' %}">HR</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Payslip</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Salary Payslip — {{ record.payroll_period.get_month_display }} {{ record.payroll_period.year }}</h4>
+    </div>
+    <div>
+      <button onclick="window.print();" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-print mr-1"></i> Print Payslip
+      </button>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="card shadow-sm border-0 p-4" style="border-radius: 12px; background: #fff;">
+        
+        <!-- School & Payslip Title -->
+        <div class="text-center pb-3 mb-3 border-bottom">
+          <h3 class="font-weight-bold text-primary mb-1">PrimeSoul International School</h3>
+          <h6 class="text-muted text-uppercase letter-spacing-1 font-weight-bold mb-0">Monthly Salary & Compensation Statement</h6>
+          <small class="text-muted">Pay Period: {{ record.payroll_period.get_month_display }} {{ record.payroll_period.year }}</small>
+        </div>
+
+        <!-- Employee Info Summary Grid -->
+        <div class="row mb-4" style="font-size: 0.88rem; line-height: 1.8;">
+          <div class="col-sm-6">
+            <div><strong>Employee Code:</strong> <code>{{ record.employee.employee_code }}</code></div>
+            <div><strong>Employee Name:</strong> {{ record.employee.full_name }}</div>
+            <div><strong>Designation:</strong> {{ record.employee.designation.name }}</div>
+            <div><strong>Department:</strong> {{ record.employee.department.name|default:"General" }}</div>
+          </div>
+          <div class="col-sm-6">
+            <div><strong>Bank Name:</strong> {{ record.employee.bank_name|default:"-" }}</div>
+            <div><strong>Bank A/C:</strong> {{ record.employee.masked_bank_account }}</div>
+            <div><strong>PAN:</strong> {{ record.employee.masked_pan }}</div>
+            <div><strong>Working / Payable Days:</strong> {{ record.working_days }} / {{ record.payable_days }}</div>
+          </div>
+        </div>
+
+        <!-- Earnings & Deductions Tables -->
+        <div class="row mb-4">
+          <!-- Earnings -->
+          <div class="col-md-6">
+            <div class="card border-0 bg-light">
+              <div class="card-header bg-success text-white font-weight-bold py-2">
+                <i class="fas fa-plus-circle mr-1"></i> Earnings
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm mb-0" style="font-size: 0.88rem;">
+                  <tbody>
+                    {% for item in earnings %}
+                      <tr>
+                        <td>{{ item.component.name }}</td>
+                        <td class="text-right font-weight-bold">₹{{ item.amount }}</td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="2" class="text-muted">No earning items</td></tr>
+                    {% endfor %}
+                    <tr class="bg-white border-top">
+                      <td><strong>Total Gross Earnings</strong></td>
+                      <td class="text-right text-success font-weight-bold">₹{{ record.gross_earnings }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Deductions -->
+          <div class="col-md-6">
+            <div class="card border-0 bg-light">
+              <div class="card-header bg-danger text-white font-weight-bold py-2">
+                <i class="fas fa-minus-circle mr-1"></i> Deductions
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm mb-0" style="font-size: 0.88rem;">
+                  <tbody>
+                    {% for item in deductions %}
+                      <tr>
+                        <td>{{ item.component.name }}</td>
+                        <td class="text-right font-weight-bold">₹{{ item.amount }}</td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="2" class="text-muted">No deduction items</td></tr>
+                    {% endfor %}
+                    <tr class="bg-white border-top">
+                      <td><strong>Total Deductions</strong></td>
+                      <td class="text-right text-danger font-weight-bold">₹{{ record.total_deductions }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Net Pay Box -->
+        <div class="p-3 mb-4 rounded d-flex justify-content-between align-items-center" style="background: #F0FDF4; border: 2px solid #86EFAC;">
+          <div>
+            <h5 class="mb-0 font-weight-bold text-success">NET SALARY PAYABLE:</h5>
+            <small class="text-muted">Disbursed via direct account credit</small>
+          </div>
+          <div class="h2 font-weight-bold text-success mb-0">
+            ₹{{ record.net_salary }}
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between pt-4 border-top text-muted small">
+          <div>Prepared By: PrimeSoul Automated Payroll Engine</div>
+          <div>Authorized Signatory</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

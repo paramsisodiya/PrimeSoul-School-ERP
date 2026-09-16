@@ -1,0 +1,151 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Movement Ledger</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Stock Movement Ledger</h4>
+      <p class="text-muted small mb-0">Immutable transaction log tracking all IN, OUT, TRANSFER, ADJUSTMENT, and RETURN operations.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'inventory:dashboard' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+    <div class="card-body py-3">
+      <form method="get" class="row align-items-center">
+        <div class="col-md-3 mb-2 mb-md-0">
+          <select name="item" class="form-control form-control-sm">
+            <option value="">-- All Items --</option>
+            {% for itm in items %}
+              <option value="{{ itm.id }}" {% if selected_item|stringformat:"s" == itm.id|stringformat:"s" %}selected{% endif %}>{{ itm.name }} ({{ itm.sku }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 mb-2 mb-md-0">
+          <select name="store" class="form-control form-control-sm">
+            <option value="">-- All Stores --</option>
+            {% for st in stores %}
+              <option value="{{ st.id }}" {% if selected_store|stringformat:"s" == st.id|stringformat:"s" %}selected{% endif %}>{{ st.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 mb-2 mb-md-0">
+          <select name="movement_type" class="form-control form-control-sm">
+            <option value="">-- All Types --</option>
+            {% for code, label in movement_types %}
+              <option value="{{ code }}" {% if selected_type == code %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 mb-2 mb-md-0">
+          <input type="date" name="start_date" class="form-control form-control-sm" value="{{ start_date }}" placeholder="Start Date">
+        </div>
+        <div class="col-md-2 mb-2 mb-md-0">
+          <input type="date" name="end_date" class="form-control form-control-sm" value="{{ end_date }}" placeholder="End Date">
+        </div>
+        <div class="col-md-1 text-right">
+          <button type="submit" class="btn btn-primary btn-sm btn-block"><i class="fas fa-filter"></i></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Movements Table -->
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+        <thead class="bg-light">
+          <tr>
+            <th>Type</th>
+            <th>Item</th>
+            <th>Quantity</th>
+            <th>Store / Route</th>
+            <th>Reference</th>
+            <th>Reason / Notes</th>
+            <th>Staff</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mov in page_obj %}
+            <tr>
+              <td>
+                {% if mov.movement_type == 'IN' %}
+                  <span class="badge badge-success">IN</span>
+                {% elif mov.movement_type == 'OUT' %}
+                  <span class="badge badge-danger">OUT</span>
+                {% elif mov.movement_type == 'TRANSFER' %}
+                  <span class="badge badge-info">TRANSFER</span>
+                {% elif mov.movement_type == 'RETURN' %}
+                  <span class="badge badge-primary">RETURN</span>
+                {% else %}
+                  <span class="badge badge-secondary">{{ mov.movement_type }}</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="font-weight-bold text-dark">{{ mov.item.name }}</span><br>
+                <small class="text-muted">{{ mov.item.sku }}</small>
+              </td>
+              <td class="font-weight-bold">{{ mov.quantity }} {{ mov.item.unit.short_code }}</td>
+              <td>
+                {% if mov.movement_type == 'TRANSFER' %}
+                  {{ mov.source_store.code }} &rarr; {{ mov.destination_store.code }}
+                {% elif mov.movement_type == 'IN' or mov.movement_type == 'RETURN' %}
+                  &rarr; {{ mov.destination_store.name }}
+                {% else %}
+                  {{ mov.source_store.name }} &rarr;
+                {% endif %}
+              </td>
+              <td><span class="badge badge-light border">{{ mov.reference_number|default:"-" }}</span></td>
+              <td>
+                {% if mov.reason %}<div class="text-dark">{{ mov.reason }}</div>{% endif %}
+                {% if mov.notes %}<small class="text-muted">{{ mov.notes }}</small>{% endif %}
+              </td>
+              <td class="text-muted small">{{ mov.performed_by.get_full_name|default:"System" }}</td>
+              <td>{{ mov.timestamp|date:"d M Y, H:i" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-5 text-muted">
+                <i class="fas fa-history fa-3x mb-3 text-muted d-block"></i>
+                No stock ledger movements found matching query.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+      <div class="card-footer bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+        <span class="text-muted small">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</span>
+        <ul class="pagination pagination-sm mb-0">
+          {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&item={{ selected_item|default:'' }}&store={{ selected_store|default:'' }}&movement_type={{ selected_type|default:'' }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}">Previous</a></li>
+          {% endif %}
+          <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+          {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&item={{ selected_item|default:'' }}&store={{ selected_store|default:'' }}&movement_type={{ selected_type|default:'' }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}">Next</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

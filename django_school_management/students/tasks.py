@@ -15,7 +15,7 @@ def send_admission_confirmation_email(student_id):
     name = student.name
     choosen_dept = student.choosen_department
     send_mail(
-        f'Django-School-Management: Admission confirmed for student {name}',
+        f'PrimeSoul School ERP: Admission confirmed for student {name}',
         f'Choosen Dept: {choosen_dept}',
         EMAIL_HOST_USER,
         [student.email, ], 

@@ -25,19 +25,19 @@ class TestStudentsViews(TestCase):
             AdmissionStudent.photo.field.upload_to,
             'test_image.png'
         )
-        dept = Department.objects.get(id=1)
+        dept = cmt
         student = AdmissionStudent.objects.create(
             name='TestStudent',
             photo=SimpleUploadedFile(
                 name='test_image.png', 
-                content=open(img_path, 'rb').read(), 
-                content_type='image/jpeg'
+                content=b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00\x21\xf9\x04\x01\x00\x00\x00\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3b', 
+                content_type='image/gif'
             ),
             fathers_name='testfather',
             mothers_name='testmother',
             date_of_birth=date.today(),
             email='tareqmonwer137@gmail.com',
-            city='13',
+            city=None,
             current_address='testaddress',
             permanent_address='testparmanentaddress',
             mobile_number='12121212',

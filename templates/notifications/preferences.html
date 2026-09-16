@@ -1,0 +1,131 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'communication:notification_center' %}" class="text-decoration-none">Notifications</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Preferences</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Notification & Alert Preferences</h4>
+      <p class="text-muted small mb-0">Customize the communication channels and alert types you wish to receive from the school.</p>
+    </div>
+    <div>
+      <a href="{% url 'communication:notification_center' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Notifications
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Preferences Form -->
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+
+            <h6 class="font-weight-bold text-dark mb-3">Delivery Channels</h6>
+            <div class="p-3 bg-light rounded mb-4">
+              <div class="custom-control custom-switch mb-3">
+                {{ form.email_enabled }}
+                <label class="custom-control-label font-weight-bold small text-dark" for="{{ form.email_enabled.id_for_label }}">
+                  Email Notifications
+                </label>
+                <small class="d-block text-muted">Receive official notifications and fee summaries via registered email.</small>
+              </div>
+
+              <div class="custom-control custom-switch mb-3">
+                {{ form.sms_enabled }}
+                <label class="custom-control-label font-weight-bold small text-dark" for="{{ form.sms_enabled.id_for_label }}">
+                  SMS Text Alerts
+                </label>
+                <small class="d-block text-muted">Receive vital attendance and emergency alerts via SMS on your mobile phone.</small>
+              </div>
+
+              <div class="custom-control custom-switch">
+                {{ form.whatsapp_enabled }}
+                <label class="custom-control-label font-weight-bold small text-dark" for="{{ form.whatsapp_enabled.id_for_label }}">
+                  WhatsApp Messages
+                </label>
+                <small class="d-block text-muted">Receive report cards, receipts, and circulars directly on WhatsApp.</small>
+              </div>
+            </div>
+
+            <h6 class="font-weight-bold text-dark mb-3">Alert Categories</h6>
+            <div class="p-3 bg-light rounded mb-4">
+              <div class="custom-control custom-switch mb-3">
+                {{ form.attendance_alerts }}
+                <label class="custom-control-label font-weight-bold small text-dark" for="{{ form.attendance_alerts.id_for_label }}">
+                  Daily Attendance Absence Alerts
+                </label>
+              </div>
+
+              <div class="custom-control custom-switch mb-3">
+                {{ form.fee_alerts }}
+                <label class="custom-control-label font-weight-bold small text-dark" for="{{ form.fee_alerts.id_for_label }}">
+                  Fee Due & Payment Reminders
+                </label>
+              </div>
+
+              <div class="custom-control custom-switch mb-3">
+                {{ form.exam_alerts }}
+                <label class="custom-control-label font-weight-bold small text-dark" for="{{ form.exam_alerts.id_for_label }}">
+                  Exam Timetable & Result Publication Alerts
+                </label>
+              </div>
+
+              <div class="custom-control custom-switch mb-3">
+                {{ form.transport_alerts }}
+                <label class="custom-control-label font-weight-bold small text-dark" for="{{ form.transport_alerts.id_for_label }}">
+                  Transport & Bus Route Updates
+                </label>
+              </div>
+
+              <div class="custom-control custom-switch mb-3">
+                {{ form.library_alerts }}
+                <label class="custom-control-label font-weight-bold small text-dark" for="{{ form.library_alerts.id_for_label }}">
+                  Library Due Dates & Overdue Notices
+                </label>
+              </div>
+
+              <div class="custom-control custom-switch">
+                {{ form.hr_alerts }}
+                <label class="custom-control-label font-weight-bold small text-dark" for="{{ form.hr_alerts.id_for_label }}">
+                  Staff Leave & Payroll Alerts
+                </label>
+              </div>
+            </div>
+
+            <div class="border-top pt-3 text-right">
+              <button type="submit" class="btn btn-primary btn-sm px-4 font-weight-bold">
+                <i class="fas fa-save mr-1"></i> Save Preferences
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+[Unit]
+Description=PrimeSoul School ERP Celery Beat Periodic Scheduler
+After=network.target redis.service postgresql.service primesoul-celery.service
+
+[Service]
+Type=simple
+User=primesoul
+Group=www-data
+WorkingDirectory=/var/www/primesoul
+EnvironmentFile=/var/www/primesoul/envs/.env
+ExecStart=/var/www/primesoul/venv/bin/celery -A config beat \
+          -l INFO \
+          --scheduler django_celery_beat.schedulers:DatabaseScheduler \
+          --pidfile=/var/run/celery/beat.pid \
+          --logfile=/var/log/celery/beat.log
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

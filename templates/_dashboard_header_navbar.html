@@ -1,132 +1,97 @@
 {% load static %}
 
-<div class="header navbar">
-  <div class="header-container">
-    <ul class="nav-left">
-      <li>
-        <a id="sidebar-toggle" class="sidebar-toggle" href="javascript:void(0);">
-          <i class="fas fa-bars"></i>
-        </a>
-      </li>
-      <li class="search-box">
-        <a class="search-toggle no-pdd-right" href="javascript:void(0);">
-          <i class="search-icon fas fa-search pdd-right-10"></i>
-          <i class="search-icon-close ti-close pdd-right-10"></i>
-        </a>
-      </li>
-      <li class="search-input">
-        <input class="form-control" type="text" placeholder="Search...">
-      </li>
-    </ul>
-    <ul class="nav-right">
-      <li class="notifications dropdown">
-        <span class="counter bgc-red">0</span>
-        <a href="" class="dropdown-toggle no-after" data-toggle="dropdown">
-          <i class="fas fa-bell"></i>
-        </a>
-        <ul class="dropdown-menu">
-          <li class="pX-20 pY-15 bdB">
-            <i class="fas fa-bell pR-10" style="color: var(--accent, #6366f1);"></i>
-            <span class="fsz-sm fw-600 c-grey-900">Notifications</span>
-          </li>
-          <li>
-            <ul class="ovY-a pos-r scrollable lis-n p-0 m-0 fsz-sm">
-              <li>
-                <a href="" class="peers fxw-nw td-n p-20 bdB c-grey-800 cH-blue bgcH-grey-100">
-                  <div class="peer mR-15">
-                    <img class="w-3r bdrs-50p" src="https://randomuser.me/api/portraits/men/1.jpg" alt="">
-                  </div>
-                  <div class="peer peer-greed">
-                    <span>
-                      <span class="fw-500">John Doe</span> 
-                      <span class="c-grey-600">
-                        liked your <span class="text-dark">post</span>
-                      </span>
-                    </span>
-                    <p class="m-0">
-                      <small class="fsz-xs">5 mins ago</small>
-                    </p>
-                  </div>
-                </a>
-              </li>
-            </ul>
-          </li>
-          <li class="pX-20 pY-15 ta-c bdT">
-            <span>
-              <a href="" class="c-grey-600 cH-blue fsz-sm td-n">
-                View All Notifications <i class="ti-angle-right fsz-xs mL-10"></i>
-              </a>
-            </span>
-          </li>
-        </ul>
-      </li>
-      <li class="dropdown">
-        <a href="javascript:void(0);" class="dropdown-toggle no-after peers fxw-nw ai-c lh-1" 
-          data-toggle="dropdown"
-          aria-expanded="false">
-          <div class="peer mR-10">
-            <img class="w-2r bdrs-50p" 
-              style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover;"
-            {% if user.profile.profile_picture %}
-              src="{{ user.profile.profile_picture.url }}"
-            {% else %}
-              src="https://randomuser.me/api/portraits/men/10.jpg"
-            {% endif %}
-             alt="">
-          </div>
-          <div class="peer">
-            <span class="fsz-sm c-grey-900" style="font-weight: 600;">
-              {{ user.username|title }}
-            </span>
-            <i class="fas fa-chevron-down" style="font-size: 0.6rem; margin-left: 6px; color: #94a3b8;"></i>
-          </div>
-        </a>
-        <ul class="dropdown-menu fsz-sm">
-          <li>
-            <a href="{% url 'institute:onboarding_step1' %}" class="d-b td-n pY-5 bgcH-grey-100 c-grey-700">
-              <i class="fas fa-sliders-h mR-10"></i>
-              <span>Onboarding / Setup wizard</span>
-            </a>
-            {% if request_institute and request_institute.onboarding_completed %}
-              <a href="{% url 'institute:institute_detail' institute_pk=request_institute.pk %}" 
-                class="d-b td-n pY-5 bgcH-grey-100 c-grey-700">
-                <i class="fas fa-school mR-10"></i>
-                <span>School Profile</span>
-              </a>
-            {% elif request_institute %}
-              <a href="{% url 'institute:onboarding_step1' %}"
-                class="d-b td-n pY-5 bgcH-grey-100 c-grey-700">
-                <i class="fas fa-cog mR-10" style="color: #6366f1;"></i>
-                <span style="font-weight: 600;">Continue Setup</span>
-              </a>
-            {% else %}
-              <a href="{% url 'institute:onboarding_step1' %}"
-                class="d-b td-n pY-5 bgcH-grey-100 c-grey-700">
-                <i class="fas fa-school mR-10"></i>
-                <span>Setup School</span>
-              </a>
-            {% endif %}
-            <a href="{% url 'institute:institute_profile_list' %}" class="d-b td-n pY-5 bgcH-grey-100 c-grey-700">
-              <i class="fas fa-th-list mR-10"></i>
-              <span>All Profiles</span>
-            </a>
-          </li>
-          <li>
-            <a href="{% url account_urls.profile_complete %}" class="d-b td-n pY-5 bgcH-grey-100 c-grey-700">
-              <i class="fas fa-user-circle mR-10"></i>
-              <span>{{ request.user }}</span>
-            </a>
-          </li>
-          <li role="separator" class="divider"></li>
-          <li>
-            <a href="{% url 'account:logout' %}" 
-              class="d-b td-n pY-5 bgcH-grey-100 c-grey-700">
-              <i class="fas fa-sign-out-alt mR-10"></i>
-              <span>Logout</span>
-            </a>
-          </li>
-        </ul>
-      </li>
-    </ul>
+<header class="app-header">
+  <div class="header-left">
+    <!-- Mobile Hamburger -->
+    <button type="button" class="sidebar-toggle-btn" id="sidebarToggle" aria-label="Toggle Navigation">
+      <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- School Identity Pill -->
+    <div class="school-meta-pill d-none d-md-inline-flex">
+      <i class="fas fa-school text-primary mr-1"></i>
+      <span>{{ school.name|default:"PrimeSoul School ERP" }}</span>
+    </div>
+
+    <!-- Academic Session Tag -->
+    <div class="session-badge d-none d-lg-inline-flex">
+      <i class="fas fa-calendar-alt text-muted mr-1"></i>
+      <span>Session: <strong>2026-2027</strong></span>
+    </div>
   </div>
-</div>
+
+  <div class="header-right">
+    <!-- User Role Badge -->
+    <div class="role-pill d-none d-sm-inline-flex">
+      {{ user.get_requested_role_display|default:user.requested_role|default:"School Admin" }}
+    </div>
+
+    <!-- Notifications Dropdown -->
+    <div class="dropdown">
+      <button class="header-btn" type="button" id="notifDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="System Alerts">
+        <i class="fas fa-bell"></i>
+        <span class="header-badge-dot"></span>
+      </button>
+      <div class="dropdown-menu dropdown-menu-right shadow border-0" aria-labelledby="notifDropdown" style="width: 320px; border-radius: 12px; padding: 0; margin-top: 10px;">
+        <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-light" style="border-radius: 12px 12px 0 0;">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-bell text-primary mr-2"></i>System Alerts</h6>
+          <span class="badge badge-primary badge-pill">2 New</span>
+        </div>
+        <div class="p-2" style="max-height: 280px; overflow-y: auto;">
+          <a href="{% url 'fees:payments' %}" class="d-flex align-items-start p-2 rounded text-dark text-decoration-none mb-1" style="transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+            <div class="mr-3" style="width: 32px; height: 32px; border-radius: 8px; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i class="fas fa-check"></i>
+            </div>
+            <div>
+              <div class="font-weight-bold" style="font-size: 0.82rem;">Fee Payment Received</div>
+              <div class="text-muted" style="font-size: 0.75rem;">₹6,000 via UPI recorded successfully</div>
+            </div>
+          </a>
+          <a href="{% url 'fees:invoices' %}" class="d-flex align-items-start p-2 rounded text-dark text-decoration-none" style="transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+            <div class="mr-3" style="width: 32px; height: 32px; border-radius: 8px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i class="fas fa-file-invoice"></i>
+            </div>
+            <div>
+              <div class="font-weight-bold" style="font-size: 0.82rem;">Installment Billed</div>
+              <div class="text-muted" style="font-size: 0.75rem;">Quarterly billing cycle active for Class 10</div>
+            </div>
+          </a>
+        </div>
+        <div class="p-2 border-top text-center" style="border-radius: 0 0 12px 12px; background: #f8fafc;">
+          <a href="{% url 'fees:fee_dashboard' %}" class="text-primary font-weight-bold" style="font-size: 0.78rem;">
+            View Financial Dashboard <i class="fas fa-arrow-right ml-1"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Profile Dropdown -->
+    <div class="dropdown">
+      <button class="user-menu-btn" type="button" id="userMenuDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <div class="user-avatar">
+          {{ user.first_name|default:user.username|slice:":1"|upper }}
+        </div>
+        <div class="user-name d-none d-md-inline-block">
+          {{ user.get_full_name|default:user.username }}
+        </div>
+        <i class="fas fa-chevron-down text-muted" style="font-size: 0.65rem; margin-left: 2px;"></i>
+      </button>
+      <div class="dropdown-menu dropdown-menu-right shadow border-0" aria-labelledby="userMenuDropdown" style="min-width: 220px; border-radius: 12px; padding: 0.5rem; margin-top: 10px;">
+        <div class="px-3 py-2 border-bottom mb-1">
+          <div class="font-weight-bold text-dark" style="font-size: 0.88rem;">{{ user.get_full_name|default:user.username }}</div>
+          <div class="text-muted small" style="font-size: 0.75rem;">{{ user.email }}</div>
+        </div>
+        <a class="dropdown-item rounded py-2 d-flex align-items-center" href="{% url 'fees:fee_dashboard' %}" style="font-size: 0.85rem;">
+          <i class="fas fa-chart-line text-success mr-2" style="width: 18px;"></i> Fees Center
+        </a>
+        <a class="dropdown-item rounded py-2 d-flex align-items-center" href="{% url account_urls.profile_complete %}" style="font-size: 0.85rem;">
+          <i class="fas fa-user-circle text-primary mr-2" style="width: 18px;"></i> My Profile
+        </a>
+        <div class="dropdown-divider my-1"></div>
+        <a class="dropdown-item rounded py-2 d-flex align-items-center text-danger font-weight-bold" href="{% url 'account_logout' %}" style="font-size: 0.85rem;">
+          <i class="fas fa-sign-out-alt mr-2" style="width: 18px;"></i> Log Out
+        </a>
+      </div>
+    </div>
+  </div>
+</header>

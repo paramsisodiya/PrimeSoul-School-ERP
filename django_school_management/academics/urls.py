@@ -5,6 +5,19 @@ from .constants import AcademicsURLEnum
 app_name = 'academics'
 
 urlpatterns = [
+    # ── Phase 5 Modern PrimeSoul K-12 Academic Routes ─────────
+    path('', views.academic_dashboard_view, name='academic_dashboard'),
+    path('dashboard/', views.academic_dashboard_view, name='dashboard'),
+    path('years/', views.academic_years_view, name='academic_years'),
+    path('classes/', views.classes_view, name='classes'),
+    path('sections/', views.sections_view, name='sections'),
+    path('subjects/', views.subjects_view, name='subjects'),
+    path('subjects/directory/', views.subjects_view, name='subjects_directory'),
+    path('assignments/', views.assignments_view, name='assignments'),
+    path('enrollments/', views.enrollments_view, name='enrollments'),
+    path('promotions/', views.promotions_view, name='promotions'),
+
+    # ── Legacy routes preserved for backwards compatibility ────
     path(AcademicsURLEnum.setup_hub.value, views.academic_setup_hub, name=AcademicsURLEnum.setup_hub.name),
     path(AcademicsURLEnum.batch_list.value, views.batch_list_view, name=AcademicsURLEnum.batch_list.name),
     path(AcademicsURLEnum.create_batch.value, views.create_batch_view, name=AcademicsURLEnum.create_batch.name),
@@ -34,3 +47,4 @@ urlpatterns = [
     path(AcademicsURLEnum.delete_semester.value, views.delete_semester, name=AcademicsURLEnum.delete_semester.name),
     path(AcademicsURLEnum.set_academic_session_current.value, views.set_academic_session_current, name=AcademicsURLEnum.set_academic_session_current.name),
 ]
+

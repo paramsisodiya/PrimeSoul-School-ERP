@@ -1,0 +1,145 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}Fee Dues & Receipts - Student Portal{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <h4 class="font-weight-bold text-dark mb-1">My Fee Dues & Receipts</h4>
+      <p class="text-muted small mb-0">Authorized student fee schedule, pending installments, and verified receipts.</p>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row mb-4">
+    <div class="col-sm-4 mb-3">
+      <div class="portal-card stat-widget h-100">
+        <div>
+          <span class="text-muted small font-weight-bold text-uppercase">Assigned Payable</span>
+          <h2 class="font-weight-bold mt-1 mb-0 text-dark">₹{{ total_payable }}</h2>
+          <span class="small text-muted">Academic year dues</span>
+        </div>
+        <div class="icon-box" style="background: #EEF2FF; color: #4F46E5;">
+          <i class="fas fa-file-invoice"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-4 mb-3">
+      <div class="portal-card stat-widget h-100">
+        <div>
+          <span class="text-muted small font-weight-bold text-uppercase">Paid Fees</span>
+          <h2 class="font-weight-bold mt-1 mb-0 text-success">₹{{ total_paid }}</h2>
+          <span class="small text-muted">Settled installments</span>
+        </div>
+        <div class="icon-box" style="background: #DCFCE7; color: #166534;">
+          <i class="fas fa-check-circle"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-4 mb-3">
+      <div class="portal-card stat-widget h-100">
+        <div>
+          <span class="text-muted small font-weight-bold text-uppercase">Pending Balance</span>
+          <h2 class="font-weight-bold mt-1 mb-0 {% if total_outstanding > 0 %}text-danger{% else %}text-success{% endif %}">₹{{ total_outstanding }}</h2>
+          <span class="small text-muted">Outstanding amount</span>
+        </div>
+        <div class="icon-box" style="background: #FEE2E2; color: #991B1B;">
+          <i class="fas fa-exclamation-circle"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Installments Table -->
+  <div class="portal-card mb-4">
+    <div class="card-header bg-white font-weight-bold py-3">
+      <i class="fas fa-calendar-alt mr-2 text-primary"></i> Fee Installment Schedule
+    </div>
+    <div class="card-body p-0">
+      {% if installments %}
+        <div class="table-responsive">
+          <table class="table portal-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Installment</th>
+                <th>Due Date</th>
+                <th>Payable</th>
+                <th>Paid</th>
+                <th>Balance</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inst in installments %}
+                <tr>
+                  <td class="font-weight-bold text-dark">{{ inst.installment_name }}</td>
+                  <td>{{ inst.due_date|date:"d M Y" }}</td>
+                  <td class="font-weight-bold">₹{{ inst.payable_amount }}</td>
+                  <td class="text-success">₹{{ inst.paid_amount }}</td>
+                  <td class="font-weight-bold {% if inst.balance_amount > 0 %}text-danger{% else %}text-success{% endif %}">₹{{ inst.balance_amount }}</td>
+                  <td>
+                    <span class="portal-badge {% if inst.status == 'PAID' %}badge-paid{% elif inst.status == 'PARTIAL' %}badge-partial{% elif inst.status == 'OVERDUE' %}badge-overdue{% else %}badge-pending{% endif %}">
+                      {{ inst.get_status_display }}
+                    </span>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-4 text-center text-muted">No fee installments assigned.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Receipts Table -->
+  <div class="portal-card">
+    <div class="card-header bg-white font-weight-bold py-3">
+      <i class="fas fa-receipt mr-2 text-success"></i> Payment Receipts
+    </div>
+    <div class="card-body p-0">
+      {% if receipts %}
+        <div class="table-responsive">
+          <table class="table portal-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Receipt No</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Payment Mode</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for rcpt in receipts %}
+                <tr>
+                  <td><code>{{ rcpt.receipt_number }}</code></td>
+                  <td>{{ rcpt.receipt_date|date:"d M Y" }}</td>
+                  <td class="font-weight-bold text-success">₹{{ rcpt.amount }}</td>
+                  <td><span class="badge badge-light border">{{ rcpt.payment_method }}</span></td>
+                  <td>
+                    {% if rcpt.generated_pdf %}
+                      <a href="{{ rcpt.generated_pdf.url }}" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2">
+                        <i class="fas fa-file-pdf mr-1"></i> PDF
+                      </a>
+                    {% else %}
+                      <span class="text-muted small">Verified</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-4 text-center text-muted">No receipts generated yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

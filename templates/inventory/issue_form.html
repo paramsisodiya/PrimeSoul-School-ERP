@@ -1,0 +1,103 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'inventory:issue_list' %}" class="text-decoration-none">Stock Issues</a></li>
+          <li class="breadcrumb-item active" aria-current="page">New Issue</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Issue Consumable Stock</h4>
+      <p class="text-muted small mb-0">Dispenses items from warehouse stock and records atomic Stock OUT movement.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'inventory:issue_list' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Issues
+      </a>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Inventory Item *</label>
+                {{ form.item }}
+                {% if form.item.errors %}<small class="text-danger">{{ form.item.errors }}</small>{% endif %}
+              </div>
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Source Store / Warehouse *</label>
+                {{ form.store }}
+                {% if form.store.errors %}<small class="text-danger">{{ form.store.errors }}</small>{% endif %}
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Quantity to Issue *</label>
+                {{ form.quantity }}
+                {% if form.quantity.errors %}<small class="text-danger">{{ form.quantity.errors }}</small>{% endif %}
+              </div>
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Issue Date *</label>
+                {{ form.issue_date }}
+                {% if form.issue_date.errors %}<small class="text-danger">{{ form.issue_date.errors }}</small>{% endif %}
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Recipient Type *</label>
+                {{ form.recipient_type }}
+              </div>
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Faculty / Employee</label>
+                {{ form.recipient_employee }}
+              </div>
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Department</label>
+                {{ form.recipient_department }}
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Recipient Name / Event (If other)</label>
+                {{ form.recipient_name }}
+              </div>
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Purpose / Activity *</label>
+                {{ form.purpose }}
+                {% if form.purpose.errors %}<small class="text-danger">{{ form.purpose.errors }}</small>{% endif %}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="font-weight-bold small">Notes / Remarks</label>
+              {{ form.notes }}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <a href="{% url 'inventory:issue_list' %}" class="btn btn-light btn-sm px-4">Cancel</a>
+              <button type="submit" class="btn btn-primary btn-sm px-4">Confirm Stock Issue</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

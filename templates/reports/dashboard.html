@@ -1,0 +1,271 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Executive Reports</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">School Executive Intelligence & Analytics</h4>
+        <span class="badge badge-primary ml-2">Phase 17</span>
+      </div>
+      <p class="text-muted small mb-0">Comprehensive institutional cross-domain analytics: Students, Attendance, Academics, Exams, Finance, Admissions, Transport, Library, HR, and Inventory.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <a href="{% url 'reports:finance_reports' %}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-rupee-sign mr-1"></i> Finance
+      </a>
+      <a href="{% url 'reports:academic_reports' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-graduation-cap mr-1"></i> Academics
+      </a>
+      <a href="{% url 'reports:attendance_reports' %}" class="btn btn-outline-info btn-sm">
+        <i class="fas fa-calendar-check mr-1"></i> Attendance
+      </a>
+      <a href="{% url 'reports:examination_reports' %}" class="btn btn-outline-warning btn-sm">
+        <i class="fas fa-award mr-1"></i> Exams
+      </a>
+      <a href="{% url 'reports:admissions_reports' %}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-user-plus mr-1"></i> Admissions
+      </a>
+      <a href="{% url 'reports:inventory_reports' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-boxes mr-1"></i> Inventory
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- KPI Row 1: Core Institutional Metrics -->
+  <div class="row mb-4">
+    <!-- Active Students -->
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #4F46E5 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Active Students</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ kpis.student_stats.active_students|default:0 }}</div>
+              <small class="text-muted">{{ kpis.student_stats.male_count|default:0 }} Boys | {{ kpis.student_stats.female_count|default:0 }} Girls</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-primary">
+              <i class="fas fa-user-graduate fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Today's Attendance -->
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #10B981 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Attendance Today</div>
+              <div class="h3 mb-0 font-weight-bold text-success">{{ kpis.attendance_today.attendance_pct|default:"0.0" }}%</div>
+              <small class="text-success font-weight-bold">{{ kpis.attendance_today.present }} Present / {{ kpis.attendance_today.total_marked }} Total</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-success">
+              <i class="fas fa-calendar-check fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Finance Collection Rate -->
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #F59E0B !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Fee Collection Rate</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ kpis.finance.collection_rate|default:"0.0" }}%</div>
+              <small class="text-warning font-weight-bold">Due: ₹{{ kpis.finance.total_due|default:"0.00" }}</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-warning">
+              <i class="fas fa-rupee-sign fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exam Performance -->
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #8B5CF6 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Exam Pass Rate</div>
+              <div class="h3 mb-0 font-weight-bold text-purple" style="color: #8B5CF6;">{{ kpis.examination.pass_rate|default:"0.0" }}%</div>
+              <small class="text-muted">Avg Score: {{ kpis.examination.avg_percentage }}%</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-purple" style="color: #8B5CF6;">
+              <i class="fas fa-award fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Operational Module Grid -->
+  <div class="row">
+    <!-- Admissions Funnel -->
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-funnel-dollar mr-2 text-success"></i> Admissions Intake Funnel</h6>
+          <a href="{% url 'reports:admissions_reports' %}" class="btn btn-outline-secondary btn-sm">Report</a>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted small">Total Enquiries:</span>
+            <span class="font-weight-bold">{{ kpis.admissions.total_enquiries }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted small">Total Applications:</span>
+            <span class="font-weight-bold">{{ kpis.admissions.total_apps }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted small">Final Admitted:</span>
+            <span class="font-weight-bold text-success">{{ kpis.admissions.admitted }}</span>
+          </div>
+          <hr>
+          <div class="text-center">
+            <span class="text-muted small">Intake Conversion Rate:</span>
+            <div class="h4 font-weight-bold text-success mb-0">{{ kpis.admissions.conversion_rate }}%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transport & Fleet Status -->
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-bus mr-2 text-warning"></i> Transport & Fleet</h6>
+          <a href="{% url 'reports:transport_reports' %}" class="btn btn-outline-secondary btn-sm">Report</a>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted small">Registered Fleet:</span>
+            <span class="font-weight-bold">{{ kpis.transport.total_vehicles }} Vehicles</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted small">Active Routes:</span>
+            <span class="font-weight-bold">{{ kpis.transport.total_routes }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted small">Students Transported:</span>
+            <span class="font-weight-bold text-primary">{{ kpis.transport.allocated_students }}</span>
+          </div>
+          <hr>
+          <div class="text-center">
+            <a href="{% url 'reports:transport_reports' %}" class="btn btn-outline-warning btn-sm btn-block">View Route Capacity & Utilization</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Library Circulation -->
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-book mr-2 text-info"></i> Library Catalog & Loans</h6>
+          <a href="{% url 'reports:library_reports' %}" class="btn btn-outline-secondary btn-sm">Report</a>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted small">Catalog Titles:</span>
+            <span class="font-weight-bold">{{ kpis.library.total_books }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted small">Physical Copies:</span>
+            <span class="font-weight-bold">{{ kpis.library.total_copies }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted small">Active Loans:</span>
+            <span class="font-weight-bold text-info">{{ kpis.library.active_issues }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted small">Overdue Books:</span>
+            <span class="font-weight-bold text-danger">{{ kpis.library.overdue_books }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: HR & Inventory Summaries -->
+  <div class="row">
+    <!-- HR & Faculty -->
+    <div class="col-lg-6 mb-4">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-users-cog mr-2 text-primary"></i> HR & Staff Deployment</h6>
+          <a href="{% url 'reports:hr_reports' %}" class="btn btn-outline-primary btn-sm">HR Reports</a>
+        </div>
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-sm-6 text-center border-right">
+              <div class="text-muted small font-weight-bold text-uppercase">Total Active Staff</div>
+              <div class="h3 font-weight-bold text-dark mb-0">{{ kpis.hr.total_employees }}</div>
+              <small class="text-muted">Teaching & Non-Teaching</small>
+            </div>
+            <div class="col-sm-6 text-center">
+              <div class="text-muted small font-weight-bold text-uppercase">Present Today</div>
+              <div class="h3 font-weight-bold text-success mb-0">{{ kpis.hr.present_today }}</div>
+              <small class="text-success font-weight-bold">Staff Attendance</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventory & Fixed Assets -->
+    <div class="col-lg-6 mb-4">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-boxes mr-2 text-dark"></i> Inventory & Fixed Assets</h6>
+          <a href="{% url 'reports:inventory_reports' %}" class="btn btn-outline-dark btn-sm">Inventory Reports</a>
+        </div>
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-sm-6 text-center border-right">
+              <div class="text-muted small font-weight-bold text-uppercase">Consumables / Stock</div>
+              <div class="h3 font-weight-bold text-dark mb-0">{{ kpis.inventory.total_items }}</div>
+              <small class="text-warning font-weight-bold">{{ kpis.inventory.low_stock_count }} Low Stock Alerts</small>
+            </div>
+            <div class="col-sm-6 text-center">
+              <div class="text-muted small font-weight-bold text-uppercase">Fixed Capital Assets</div>
+              <div class="h3 font-weight-bold text-primary mb-0">{{ kpis.inventory.total_assets }}</div>
+              <small class="text-muted">{{ kpis.inventory.assigned_assets }} Assigned | {{ kpis.inventory.in_repair_assets }} In Repair</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

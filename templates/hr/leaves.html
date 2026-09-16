@@ -1,0 +1,123 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'hr:dashboard' %}">HR</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Leaves</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Leave Applications & Approvals</h4>
+    </div>
+    <div>
+      <a href="{% url 'hr:leave_apply' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus mr-1"></i> Apply Leave
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="mb-3">
+    <div class="btn-group btn-group-sm">
+      <a href="{% url 'hr:leaves' %}" class="btn {% if not selected_status %}btn-primary{% else %}btn-outline-secondary{% endif %}">All Leaves</a>
+      <a href="{% url 'hr:leaves' %}?status=PENDING" class="btn {% if selected_status == 'PENDING' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Pending</a>
+      <a href="{% url 'hr:leaves' %}?status=APPROVED" class="btn {% if selected_status == 'APPROVED' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Approved</a>
+      <a href="{% url 'hr:leaves' %}?status=REJECTED" class="btn {% if selected_status == 'REJECTED' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Rejected</a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="thead-light">
+          <tr>
+            <th>Employee</th>
+            <th>Leave Type</th>
+            <th>Duration</th>
+            <th>Total Days</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lr in leave_requests %}
+            <tr>
+              <td>
+                <strong>{{ lr.employee.full_name }}</strong>
+                <div class="small text-muted">{{ lr.employee.employee_code }}</div>
+              </td>
+              <td><span class="badge badge-light border">{{ lr.leave_type.name }}</span></td>
+              <td>{{ lr.start_date|date:"d M Y" }} &rarr; {{ lr.end_date|date:"d M Y" }}</td>
+              <td><strong>{{ lr.days_count }}</strong></td>
+              <td>{{ lr.reason|truncatechars:35 }}</td>
+              <td>
+                {% if lr.status == 'PENDING' %}
+                  <span class="badge badge-warning">Pending</span>
+                {% elif lr.status == 'APPROVED' %}
+                  <span class="badge badge-success">Approved</span>
+                {% elif lr.status == 'REJECTED' %}
+                  <span class="badge badge-danger">Rejected</span>
+                {% else %}
+                  <span class="badge badge-secondary">{{ lr.status }}</span>
+                {% endif %}
+              </td>
+              <td class="text-right">
+                {% if lr.status == 'PENDING' %}
+                  <form method="post" action="{% url 'hr:leave_action' lr.pk 'approve' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-success btn-sm py-0 px-2" style="font-size: 0.78rem;">
+                      <i class="fas fa-check mr-1"></i> Approve
+                    </button>
+                  </form>
+                  <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 ml-1" data-toggle="modal" data-target="#rejectModal{{ lr.pk }}" style="font-size: 0.78rem;">
+                    <i class="fas fa-times mr-1"></i> Reject
+                  </button>
+
+                  <!-- Reject Modal -->
+                  <div class="modal fade" id="rejectModal{{ lr.pk }}" tabindex="-1" role="dialog" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered text-left" role="document">
+                      <div class="modal-content border-0 shadow">
+                        <div class="modal-header bg-danger text-white">
+                          <h5 class="modal-title font-weight-bold">Reject Leave Application</h5>
+                          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                          </button>
+                        </div>
+                        <form method="post" action="{% url 'hr:leave_action' lr.pk 'reject' %}">
+                          {% csrf_token %}
+                          <div class="modal-body">
+                            <div class="form-group">
+                              <label class="font-weight-bold">Rejection Reason</label>
+                              <textarea name="rejection_reason" class="form-control" rows="3" placeholder="Provide reason for rejecting..."></textarea>
+                            </div>
+                          </div>
+                          <div class="modal-footer bg-light">
+                            <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger btn-sm">Confirm Rejection</button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">No leave requests found.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

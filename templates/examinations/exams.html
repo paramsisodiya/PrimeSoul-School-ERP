@@ -1,0 +1,112 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'examinations:dashboard' %}">Examinations</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Exams</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Class Examinations & Assessments</h4>
+      <p class="text-muted small mb-0">Configure examinations by class, section, subject lists, and grading rules.</p>
+    </div>
+    <div>
+      <a href="{% url 'examinations:exam_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus mr-1"></i> New Exam
+      </a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card shadow-sm border-0" style="border-radius: 12px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+        <thead class="bg-light text-muted small text-uppercase">
+          <tr>
+            <th class="pl-4">Exam Name</th>
+            <th>Class / Section</th>
+            <th>Session</th>
+            <th>Type</th>
+            <th>Subjects</th>
+            <th>Grading</th>
+            <th>Status</th>
+            <th class="text-right pr-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ex in exams %}
+          <tr>
+            <td class="pl-4 font-weight-bold text-dark">
+              <a href="{% url 'examinations:exam_subjects' ex.id %}" class="text-decoration-none text-dark">
+                {{ ex.name }}
+              </a>
+            </td>
+            <td>
+              <span class="badge badge-light border text-primary">
+                {{ ex.grade_level.name }}{% if ex.section %} - Section {{ ex.section.name }}{% else %} (All Sections){% endif %}
+              </span>
+            </td>
+            <td>{{ ex.session.name }}</td>
+            <td>{{ ex.assessment_type.name }}</td>
+            <td>
+              <a href="{% url 'examinations:exam_subjects' ex.id %}" class="badge badge-light border text-info">
+                {{ ex.subjects.count }} subjects
+              </a>
+            </td>
+            <td>{{ ex.grade_scale.name|default:"Standard" }}</td>
+            <td>
+              {% if ex.status == 'PUBLISHED' %}
+                <span class="badge badge-success px-2 py-1"><i class="fas fa-check mr-1"></i> Published</span>
+              {% elif ex.status == 'LOCKED' %}
+                <span class="badge badge-secondary px-2 py-1"><i class="fas fa-lock mr-1"></i> Locked</span>
+              {% elif ex.status == 'FINALIZED' %}
+                <span class="badge badge-info px-2 py-1">Finalized</span>
+              {% else %}
+                <span class="badge badge-warning px-2 py-1">{{ ex.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td class="text-right pr-4">
+              <div class="btn-group btn-group-sm">
+                <a href="{% url 'examinations:marks_entry' %}?exam={{ ex.id }}" class="btn btn-outline-primary" title="Enter Marks">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a href="{% url 'examinations:exam_subjects' ex.id %}" class="btn btn-outline-secondary" title="Subjects">
+                  <i class="fas fa-list"></i>
+                </a>
+                <a href="{% url 'examinations:results_list' %}?exam={{ ex.id }}" class="btn btn-outline-info" title="Results">
+                  <i class="fas fa-poll-h"></i>
+                </a>
+                <a href="{% url 'examinations:exam_edit' ex.id %}" class="btn btn-outline-dark" title="Edit Details">
+                  <i class="fas fa-cog"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-4 text-muted">
+              No examinations configured. Click "New Exam" to create an exam for a class.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

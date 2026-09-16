@@ -1,0 +1,222 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Breadcrumbs & Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'fees:fee_dashboard' %}" class="text-decoration-none">Fees</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Fee Structures</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Master Fee Structures</h4>
+      <p class="text-muted small mb-0">Define class-wise fee schedules, components, and installment frequencies for each academic year.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addStructureModal">
+        <i class="fas fa-plus mr-1"></i> New Fee Structure
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-body p-3">
+      <form method="get" class="form-row align-items-center">
+        <div class="col-md-4 my-1">
+          <select name="academic_year" class="form-control" onchange="this.form.submit()">
+            <option value="">All Academic Years</option>
+            {% for ay in academic_years %}
+              <option value="{{ ay.id }}" {% if ay_filter == ay.id|stringformat:"i" %}selected{% endif %}>{{ ay.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 my-1">
+          <select name="grade_level" class="form-control" onchange="this.form.submit()">
+            <option value="">All Classes / Grade Levels</option>
+            {% for gl in grade_levels %}
+              <option value="{{ gl.id }}" {% if gl_filter == gl.id|stringformat:"i" %}selected{% endif %}>{{ gl.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 my-1 d-flex gap-2">
+          <button type="submit" class="btn btn-dark btn-block">Filter</button>
+          {% if ay_filter or gl_filter %}
+            <a href="{% url 'fees:fee_structures' %}" class="btn btn-light border ml-2">Reset</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Structures Grid / Cards -->
+  <div class="row">
+    {% for struct in structures %}
+    <div class="col-lg-6 mb-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; overflow: hidden;">
+        <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+          <div>
+            <h6 class="font-weight-bold text-dark mb-0">{{ struct.name }}</h6>
+            <div class="small text-muted">
+              <span class="badge badge-light border text-primary">{{ struct.grade_level.name }}</span>
+              <span class="badge badge-light border text-muted ml-1">{{ struct.academic_year.name }}</span>
+              <span class="badge badge-info text-white ml-1">{{ struct.get_frequency_display }}</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-muted small">Annual Total</div>
+            <div class="font-weight-bold text-dark" style="font-size: 1.25rem;">₹{{ struct.total_structure_amount }}</div>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <table class="table-modern mb-0">
+            <thead>
+              <tr>
+                <th class="pl-4">Fee Component</th>
+                <th>Category</th>
+                <th class="text-right pr-4">Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in struct.items.all %}
+              <tr>
+                <td class="pl-4 font-weight-bold text-secondary">{{ item.fee_head.name }}</td>
+                <td><span class="badge badge-light border">{{ item.fee_head.get_category_display }}</span></td>
+                <td class="text-right pr-4 font-weight-bold">₹{{ item.amount }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="3" class="text-center py-3 text-muted">No fee head line items assigned.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer bg-white border-top py-2 d-flex justify-content-between align-items-center">
+          <small class="text-muted">Effective: {{ struct.effective_from|date:"d M Y" }} to {{ struct.effective_to|date:"d M Y" }}</small>
+          <form method="post" action="{% url 'fees:fee_structures' %}" onsubmit="return confirm('Delete this structure?');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="structure_id" value="{{ struct.id }}">
+            <button type="submit" class="btn btn-sm btn-light border text-danger">
+              <i class="fas fa-trash-alt mr-1"></i> Delete
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+          <div class="empty-state">
+            <div class="empty-state__icon">
+              <i class="fas fa-sitemap"></i>
+            </div>
+            <div class="empty-state__title">No Fee Structures Found</div>
+            <div class="empty-state__desc">Create master fee structures for each class / grade level to start assigning student fees and generating installments.</div>
+            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addStructureModal">
+              <i class="fas fa-plus mr-1"></i> Create Fee Structure
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<!-- Create Fee Structure Modal -->
+<div class="modal fade" id="addStructureModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow">
+      <form method="post" action="{% url 'fees:fee_structures' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title font-weight-bold">Create Master Fee Structure</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold small text-muted">Structure Name *</label>
+              <input type="text" name="name" class="form-control" placeholder="e.g. Class 10 Standard Fee 2026-27" required>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold small text-muted">Academic Session *</label>
+              <select name="academic_year" class="form-control" required>
+                {% for ay in academic_years %}
+                  <option value="{{ ay.id }}" {% if ay.is_current %}selected{% endif %}>{{ ay.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold small text-muted">Target Grade Level / Class *</label>
+              <select name="grade_level" class="form-control" required>
+                {% for gl in grade_levels %}
+                  <option value="{{ gl.id }}">{{ gl.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold small text-muted">Installment Frequency *</label>
+              <select name="frequency" class="form-control">
+                {% for f_val, f_lbl in frequencies %}
+                  <option value="{{ f_val }}">{{ f_lbl }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <h6 class="font-weight-bold border-bottom pb-2 mt-3 mb-3 text-dark">
+            <i class="fas fa-list-ol text-primary mr-1"></i> Fee Head Component Amounts (₹)
+          </h6>
+          <p class="small text-muted mb-3">Enter annual amounts for each applicable fee head. Unfilled items will be omitted.</p>
+
+          <div class="row">
+            {% for fh in fee_heads %}
+            <div class="col-md-6 form-group">
+              <label class="small font-weight-bold text-dark d-flex justify-content-between">
+                <span>{{ fh.name }} ({{ fh.code }})</span>
+                <span class="badge badge-light border text-muted">{{ fh.get_category_display }}</span>
+              </label>
+              <div class="input-group">
+                <div class="input-group-prepend">
+                  <span class="input-group-text bg-light">₹</span>
+                </div>
+                <input type="number" step="0.01" min="0" name="head_amount_{{ fh.id }}" class="form-control" placeholder="0.00">
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary font-weight-bold">Save Fee Structure</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

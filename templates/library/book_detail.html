@@ -1,0 +1,135 @@
+{% extends 'dashboard.html' %}
+{% load static crispy_forms_tags %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'library:books' %}">Books</a></li>
+          <li class="breadcrumb-item active" aria-current="page">{{ book.title }}</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">{{ book.title }}</h4>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex gap-2">
+      <a href="{% url 'library:books' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Catalog
+      </a>
+      {% if can_manage %}
+        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addCopyModal">
+          <i class="fas fa-plus mr-1"></i> Add Physical Copy
+        </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Book Details Card -->
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white font-weight-bold">
+          <i class="fas fa-info-circle mr-1 text-primary"></i> Book Information
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled mb-0" style="font-size: 0.9rem; line-height: 2;">
+            <li><strong>Category:</strong> {{ book.category.name|default:"General" }}</li>
+            <li><strong>ISBN:</strong> {{ book.isbn|default:"Not specified" }}</li>
+            <li><strong>Publisher:</strong> {{ book.publisher.name|default:"N/A" }}</li>
+            <li><strong>Language:</strong> {{ book.language }}</li>
+            <li><strong>Edition:</strong> {{ book.edition|default:"N/A" }}</li>
+            <li><strong>Year:</strong> {{ book.publication_year|default:"N/A" }}</li>
+            <li><strong>Authors:</strong> 
+              {% for a in book.authors.all %}{{ a.name }}{% if not forloop.last %}, {% endif %}{% empty %}N/A{% endfor %}
+            </li>
+          </ul>
+          {% if book.description %}
+            <div class="mt-3 pt-3 border-top small text-muted">
+              {{ book.description }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Physical Copies Table -->
+    <div class="col-lg-8 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white font-weight-bold d-flex justify-content-between align-items-center">
+          <span><i class="fas fa-barcode mr-1 text-primary"></i> Physical Inventory Copies ({{ copies.count }})</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+            <thead class="thead-light">
+              <tr>
+                <th>Accession No.</th>
+                <th>Barcode</th>
+                <th>Shelf</th>
+                <th>Condition</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for copy in copies %}
+                <tr>
+                  <td><code>{{ copy.accession_number }}</code></td>
+                  <td>{{ copy.barcode|default:"-" }}</td>
+                  <td>{{ copy.shelf.name|default:"Unassigned" }}</td>
+                  <td><span class="badge badge-light border">{{ copy.get_condition_display }}</span></td>
+                  <td>
+                    {% if copy.status == 'AVAILABLE' %}
+                      <span class="badge badge-success">Available</span>
+                    {% elif copy.status == 'ISSUED' %}
+                      <span class="badge badge-warning">Issued</span>
+                    {% elif copy.status == 'LOST' %}
+                      <span class="badge badge-danger">Lost</span>
+                    {% elif copy.status == 'DAMAGED' %}
+                      <span class="badge badge-dark">Damaged</span>
+                    {% else %}
+                      <span class="badge badge-secondary">{{ copy.status }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center py-4 text-muted">No physical copies added for this book yet.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% if can_manage and copy_form %}
+<!-- Add Copy Modal -->
+<div class="modal fade" id="addCopyModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title font-weight-bold"><i class="fas fa-barcode mr-2"></i> Add Physical Book Copy</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post" action="{% url 'library:book_copy_create' book.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          {{ copy_form|crispy }}
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Save Copy</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

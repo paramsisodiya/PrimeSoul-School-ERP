@@ -1,0 +1,97 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'examinations:dashboard' %}">Examinations</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Grade Scales</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Board-Flexible Grading Scales</h4>
+      <p class="text-muted small mb-0">Configure multi-board grading systems (CBSE 8-Point, ICSE, 10-Point CGPA, State Board).</p>
+    </div>
+    <div>
+      <a href="{% url 'examinations:grade_scale_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus mr-1"></i> New Grade Scale
+      </a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row">
+    {% for scale in scales %}
+    <div class="col-lg-6 mb-4">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 12px;">
+        <div class="card-header bg-white py-3 border-0 d-flex align-items-center justify-content-between">
+          <div>
+            <h6 class="font-weight-bold text-dark mb-0">{{ scale.name }}</h6>
+            <small class="text-muted">Code: <code>{{ scale.code }}</code></small>
+          </div>
+          <div>
+            {% if scale.is_default %}
+              <span class="badge badge-success px-2 py-1"><i class="fas fa-check mr-1"></i> Default</span>
+            {% endif %}
+            <a href="{% url 'examinations:grade_scale_detail' scale.id %}" class="btn btn-sm btn-outline-primary ml-1">
+              <i class="fas fa-sliders-h mr-1"></i> Configure Bands
+            </a>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0" style="font-size: 0.85rem;">
+              <thead class="bg-light text-muted small text-uppercase">
+                <tr>
+                  <th class="pl-3">Grade</th>
+                  <th>Percentage Range</th>
+                  <th>Grade Point</th>
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for b in scale.bands.all %}
+                <tr>
+                  <td class="pl-3 font-weight-bold">
+                    <span class="badge {% if b.is_passing %}badge-light border text-primary{% else %}badge-danger{% endif %} px-2 py-1">
+                      {{ b.name }}
+                    </span>
+                  </td>
+                  <td>{{ b.min_percentage|floatformat:0 }}% &ndash; {{ b.max_percentage|floatformat:0 }}%</td>
+                  <td>{{ b.grade_point|default:"—" }}</td>
+                  <td class="text-muted">{{ b.remarks }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center py-3 text-muted">No grade bands configured yet.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+      <div class="card shadow-sm border-0 py-5 text-center text-muted" style="border-radius: 12px;">
+        <p class="mb-0">No grading scales found. Click "New Grade Scale" to create one.</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

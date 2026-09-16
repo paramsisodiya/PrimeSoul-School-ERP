@@ -1,0 +1,28 @@
+[Unit]
+Description=PrimeSoul School ERP Celery Background Worker
+After=network.target redis.service postgresql.service
+
+[Service]
+Type=forking
+User=primesoul
+Group=www-data
+WorkingDirectory=/var/www/primesoul
+EnvironmentFile=/var/www/primesoul/envs/.env
+ExecStart=/var/www/primesoul/venv/bin/celery multi start worker1 \
+          -A config \
+          --pidfile=/var/run/celery/%n.pid \
+          --logfile=/var/log/celery/%n%I.log \
+          --loglevel=INFO \
+          --concurrency=4
+ExecStop=/var/www/primesoul/venv/bin/celery multi stopwait worker1 \
+         --pidfile=/var/run/celery/%n.pid
+ExecReload=/var/www/primesoul/venv/bin/celery multi restart worker1 \
+           -A config \
+           --pidfile=/var/run/celery/%n.pid \
+           --logfile=/var/log/celery/%n%I.log \
+           --loglevel=INFO
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

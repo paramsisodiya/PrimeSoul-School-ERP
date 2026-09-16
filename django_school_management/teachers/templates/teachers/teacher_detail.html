@@ -8,11 +8,7 @@
       <div class="row py-5">
         <div class="col-4">
           <img class="teacher-profile-img"
-             {% if teacher.photo %}
-                src="{{ teacher.photo.url }}"
-             {% else %}
-                {% static 'images/money.jpg' %}
-             {% endif %}
+             src="{% if teacher.photo %}{{ teacher.photo.url }}{% else %}{% static 'images/avatar_placeholder.png' %}{% endif %}"
             alt="" width="300" height="200">
         </div>
         <div class="col-8">

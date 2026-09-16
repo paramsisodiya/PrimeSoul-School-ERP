@@ -1,0 +1,89 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'library:dashboard' %}">Library</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Fines Register</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Library Overdue Fines Register</h4>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-4 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 8px; border-left: 4px solid #4F46E5 !important;">
+        <div class="card-body py-3">
+          <small class="text-muted font-weight-bold">TOTAL ASSESSED FINES</small>
+          <div class="h4 font-weight-bold mb-0">₹{{ summary.total_assessed|default:"0.00" }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 8px; border-left: 4px solid #10B981 !important;">
+        <div class="card-body py-3">
+          <small class="text-muted font-weight-bold">TOTAL COLLECTED / PAID</small>
+          <div class="h4 font-weight-bold text-success mb-0">₹{{ summary.total_paid|default:"0.00" }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 8px; border-left: 4px solid #EF4444 !important;">
+        <div class="card-body py-3">
+          <small class="text-muted font-weight-bold">TOTAL OUTSTANDING FINES</small>
+          <div class="h4 font-weight-bold text-danger mb-0">₹{{ summary.total_unpaid|default:"0.00" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="thead-light">
+          <tr>
+            <th>Fine ID</th>
+            <th>Member</th>
+            <th>Book Title</th>
+            <th>Calculated</th>
+            <th>Waived</th>
+            <th>Final Fine</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fine in fines %}
+            <tr>
+              <td>#{{ fine.pk }}</td>
+              <td>{{ fine.issue.member.get_name }} ({{ fine.issue.member.member_code }})</td>
+              <td>{{ fine.issue.book_copy.book.title }}</td>
+              <td>₹{{ fine.calculated_fine }}</td>
+              <td>₹{{ fine.waived_fine }}</td>
+              <td><strong>₹{{ fine.final_fine }}</strong></td>
+              <td>
+                {% if fine.paid %}
+                  <span class="badge badge-success">Paid</span>
+                {% else %}
+                  <span class="badge badge-danger">Unpaid</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">No fine records found.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

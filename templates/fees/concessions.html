@@ -1,0 +1,177 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Breadcrumbs & Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'fees:fee_dashboard' %}" class="text-decoration-none">Fees</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Concessions</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Fee Concessions & Scholarships</h4>
+      <p class="text-muted small mb-0">Configure discount rules, merit scholarships, sibling concessions, and approval workflows.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addConcessionModal">
+        <i class="fas fa-plus mr-1"></i> New Concession Policy
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Concessions Table -->
+  <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-0 table-responsive">
+      <table class="table-modern align-middle mb-0">
+        <thead>
+          <tr>
+            <th class="pl-4">Policy Name</th>
+            <th>Discount Type</th>
+            <th>Value</th>
+            <th>Applicable Fee Heads</th>
+            <th>Approval Status</th>
+            <th class="text-right pr-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for conc in concessions %}
+          <tr>
+            <td class="pl-4 font-weight-bold text-dark">{{ conc.name }}</td>
+            <td><span class="badge badge-light border text-dark">{{ conc.get_concession_type_display }}</span></td>
+            <td class="font-weight-bold text-success">
+              {% if conc.concession_type == 'PERCENTAGE' %}
+                {{ conc.value }}%
+                {% if conc.maximum_amount %}<span class="text-muted small font-weight-normal">(Cap: ₹{{ conc.maximum_amount }})</span>{% endif %}
+              {% elif conc.concession_type == 'FIXED_AMOUNT' %}
+                ₹{{ conc.value }}
+              {% else %}
+                100% Full Waiver
+              {% endif %}
+            </td>
+            <td>
+              {% for fh in conc.applicable_fee_heads.all %}
+                <span class="badge badge-light border text-primary">{{ fh.name }}</span>
+              {% empty %}
+                <span class="badge badge-light border text-muted">All Tuition Heads</span>
+              {% endfor %}
+            </td>
+            <td>
+              {% if conc.is_approved %}
+                <span class="badge badge-status-paid"><i class="fas fa-check-circle mr-1"></i> Approved</span>
+                {% if conc.approved_by %}<span class="small text-muted d-block">by {{ conc.approved_by.get_full_name }}</span>{% endif %}
+              {% else %}
+                <span class="badge badge-status-pending"><i class="fas fa-clock mr-1"></i> Pending Approval</span>
+              {% endif %}
+            </td>
+            <td class="text-right pr-4">
+              {% if not conc.is_approved and user.requested_role in 'PRINCIPAL,SCHOOL_ADMIN,admin' or user.is_superuser %}
+                <form method="post" action="{% url 'fees:concessions' %}" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="approve">
+                  <input type="hidden" name="concession_id" value="{{ conc.id }}">
+                  <button type="submit" class="btn btn-sm btn-success font-weight-bold">
+                    <i class="fas fa-check mr-1"></i> Approve
+                  </button>
+                </form>
+              {% else %}
+                <span class="text-muted small">&mdash;</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="p-0">
+              <div class="empty-state">
+                <div class="empty-state__icon">
+                  <i class="fas fa-percentage"></i>
+                </div>
+                <div class="empty-state__title">No Concessions Configured</div>
+                <div class="empty-state__desc">Set up scholarship, sibling, or staff child concession policies to apply fee waivers across eligible students.</div>
+                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addConcessionModal">
+                  <i class="fas fa-plus mr-1"></i> Create Concession Policy
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Create Concession Modal -->
+<div class="modal fade" id="addConcessionModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow">
+      <form method="post" action="{% url 'fees:concessions' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title font-weight-bold">Create Concession Policy</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="form-group">
+            <label class="font-weight-bold small text-muted">Policy Name *</label>
+            <input type="text" name="name" class="form-control" placeholder="e.g. Sibling Discount 20%, Merit Scholarship" required>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small text-muted">Concession Type *</label>
+            <select name="concession_type" class="form-control" id="concessionTypeSelect">
+              {% for ct_val, ct_lbl in types %}
+                <option value="{{ ct_val }}">{{ ct_lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small text-muted">Value (% or Fixed ₹) *</label>
+            <input type="number" step="0.01" min="0" name="value" class="form-control" placeholder="e.g. 20.00 or 5000.00" required>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small text-muted">Maximum Cap (₹) (Optional for % discounts)</label>
+            <input type="number" step="0.01" min="0" name="maximum_amount" class="form-control" placeholder="e.g. 10000.00">
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small text-muted">Applicable Fee Heads</label>
+            <select name="applicable_heads" class="form-control" multiple style="height: 110px;">
+              {% for fh in fee_heads %}
+                <option value="{{ fh.id }}">{{ fh.name }} ({{ fh.get_category_display }})</option>
+              {% endfor %}
+            </select>
+            <small class="text-muted">Hold Ctrl/Cmd to select multiple. If none selected, applies to Tuition Fee by default.</small>
+          </div>
+          <div class="form-check">
+            <input type="checkbox" name="approval_required" value="1" class="form-check-input" id="appReq">
+            <label class="form-check-label small" for="appReq">Requires Principal / Admin Approval before application</label>
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary font-weight-bold">Create Policy</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

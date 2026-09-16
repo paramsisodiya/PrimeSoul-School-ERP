@@ -1,0 +1,254 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}Student Dashboard - {{ student.name|default:"Home" }}{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+
+  <!-- Student Banner Card -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="portal-card p-4" style="background: linear-gradient(135deg, #0EA5E9 0%, #0369A1 100%); color: white;">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+          <div class="d-flex align-items-center mb-2 mb-md-0">
+            <div class="rounded-circle bg-white text-info font-weight-bold d-flex align-items-center justify-content-center mr-3 shadow" style="width: 58px; height: 58px; font-size: 1.5rem;">
+              {{ student.first_name|first|upper }}
+            </div>
+            <div>
+              <h3 class="font-weight-bold mb-1">{{ student.name }}</h3>
+              <p class="text-white-50 small mb-0">
+                <span>Class: <strong>{{ student.grade_level.name }} - Section {{ student.section.name }}</strong></span>
+                <span class="mx-2">•</span>
+                <span>Roll No: <strong>{{ student.roll_number|default:"-" }}</strong></span>
+                <span class="mx-2">•</span>
+                <span>Adm No: <code>{{ student.admission_number|default:"-" }}</code></span>
+              </p>
+            </div>
+          </div>
+          <div>
+            <a href="{% url 'portal:student_profile' %}" class="btn btn-light btn-sm font-weight-bold">
+              <i class="fas fa-id-card mr-1"></i> My Profile
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Grid -->
+  <div class="row mb-4">
+    <!-- Attendance -->
+    <div class="col-sm-6 col-lg-3 mb-3">
+      <div class="portal-card stat-widget h-100">
+        <div>
+          <span class="text-muted small font-weight-bold text-uppercase">My Attendance</span>
+          <h3 class="font-weight-bold mt-1 mb-0 text-dark">{{ attendance.percentage }}%</h3>
+          <span class="small {% if attendance.today_record and attendance.today_record.status == 'PRESENT' %}text-success{% elif attendance.today_record and attendance.today_record.status == 'ABSENT' %}text-danger{% else %}text-muted{% endif %}">
+            Today: {{ attendance.today_status }}
+          </span>
+        </div>
+        <div class="icon-box" style="background: #DCFCE7; color: #166534;">
+          <i class="fas fa-calendar-check"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exam Performance -->
+    <div class="col-sm-6 col-lg-3 mb-3">
+      <div class="portal-card stat-widget h-100">
+        <div>
+          <span class="text-muted small font-weight-bold text-uppercase">Latest Exam</span>
+          {% if latest_result %}
+            <h3 class="font-weight-bold mt-1 mb-0 text-dark">{{ latest_result.percentage }}%</h3>
+            <span class="badge badge-success font-weight-bold">{{ latest_result.grade }} ({{ latest_result.status }})</span>
+          {% else %}
+            <h4 class="font-weight-bold mt-1 mb-0 text-muted">No Exams</h4>
+            <span class="text-muted small">Awaiting published results</span>
+          {% endif %}
+        </div>
+        <div class="icon-box" style="background: #FEF3C7; color: #92400E;">
+          <i class="fas fa-award"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Library Pass -->
+    <div class="col-sm-6 col-lg-3 mb-3">
+      <div class="portal-card stat-widget h-100">
+        <div>
+          <span class="text-muted small font-weight-bold text-uppercase">Library Books</span>
+          <h3 class="font-weight-bold mt-1 mb-0 text-dark">
+            {% if library %}{{ library.active_issues|length }} On Loan{% else %}0 Books{% endif %}
+          </h3>
+          <span class="text-muted small">
+            {% if library and library.outstanding_fines > 0 %}<span class="text-danger">Fine: ₹{{ library.outstanding_fines }}</span>{% else %}No overdue fines{% endif %}
+          </span>
+        </div>
+        <div class="icon-box" style="background: #E0E7FF; color: #3730A3;">
+          <i class="fas fa-book"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transport / Schedule -->
+    <div class="col-sm-6 col-lg-3 mb-3">
+      <div class="portal-card stat-widget h-100">
+        <div>
+          <span class="text-muted small font-weight-bold text-uppercase">Today's Classes</span>
+          <h3 class="font-weight-bold mt-1 mb-0 text-dark">{{ timetable_today|length }} Periods</h3>
+          <span class="text-muted small">
+            {% if transport %}Bus Route: {{ transport.route.name }}{% else %}Self Commute{% endif %}
+          </span>
+        </div>
+        <div class="icon-box" style="background: #F1F5F9; color: #475569;">
+          <i class="fas fa-clock"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Today's Schedule -->
+    <div class="col-lg-8 mb-4">
+      <div class="portal-card mb-4">
+        <div class="card-header bg-white font-weight-bold d-flex justify-content-between align-items-center py-3">
+          <span><i class="fas fa-clock mr-2 text-primary"></i> Today's Schedule</span>
+          <a href="{% url 'portal:student_timetable' %}" class="small font-weight-bold text-primary">Full Timetable <i class="fas fa-arrow-right ml-1"></i></a>
+        </div>
+        <div class="card-body p-0">
+          {% if timetable_today %}
+            <div class="table-responsive">
+              <table class="table portal-table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Timing</th>
+                    <th>Subject</th>
+                    <th>Teacher</th>
+                    <th>Room</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for entry in timetable_today %}
+                    <tr>
+                      <td><code>{{ entry.time_slot.start_time|time:"H:i" }} - {{ entry.time_slot.end_time|time:"H:i" }}</code></td>
+                      <td class="font-weight-bold text-dark">{{ entry.subject.name }}</td>
+                      <td>{{ entry.teacher.name|default:"-" }}</td>
+                      <td><span class="badge badge-light border">{{ entry.room.name|default:"Classroom" }}</span></td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="p-4 text-center text-muted">No classes scheduled for today.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Published Results Card -->
+      <div class="portal-card">
+        <div class="card-header bg-white font-weight-bold d-flex justify-content-between align-items-center py-3">
+          <span><i class="fas fa-award mr-2 text-warning"></i> Recent Examination Results</span>
+          <a href="{% url 'portal:student_results' %}" class="small font-weight-bold text-primary">All Results & Reports <i class="fas fa-arrow-right ml-1"></i></a>
+        </div>
+        <div class="card-body p-0">
+          {% if results %}
+            <div class="table-responsive">
+              <table class="table portal-table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Examination</th>
+                    <th>Marks</th>
+                    <th>Percentage</th>
+                    <th>Grade</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in results|slice:":3" %}
+                    <tr>
+                      <td class="font-weight-bold text-dark">{{ item.exam.name }}</td>
+                      <td>{{ item.result.total_marks_obtained }} / {{ item.result.total_max_marks }}</td>
+                      <td class="font-weight-bold text-primary">{{ item.result.percentage }}%</td>
+                      <td><span class="badge badge-light border font-weight-bold">{{ item.result.overall_grade }}</span></td>
+                      <td>
+                        <span class="badge {% if item.result.result_status == 'PASSED' %}badge-success{% else %}badge-danger{% endif %}">
+                          {{ item.status }}
+                        </span>
+                      </td>
+                      <td>
+                        <a href="{% url 'examinations:report_card_pdf' item.result.id %}" class="btn btn-outline-primary btn-sm py-0 px-2">
+                          <i class="fas fa-file-pdf mr-1"></i> PDF
+                        </a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="p-4 text-center text-muted">No published examination results available.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Notices & Transport Info -->
+    <div class="col-lg-4">
+      <div class="portal-card mb-4">
+        <div class="card-header bg-white font-weight-bold d-flex justify-content-between align-items-center py-3">
+          <span><i class="fas fa-bullhorn mr-2 text-warning"></i> School Notices</span>
+          <a href="{% url 'portal:student_notices' %}" class="small font-weight-bold text-primary">All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="card-body p-3">
+          {% if notices %}
+            <ul class="list-unstyled mb-0">
+              {% for notice in notices %}
+                <li class="pb-3 mb-3 border-bottom {% if forloop.last %}border-0 pb-0 mb-0{% endif %}">
+                  <a href="{% url 'portal:notice_detail' notice.id %}" class="font-weight-bold text-dark d-block mb-1 text-truncate">
+                    {{ notice.title }}
+                  </a>
+                  <div class="d-flex justify-content-between small text-muted">
+                    <span><i class="far fa-calendar-alt mr-1"></i> {{ notice.created|date:"d M Y" }}</span>
+                    {% if notice.file %}
+                      <span class="badge badge-light border"><i class="fas fa-paperclip mr-1"></i> Attachment</span>
+                    {% endif %}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted text-center mb-0 py-3">No active notices.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Transport Card -->
+      <div class="portal-card">
+        <div class="card-header bg-white font-weight-bold py-3">
+          <i class="fas fa-bus mr-2 text-info"></i> Transport Assignment
+        </div>
+        <div class="card-body p-3">
+          {% if transport %}
+            <p class="mb-1 font-weight-bold text-dark">{{ transport.route.name }}</p>
+            <p class="small text-muted mb-2">Vehicle: <strong>{{ transport.vehicle.registration_number|default:"Assigned Bus" }}</strong></p>
+            <div class="p-2 bg-light rounded small mb-2">
+              <div><i class="fas fa-map-marker-alt text-success mr-1"></i> Pickup: {{ transport.pickup_stop.stop_name|default:"Designated Pickup" }}</div>
+              <div><i class="fas fa-flag-checkered text-danger mr-1"></i> Drop: {{ transport.drop_stop.stop_name|default:"Designated Drop" }}</div>
+            </div>
+            {% if transport.driver_name %}
+              <div class="small text-muted">
+                <i class="fas fa-user mr-1"></i> Driver: <strong>{{ transport.driver_name }}</strong>
+              </div>
+            {% endif %}
+          {% else %}
+            <p class="text-muted small mb-0">No school transport assigned.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

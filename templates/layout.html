@@ -45,6 +45,13 @@
       $(document).ready(function() {
           $('#id_city').select2();
       });
+
+      // Auto-refresh page if loaded from browser Back-Forward Cache (bfcache) to prevent stale CSRF tokens
+      window.addEventListener('pageshow', function(event) {
+          if (event.persisted) {
+              window.location.reload();
+          }
+      });
   </script>
   
   {% block extrajs %}

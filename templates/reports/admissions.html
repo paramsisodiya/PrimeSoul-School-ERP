@@ -1,0 +1,125 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'reports:dashboard' %}" class="text-decoration-none">Reports</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Admissions</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Admissions Intake Analytics & Funnel</h4>
+      <p class="text-muted small mb-0">Conversion funnel analytics, enquiry conversion rates, and grade-wise intake distribution.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <a href="?export=csv{% if data.selected_session %}&session={{ data.selected_session.id }}{% endif %}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-file-csv mr-1"></i> Export CSV
+      </a>
+      <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Hub
+      </a>
+    </div>
+  </div>
+
+  <!-- Session Selector -->
+  <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+    <div class="card-body py-3">
+      <form method="get" class="row align-items-center">
+        <div class="col-md-6 mb-2 mb-md-0">
+          <label class="small text-muted font-weight-bold mb-1">Select Admission Session</label>
+          <select name="session" class="form-control form-control-sm" onchange="this.form.submit()">
+            {% for s in data.sessions %}
+              <option value="{{ s.id }}" {% if data.selected_session.id == s.id %}selected{% endif %}>{{ s.name }} ({{ s.academic_year.name }})</option>
+            {% empty %}
+              <option value="">No active admission sessions</option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Funnel Progression Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #6366F1 !important;">
+        <div class="card-body">
+          <div class="text-muted small font-weight-bold text-uppercase">1. Enquiries</div>
+          <div class="h3 font-weight-bold text-dark mb-0">{{ data.enquiry_count }}</div>
+          <small class="text-muted">Initial Leads</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #3B82F6 !important;">
+        <div class="card-body">
+          <div class="text-muted small font-weight-bold text-uppercase">2. Applications</div>
+          <div class="h3 font-weight-bold text-primary mb-0">{{ data.app_pipeline.total_applications }}</div>
+          <small class="text-muted">Registered Forms</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #F59E0B !important;">
+        <div class="card-body">
+          <div class="text-muted small font-weight-bold text-uppercase">3. Interview / Review</div>
+          <div class="h3 font-weight-bold text-warning mb-0">{{ data.app_pipeline.interview|add:data.app_pipeline.under_review }}</div>
+          <small class="text-muted">Under Evaluation</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #10B981 !important;">
+        <div class="card-body">
+          <div class="text-muted small font-weight-bold text-uppercase">4. Admitted</div>
+          <div class="h3 font-weight-bold text-success mb-0">{{ data.app_pipeline.admitted }}</div>
+          <small class="text-success font-weight-bold">Conv. Rate: {{ data.conversion_rate }}%</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Class-Wise Intake Distribution -->
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="card-header bg-white py-3">
+      <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-chart-bar mr-2 text-primary"></i> Class-Wise Intake Breakdown</h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="bg-light">
+          <tr>
+            <th>Class / Grade</th>
+            <th>Applications Received</th>
+            <th>Admitted Students</th>
+            <th>Intake Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cw in data.class_wise %}
+            <tr>
+              <td class="font-weight-bold text-dark">{{ cw.requested_grade__name|default:cw.grade_level__name|default:"General" }}</td>
+              <td>{{ cw.total }}</td>
+              <td class="font-weight-bold text-success">{{ cw.admitted }}</td>
+              <td>
+                <span class="badge badge-light border">
+                  {% widthratio cw.admitted cw.total 100 %}%
+                </span>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="text-center py-4 text-muted">No applications recorded in this session.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Items Master</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Consumable & Stock Item Register</h4>
+      <p class="text-muted small mb-0">All consumable inventory, SKUs, reorder levels, and aggregated stock across school warehouses.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      {% if is_admin %}
+        <a href="{% url 'inventory:item_create' %}" class="btn btn-primary btn-sm">
+          <i class="fas fa-plus mr-1"></i> Add Inventory Item
+        </a>
+      {% endif %}
+      <a href="{% url 'inventory:category_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-folder mr-1"></i> Categories
+      </a>
+      <a href="{% url 'inventory:store_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-warehouse mr-1"></i> Stores
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filters -->
+  <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+    <div class="card-body py-3">
+      <form method="get" class="row align-items-center">
+        <div class="col-md-5 mb-2 mb-md-0">
+          <div class="input-group">
+            <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by name, SKU..." value="{{ search }}">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary btn-sm" type="submit"><i class="fas fa-search"></i></button>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4 mb-2 mb-md-0">
+          <select name="category" class="form-control form-control-sm" onchange="this.form.submit()">
+            <option value="">-- All Categories --</option>
+            {% for cat in categories %}
+              <option value="{{ cat.id }}" {% if selected_category|stringformat:"s" == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 text-right">
+          <a href="{% url 'inventory:item_list' %}" class="btn btn-outline-dark btn-sm">Reset</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Items Table -->
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="bg-light">
+          <tr>
+            <th>SKU</th>
+            <th>Item Name</th>
+            <th>Category</th>
+            <th>Unit</th>
+            <th>Default Price</th>
+            <th>Reorder Lvl</th>
+            <th>Total Stock</th>
+            <th>Status</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in page_obj %}
+            <tr>
+              <td class="font-weight-bold text-primary">{{ item.sku }}</td>
+              <td class="font-weight-bold text-dark">{{ item.name }}</td>
+              <td><span class="badge badge-light border">{{ item.category.name }}</span></td>
+              <td>{{ item.unit.short_code }}</td>
+              <td>₹{{ item.default_purchase_price }}</td>
+              <td>{{ item.reorder_level }}</td>
+              <td>
+                <span class="font-weight-bold">{{ item.total_stock }}</span>
+              </td>
+              <td>
+                {% if item.is_out_of_stock %}
+                  <span class="badge badge-danger">Out of Stock</span>
+                {% elif item.is_low_stock %}
+                  <span class="badge badge-warning">Low Stock</span>
+                {% else %}
+                  <span class="badge badge-success">In Stock</span>
+                {% endif %}
+              </td>
+              <td class="text-right">
+                <a href="{% url 'inventory:item_detail' item.pk %}" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.8rem;">
+                  View Stock
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" class="text-center py-5 text-muted">
+                <i class="fas fa-boxes fa-3x mb-3 text-muted d-block"></i>
+                No inventory items found matching your filters.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+      <div class="card-footer bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+        <span class="text-muted small">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</span>
+        <ul class="pagination pagination-sm mb-0">
+          {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&category={{ selected_category|default:'' }}&search={{ search|default:'' }}">Previous</a></li>
+          {% endif %}
+          <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+          {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&category={{ selected_category|default:'' }}&search={{ search|default:'' }}">Next</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

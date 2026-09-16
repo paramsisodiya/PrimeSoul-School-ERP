@@ -1,0 +1,64 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'inventory:asset_list' %}" class="text-decoration-none">Assets</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'inventory:asset_detail' asset.pk %}" class="text-decoration-none">{{ asset.asset_tag }}</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Return Asset</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Return Asset to Storage: {{ asset.name }} ({{ asset.asset_tag }})</h4>
+      <p class="text-muted small mb-0">Terminates active assignment, updates physical condition, and marks asset Available in Stock.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'inventory:asset_detail' asset.pk %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Asset
+      </a>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Return Date *</label>
+                {{ form.returned_date }}
+                {% if form.returned_date.errors %}<small class="text-danger">{{ form.returned_date.errors }}</small>{% endif %}
+              </div>
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Returned Condition *</label>
+                {{ form.condition }}
+                {% if form.condition.errors %}<small class="text-danger">{{ form.condition.errors }}</small>{% endif %}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="font-weight-bold small">Inspection Notes / Remarks</label>
+              {{ form.notes }}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <a href="{% url 'inventory:asset_detail' asset.pk %}" class="btn btn-light btn-sm px-4">Cancel</a>
+              <button type="submit" class="btn btn-success btn-sm px-4">Confirm Return to Stock</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

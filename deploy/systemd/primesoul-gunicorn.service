@@ -1,0 +1,22 @@
+[Unit]
+Description=PrimeSoul School ERP Gunicorn WSGI Daemon
+After=network.target postgresql.service redis.service
+
+[Service]
+Type=notify
+User=primesoul
+Group=www-data
+WorkingDirectory=/var/www/primesoul
+EnvironmentFile=/var/www/primesoul/envs/.env
+ExecStart=/var/www/primesoul/venv/bin/gunicorn \
+          --config /var/www/primesoul/deploy/gunicorn.conf.py \
+          config.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=30
+PrivateTmp=true
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

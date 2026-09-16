@@ -1,0 +1,124 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'inventory:asset_list' %}" class="text-decoration-none">Assets</a></li>
+          <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">{{ title }}</h4>
+      <p class="text-muted small mb-0">Record institutional fixed asset details, identification tags, serial numbers, warranty, and location.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'inventory:asset_list' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Assets
+      </a>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Asset Category *</label>
+                {{ form.category }}
+                {% if form.category.errors %}<small class="text-danger">{{ form.category.errors }}</small>{% endif %}
+              </div>
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Asset Name *</label>
+                {{ form.name }}
+                {% if form.name.errors %}<small class="text-danger">{{ form.name.errors }}</small>{% endif %}
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Asset Tag / Barcode</label>
+                {{ form.asset_tag }}
+                <small class="form-text text-muted">Auto-generated if left blank.</small>
+              </div>
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Serial Number</label>
+                {{ form.serial_number }}
+              </div>
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Manufacturer / Make</label>
+                {{ form.manufacturer }}
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Model Number</label>
+                {{ form.model_number }}
+              </div>
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Purchase Date</label>
+                {{ form.purchase_date }}
+              </div>
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Purchase Cost (₹)</label>
+                {{ form.purchase_cost }}
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Vendor / Supplier</label>
+                {{ form.supplier }}
+              </div>
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Warranty Start Date</label>
+                {{ form.warranty_start }}
+              </div>
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Warranty Expiry Date</label>
+                {{ form.warranty_expiry }}
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Current Physical Location</label>
+                {{ form.current_location }}
+              </div>
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Operational Status</label>
+                {{ form.status }}
+              </div>
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Physical Condition</label>
+                {{ form.condition }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="font-weight-bold small">Notes / Technical Specs</label>
+              {{ form.notes }}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <a href="{% url 'inventory:asset_list' %}" class="btn btn-light btn-sm px-4">Cancel</a>
+              <button type="submit" class="btn btn-primary btn-sm px-4">Save Asset</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

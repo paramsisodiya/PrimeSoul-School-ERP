@@ -1,0 +1,97 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'inventory:item_list' %}" class="text-decoration-none">Items</a></li>
+          <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">{{ title }}</h4>
+      <p class="text-muted small mb-0">Define stock-managed consumable product parameters and reorder safety thresholds.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'inventory:item_list' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Items
+      </a>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Category *</label>
+                {{ form.category }}
+                {% if form.category.errors %}<small class="text-danger">{{ form.category.errors }}</small>{% endif %}
+              </div>
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Unit of Measure *</label>
+                {{ form.unit }}
+                {% if form.unit.errors %}<small class="text-danger">{{ form.unit.errors }}</small>{% endif %}
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-8">
+                <label class="font-weight-bold small">Item Name *</label>
+                {{ form.name }}
+                {% if form.name.errors %}<small class="text-danger">{{ form.name.errors }}</small>{% endif %}
+              </div>
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">SKU / Code</label>
+                {{ form.sku }}
+                <small class="form-text text-muted">Auto-generated if left blank.</small>
+                {% if form.sku.errors %}<small class="text-danger">{{ form.sku.errors }}</small>{% endif %}
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Reorder Threshold Level *</label>
+                {{ form.reorder_level }}
+                <small class="form-text text-muted">Triggers low-stock warning when total stock reaches this.</small>
+                {% if form.reorder_level.errors %}<small class="text-danger">{{ form.reorder_level.errors }}</small>{% endif %}
+              </div>
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Default Purchase Price (₹)</label>
+                {{ form.default_purchase_price }}
+                {% if form.default_purchase_price.errors %}<small class="text-danger">{{ form.default_purchase_price.errors }}</small>{% endif %}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="font-weight-bold small">Description / Specifications</label>
+              {{ form.description }}
+              {% if form.description.errors %}<small class="text-danger">{{ form.description.errors }}</small>{% endif %}
+            </div>
+
+            <div class="form-group form-check">
+              {{ form.is_active }}
+              <label class="form-check-label font-weight-bold small ml-2" for="{{ form.is_active.id_for_label }}">Active Item (Available for issue & procurement)</label>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <a href="{% url 'inventory:item_list' %}" class="btn btn-light btn-sm px-4">Cancel</a>
+              <button type="submit" class="btn btn-primary btn-sm px-4">Save Item</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -105,3 +105,133 @@ class BulkSemesterForm(forms.Form):
         if existing:
             raise ValidationError(f'Semester(s) already exist: {sorted(existing)}. Create only new numbers.')
         return sorted(numbers)
+
+
+# ─────────────────────────────────────────────────────────────
+# Phase 5 — Modern PrimeSoul K-12 Academic Forms
+# ─────────────────────────────────────────────────────────────
+
+from .models import AcademicYear, GradeLevel, Section, SubjectAssignment, StudentEnrollment
+from django_school_management.students.models import Student
+from django_school_management.teachers.models import Teacher
+
+
+class AcademicYearForm(forms.ModelForm):
+    class Meta:
+        model = AcademicYear
+        fields = ['name', 'start_date', 'end_date', 'status', 'is_current']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 2026-2027'}),
+            'start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'status': forms.Select(attrs={'class': 'form-control'}),
+            'is_current': forms.CheckboxInput(attrs={'class': 'form-check-input ml-1'}),
+        }
+
+
+class GradeLevelForm(forms.ModelForm):
+    class Meta:
+        model = GradeLevel
+        fields = ['name', 'code', 'board', 'stream_applicable', 'display_order', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Class 10, Nursery'}),
+            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 10, NUR'}),
+            'board': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. CBSE, ICSE'}),
+            'stream_applicable': forms.CheckboxInput(attrs={'class': 'form-check-input ml-1'}),
+            'display_order': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input ml-1'}),
+        }
+
+
+class SectionForm(forms.ModelForm):
+    class Meta:
+        model = Section
+        fields = ['grade_level', 'academic_year', 'name', 'class_teacher', 'room_number', 'max_capacity', 'is_active']
+        widgets = {
+            'grade_level': forms.Select(attrs={'class': 'form-control'}),
+            'academic_year': forms.Select(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. A, B, Rose'}),
+            'class_teacher': forms.Select(attrs={'class': 'form-control'}),
+            'room_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Room 204'}),
+            'max_capacity': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input ml-1'}),
+        }
+
+    def __init__(self, *args, school=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if school:
+            self.fields['grade_level'].queryset = GradeLevel.objects.filter(school=school, is_active=True)
+            self.fields['academic_year'].queryset = AcademicYear.objects.filter(school=school)
+            self.fields['class_teacher'].queryset = Teacher.objects.filter(school=school)
+
+
+class SubjectModernForm(forms.ModelForm):
+    class Meta:
+        model = Subject
+        fields = ['name', 'code', 'subject_type', 'max_marks', 'passing_marks', 'instructor', 'theory_marks', 'practical_marks', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Mathematics, English'}),
+            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. MATH-10, ENG-101'}),
+            'subject_type': forms.Select(attrs={'class': 'form-control'}),
+            'max_marks': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'passing_marks': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'instructor': forms.Select(attrs={'class': 'form-control'}),
+            'theory_marks': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'practical_marks': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input ml-1'}),
+        }
+
+    def __init__(self, *args, school=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if school:
+            self.fields['instructor'].queryset = Teacher.objects.filter(school=school)
+
+
+class SubjectAssignmentForm(forms.ModelForm):
+    class Meta:
+        model = SubjectAssignment
+        fields = ['academic_year', 'grade_level', 'section', 'subject', 'teacher', 'periods_per_week', 'is_active']
+        widgets = {
+            'academic_year': forms.Select(attrs={'class': 'form-control'}),
+            'grade_level': forms.Select(attrs={'class': 'form-control'}),
+            'section': forms.Select(attrs={'class': 'form-control'}),
+            'subject': forms.Select(attrs={'class': 'form-control'}),
+            'teacher': forms.Select(attrs={'class': 'form-control'}),
+            'periods_per_week': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input ml-1'}),
+        }
+
+    def __init__(self, *args, school=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if school:
+            self.fields['academic_year'].queryset = AcademicYear.objects.filter(school=school)
+            self.fields['grade_level'].queryset = GradeLevel.objects.filter(school=school, is_active=True)
+            self.fields['section'].queryset = Section.objects.filter(school=school, is_active=True)
+            self.fields['subject'].queryset = Subject.objects.filter(school=school, is_active=True)
+            self.fields['teacher'].queryset = Teacher.objects.filter(school=school)
+            self.fields['section'].required = False
+
+
+class StudentEnrollmentForm(forms.ModelForm):
+    class Meta:
+        model = StudentEnrollment
+        fields = ['student', 'academic_year', 'grade_level', 'section', 'roll_number', 'status', 'notes']
+        widgets = {
+            'student': forms.Select(attrs={'class': 'form-control'}),
+            'academic_year': forms.Select(attrs={'class': 'form-control'}),
+            'grade_level': forms.Select(attrs={'class': 'form-control'}),
+            'section': forms.Select(attrs={'class': 'form-control'}),
+            'roll_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 15'}),
+            'status': forms.Select(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': '2'}),
+        }
+
+    def __init__(self, *args, school=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if school:
+            self.fields['student'].queryset = Student.objects.filter(school=school, is_active=True)
+            self.fields['academic_year'].queryset = AcademicYear.objects.filter(school=school)
+            self.fields['grade_level'].queryset = GradeLevel.objects.filter(school=school, is_active=True)
+            self.fields['section'].queryset = Section.objects.filter(school=school, is_active=True)
+            self.fields['section'].required = False
+

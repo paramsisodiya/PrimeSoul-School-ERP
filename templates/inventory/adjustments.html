@@ -1,0 +1,91 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Adjustments</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Stock Count Adjustments</h4>
+      <p class="text-muted small mb-0">Auditable manual balance corrections (physical inventory count variance, shrinkage, breakage).</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'inventory:adjustment_create' %}" class="btn btn-warning btn-sm text-white">
+        <i class="fas fa-sliders-h mr-1"></i> New Stock Adjustment
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Adjustments Table -->
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="bg-light">
+          <tr>
+            <th>Item</th>
+            <th>Store</th>
+            <th>Previous Qty</th>
+            <th>New Qty</th>
+            <th>Delta</th>
+            <th>Reason</th>
+            <th>Date</th>
+            <th>Performed By</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for adj in adjustments %}
+            <tr>
+              <td>
+                <span class="font-weight-bold text-dark">{{ adj.item.name }}</span><br>
+                <small class="text-muted">{{ adj.item.sku }}</small>
+              </td>
+              <td><span class="badge badge-light border">{{ adj.store.name }}</span></td>
+              <td>{{ adj.previous_quantity }} {{ adj.item.unit.short_code }}</td>
+              <td class="font-weight-bold">{{ adj.new_quantity }} {{ adj.item.unit.short_code }}</td>
+              <td>
+                {% if adj.delta_quantity > 0 %}
+                  <span class="badge badge-success">+{{ adj.delta_quantity }}</span>
+                {% elif adj.delta_quantity < 0 %}
+                  <span class="badge badge-danger">{{ adj.delta_quantity }}</span>
+                {% else %}
+                  <span class="badge badge-secondary">0.00</span>
+                {% endif %}
+              </td>
+              <td>{{ adj.reason }}</td>
+              <td>{{ adj.adjustment_date|date:"d M Y" }}</td>
+              <td class="text-muted small">{{ adj.performed_by.get_full_name|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-5 text-muted">
+                <i class="fas fa-sliders-h fa-3x mb-3 text-muted d-block"></i>
+                No stock adjustments recorded yet.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

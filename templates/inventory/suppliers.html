@@ -1,0 +1,135 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Suppliers & Vendors</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Vendors & Supplier Directory</h4>
+      <p class="text-muted small mb-0">Institutional suppliers, contacts, and GSTIN identification for procurement and asset records.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'inventory:purchase_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-truck-loading mr-1"></i> New Goods Receipt (GRN)
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row">
+    <!-- Suppliers List -->
+    <div class="col-lg-7 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-truck mr-2 text-primary"></i> Registered Suppliers</h6>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+            <thead class="bg-light">
+              <tr>
+                <th>Vendor Name</th>
+                <th>Contact</th>
+                <th>GSTIN</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for sup in suppliers %}
+                <tr>
+                  <td>
+                    <div class="font-weight-bold text-dark">{{ sup.name }}</div>
+                    <small class="text-muted">{{ sup.contact_person|default:"-" }}</small>
+                  </td>
+                  <td>
+                    {% if sup.phone %}<div><i class="fas fa-phone mr-1 text-muted"></i>{{ sup.phone }}</div>{% endif %}
+                    {% if sup.email %}<small class="text-muted"><i class="fas fa-envelope mr-1 text-muted"></i>{{ sup.email }}</small>{% endif %}
+                  </td>
+                  <td><span class="badge badge-light border">{{ sup.gstin|default:"Unregistered" }}</span></td>
+                  <td>
+                    {% if sup.is_active %}
+                      <span class="badge badge-success">Active</span>
+                    {% else %}
+                      <span class="badge badge-secondary">Inactive</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-muted">No suppliers registered.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Supplier Form -->
+    <div class="col-lg-5 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-plus-circle mr-2 text-success"></i> Add New Supplier / Vendor</h6>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+              <label class="font-weight-bold small">Vendor / Company Name *</label>
+              {{ form.name }}
+              {% if form.name.errors %}<small class="text-danger">{{ form.name.errors }}</small>{% endif %}
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold small">Contact Person</label>
+              {{ form.contact_person }}
+            </div>
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Phone</label>
+                {{ form.phone }}
+              </div>
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Email</label>
+                {{ form.email }}
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold small">GSTIN (15 characters)</label>
+              {{ form.gstin }}
+              {% if form.gstin.errors %}<small class="text-danger">{{ form.gstin.errors }}</small>{% endif %}
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold small">Address</label>
+              {{ form.address }}
+            </div>
+            <div class="form-group form-check">
+              {{ form.is_active }}
+              <label class="form-check-label font-weight-bold small ml-2" for="{{ form.is_active.id_for_label }}">Active</label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block btn-sm mt-3">Save Vendor</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

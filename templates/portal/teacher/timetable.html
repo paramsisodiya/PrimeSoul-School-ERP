@@ -1,0 +1,64 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}Faculty Schedule - Teacher Portal{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <h4 class="font-weight-bold text-dark mb-1">My Faculty Schedule & Timetable</h4>
+      <p class="text-muted small mb-0">Personal weekly teaching schedule across all assigned grades and sections.</p>
+    </div>
+  </div>
+
+  <div class="portal-card">
+    <div class="card-header bg-white font-weight-bold py-3">
+      <i class="fas fa-table mr-2 text-primary"></i> Weekly Timetable Grid
+    </div>
+    <div class="card-body p-0">
+      {% if matrix and matrix.grid_rows %}
+        <div class="table-responsive">
+          <table class="table table-bordered portal-table mb-0 text-center">
+            <thead>
+              <tr>
+                <th style="width: 140px;">Time Slot</th>
+                {% for day in matrix.working_days %}
+                  <th>{{ day.get_weekday_display }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in matrix.grid_rows %}
+                <tr>
+                  <td class="font-weight-bold bg-light align-middle text-left" style="font-size: 0.8rem;">
+                    <div>{{ row.slot.name }}</div>
+                    <code class="small">{{ row.slot.start_time|time:"H:i" }} - {{ row.slot.end_time|time:"H:i" }}</code>
+                  </td>
+                  {% for cell in row.cells %}
+                    <td class="align-middle p-2">
+                      {% if cell.entry %}
+                        <div class="p-2 rounded" style="background: #DCFCE7; border: 1px solid #86EFAC;">
+                          <div class="font-weight-bold text-success" style="font-size: 0.88rem;">{{ cell.entry.subject.name }}</div>
+                          <div class="font-weight-bold text-dark small" style="font-size: 0.8rem;">{{ cell.entry.section.grade_level.name }} - Section {{ cell.entry.section.name }}</div>
+                          {% if cell.entry.room %}
+                            <span class="badge badge-light border" style="font-size: 0.7rem;">Room: {{ cell.entry.room.name }}</span>
+                          {% endif %}
+                        </div>
+                      {% else %}
+                        <span class="text-muted small">-</span>
+                      {% endif %}
+                    </td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-4 text-center text-muted">No timetable periods scheduled for your faculty profile.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'reports:dashboard' %}" class="text-decoration-none">Reports</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Library</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Library Circulation & Overdue Reports</h4>
+      <p class="text-muted small mb-0">Book loan activity, member borrowings, overdue books, and fine collections.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <a href="?export=csv" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-file-csv mr-1"></i> Export CSV
+      </a>
+      <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Hub
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary Row -->
+  <div class="row mb-4">
+    <div class="col-md-3 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #4F46E5 !important;">
+        <div class="card-body">
+          <div class="text-muted small font-weight-bold text-uppercase">Total Loan Records</div>
+          <div class="h3 font-weight-bold text-dark mb-0">{{ data.stats.total_loans }}</div>
+          <small class="text-muted">Lifetime transactions</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #10B981 !important;">
+        <div class="card-body">
+          <div class="text-muted small font-weight-bold text-uppercase">Active Borrowed Books</div>
+          <div class="h3 font-weight-bold text-success mb-0">{{ data.stats.active_issued }}</div>
+          <small class="text-success font-weight-bold">In Member Custody</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #EF4444 !important;">
+        <div class="card-body">
+          <div class="text-muted small font-weight-bold text-uppercase">Overdue Books</div>
+          <div class="h3 font-weight-bold text-danger mb-0">{{ data.stats.overdue }}</div>
+          <small class="text-danger font-weight-bold">Pending Return</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #F59E0B !important;">
+        <div class="card-body">
+          <div class="text-muted small font-weight-bold text-uppercase">Fine Collections</div>
+          <div class="h3 font-weight-bold text-warning mb-0">₹{{ data.fines.collected_fines }}</div>
+          <small class="text-muted">₹{{ data.fines.pending_fines }} Pending</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overdue Books Table -->
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="card-header bg-white py-3">
+      <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-exclamation-circle mr-2 text-danger"></i> Currently Overdue Books Statement</h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="bg-light">
+          <tr>
+            <th>Book Title</th>
+            <th>Accession No</th>
+            <th>Borrower / Member</th>
+            <th>Issue Date</th>
+            <th>Due Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in data.overdue_list %}
+            <tr>
+              <td class="font-weight-bold text-dark">{{ o.book_copy.book.title }}</td>
+              <td><span class="badge badge-light border">{{ o.book_copy.accession_number }}</span></td>
+              <td>
+                <div class="font-weight-bold text-dark">{{ o.member.user.get_full_name }}</div>
+                <small class="text-muted">{{ o.member.membership_number }}</small>
+              </td>
+              <td>{{ o.issue_date|date:"d M Y" }}</td>
+              <td class="font-weight-bold text-danger">{{ o.due_date|date:"d M Y" }}</td>
+              <td><span class="badge badge-danger">Overdue</span></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center py-4 text-muted">No books currently overdue.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

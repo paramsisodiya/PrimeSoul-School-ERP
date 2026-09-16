@@ -1,0 +1,68 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'inventory:maintenance_list' %}" class="text-decoration-none">Maintenance</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Complete Maintenance</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Complete Service: {{ record.asset.name }} ({{ record.asset.asset_tag }})</h4>
+      <p class="text-muted small mb-0">Finalizes repair costs, logs completion timestamp, and restores asset to operational status.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'inventory:maintenance_list' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Maintenance
+      </a>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Completion Date *</label>
+                {{ form.completion_date }}
+                {% if form.completion_date.errors %}<small class="text-danger">{{ form.completion_date.errors }}</small>{% endif %}
+              </div>
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Final Repair Cost (₹) *</label>
+                {{ form.cost }}
+                {% if form.cost.errors %}<small class="text-danger">{{ form.cost.errors }}</small>{% endif %}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="font-weight-bold small">Restored Asset Status *</label>
+              {{ form.restored_status }}
+            </div>
+
+            <div class="form-group">
+              <label class="font-weight-bold small">Technician Completion Remarks / Service Report</label>
+              {{ form.notes }}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <a href="{% url 'inventory:maintenance_list' %}" class="btn btn-light btn-sm px-4">Cancel</a>
+              <button type="submit" class="btn btn-success btn-sm px-4">Complete & Mark Operational</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

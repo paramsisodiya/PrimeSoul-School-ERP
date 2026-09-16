@@ -1,0 +1,103 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}Transport - {{ selected_child.name|default:"Parent Portal" }}{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <h4 class="font-weight-bold text-dark mb-1">School Transport Details</h4>
+      <p class="text-muted small mb-0">Assigned bus route, stops, timing, and vehicle details for <strong>{{ selected_child.name }}</strong>.</p>
+    </div>
+  </div>
+
+  {% if transport %}
+    <div class="row">
+      <!-- Route Card -->
+      <div class="col-lg-6 mb-4">
+        <div class="portal-card h-100 p-4">
+          <div class="d-flex align-items-center mb-4">
+            <div class="rounded-circle bg-info text-white font-weight-bold d-flex align-items-center justify-content-center mr-3" style="width: 54px; height: 54px; font-size: 1.5rem;">
+              <i class="fas fa-bus"></i>
+            </div>
+            <div>
+              <h4 class="font-weight-bold mb-1 text-dark">{{ transport.route.name }}</h4>
+              <span class="badge badge-light border text-info font-weight-bold">Active Transport</span>
+            </div>
+          </div>
+
+          <h6 class="font-weight-bold text-dark border-bottom pb-2 mb-3">Bus Stops & Route Timings</h6>
+          <div class="p-3 bg-light rounded mb-4">
+            <div class="mb-2">
+              <span class="text-success font-weight-bold"><i class="fas fa-map-marker-alt mr-1"></i> Pickup Stop:</span>
+              <span class="font-weight-bold text-dark ml-1">{{ transport.pickup_stop.name|default:"Designated Pickup Stop" }}</span>
+              {% if transport.pickup_stop.pickup_time %}
+                <span class="badge badge-light border ml-2"><i class="far fa-clock mr-1"></i> {{ transport.pickup_stop.pickup_time|time:"H:i" }}</span>
+              {% endif %}
+            </div>
+            <div>
+              <span class="text-danger font-weight-bold"><i class="fas fa-flag-checkered mr-1"></i> Drop Stop:</span>
+              <span class="font-weight-bold text-dark ml-1">{{ transport.drop_stop.name|default:"Designated Drop Stop" }}</span>
+              {% if transport.drop_stop.drop_time %}
+                <span class="badge badge-light border ml-2"><i class="far fa-clock mr-1"></i> {{ transport.drop_stop.drop_time|time:"H:i" }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <h6 class="font-weight-bold text-dark border-bottom pb-2 mb-3">Vehicle Details</h6>
+          <div class="row small">
+            <div class="col-6 mb-2"><span class="text-muted">Vehicle Reg No:</span><br><strong>{{ transport.vehicle.registration_number|default:"Assigned Fleet" }}</strong></div>
+            <div class="col-6 mb-2"><span class="text-muted">Vehicle Model:</span><br><strong>{{ transport.vehicle.model|default:"School Bus" }}</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Staff & Contact Card -->
+      <div class="col-lg-6 mb-4">
+        <div class="portal-card h-100 p-4">
+          <h6 class="font-weight-bold text-dark border-bottom pb-2 mb-3">Driver & Attendant Contacts</h6>
+          
+          <div class="d-flex align-items-center mb-4 p-3 bg-light rounded">
+            <div class="rounded-circle bg-white border font-weight-bold d-flex align-items-center justify-content-center mr-3 text-secondary" style="width: 48px; height: 48px;">
+              <i class="fas fa-user"></i>
+            </div>
+            <div>
+              <span class="text-muted small">Assigned Fleet Driver</span>
+              <h5 class="font-weight-bold text-dark mb-0">{{ transport.driver_name }}</h5>
+              {% if transport.driver_phone %}
+                <span class="small font-weight-bold text-primary"><i class="fas fa-phone mr-1"></i> {{ transport.driver_phone }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if transport.attendant_name %}
+            <div class="d-flex align-items-center p-3 bg-light rounded mb-4">
+              <div class="rounded-circle bg-white border font-weight-bold d-flex align-items-center justify-content-center mr-3 text-secondary" style="width: 48px; height: 48px;">
+                <i class="fas fa-user-shield"></i>
+              </div>
+              <div>
+                <span class="text-muted small">Bus Attendant / Conductor</span>
+                <h5 class="font-weight-bold text-dark mb-0">{{ transport.attendant_name }}</h5>
+                {% if transport.attendant_phone %}
+                  <span class="small font-weight-bold text-primary"><i class="fas fa-phone mr-1"></i> {{ transport.attendant_phone }}</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
+
+          <div class="alert alert-info border-0 mb-0 small" style="border-radius: 8px;">
+            <i class="fas fa-info-circle mr-1"></i> For route changes or transport queries, please reach out to the institutional transport desk.
+          </div>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="portal-card p-5 text-center text-muted">
+      <i class="fas fa-bus fa-3x mb-3 text-muted"></i>
+      <h5>No School Transport Assigned</h5>
+      <p class="small mb-0">This student is currently marked for self-commute / private transport.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

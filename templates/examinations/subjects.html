@@ -1,0 +1,155 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'examinations:exam_list' %}">Exams</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Configure Subjects</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">{{ exam.name }}</h4>
+        <span class="badge badge-primary px-2 py-1">{{ exam.grade_level.name }}</span>
+      </div>
+      <p class="text-muted small mb-0">Set maximum marks, passing marks, evaluation weightage, and subject sequencing.</p>
+    </div>
+    <div>
+      <a href="{% url 'examinations:marks_entry' %}?exam={{ exam.id }}" class="btn btn-success btn-sm">
+        <i class="fas fa-edit mr-1"></i> Enter Marks for this Exam
+      </a>
+      <a href="{% url 'examinations:exam_list' %}" class="btn btn-outline-secondary btn-sm ml-1">Back</a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row">
+    <!-- Add Subject Form -->
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-header bg-white py-3 border-0">
+          <h6 class="font-weight-bold text-dark mb-0"><i class="fas fa-plus-circle text-primary mr-1"></i> Add Subject</h6>
+        </div>
+        <div class="card-body p-4 pt-0">
+          <form method="POST">
+            {% csrf_token %}
+            <div class="form-group mb-3">
+              <label class="form-label font-weight-bold small text-muted">Subject *</label>
+              {{ form.subject }}
+              {% if form.subject.errors %}<div class="text-danger small mt-1">{{ form.subject.errors }}</div>{% endif %}
+            </div>
+            <div class="row">
+              <div class="col-6 form-group mb-3">
+                <label class="form-label font-weight-bold small text-muted">Max Marks *</label>
+                {{ form.max_marks }}
+              </div>
+              <div class="col-6 form-group mb-3">
+                <label class="form-label font-weight-bold small text-muted">Pass Marks *</label>
+                {{ form.passing_marks }}
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-6 form-group mb-3">
+                <label class="form-label font-weight-bold small text-muted">Weightage (%)</label>
+                {{ form.weightage }}
+              </div>
+              <div class="col-6 form-group mb-3">
+                <label class="form-label font-weight-bold small text-muted">Sequence</label>
+                {{ form.sequence_order }}
+              </div>
+            </div>
+            <div class="form-group mb-3">
+              <div class="custom-control custom-checkbox">
+                {{ form.is_optional }}
+                <label class="custom-control-label small" for="{{ form.is_optional.id_for_label }}">Optional Subject</label>
+              </div>
+            </div>
+            <div class="form-group mb-4">
+              <div class="custom-control custom-checkbox">
+                {{ form.is_active }}
+                <label class="custom-control-label small" for="{{ form.is_active.id_for_label }}">Active in Examination</label>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+              <i class="fas fa-plus mr-1"></i> Add Subject to Exam
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configured Subjects Table -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-header bg-white py-3 border-0 d-flex align-items-center justify-content-between">
+          <h6 class="font-weight-bold text-dark mb-0">Configured Subjects ({{ configured_subjects.count }})</h6>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+            <thead class="bg-light text-muted small text-uppercase">
+              <tr>
+                <th class="pl-4">#</th>
+                <th>Subject Name</th>
+                <th>Max Marks</th>
+                <th>Pass Marks</th>
+                <th>Weightage</th>
+                <th>Status</th>
+                <th class="text-right pr-4">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cs in configured_subjects %}
+              <tr>
+                <td class="pl-4 text-muted">{{ cs.sequence_order }}</td>
+                <td class="font-weight-bold text-dark">
+                  {{ cs.subject.name }}
+                  {% if cs.is_optional %}<span class="badge badge-light border text-muted">Optional</span>{% endif %}
+                </td>
+                <td><span class="badge badge-light border font-weight-bold">{{ cs.max_marks|floatformat:0 }}</span></td>
+                <td><span class="badge badge-light border text-danger font-weight-bold">{{ cs.passing_marks|floatformat:0 }}</span></td>
+                <td>{{ cs.weightage|floatformat:0 }}%</td>
+                <td>
+                  {% if cs.is_active %}
+                    <span class="badge badge-success px-2 py-1">Active</span>
+                  {% else %}
+                    <span class="badge badge-secondary px-2 py-1">Inactive</span>
+                  {% endif %}
+                </td>
+                <td class="text-right pr-4">
+                  <form method="POST" action="{% url 'examinations:exam_subject_delete' exam.id cs.id %}" onsubmit="return confirm('Remove {{ cs.subject.name }} from this exam?');" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove Subject">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center py-4 text-muted">
+                  No subjects configured for this exam yet. Use the form on the left to add subjects.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

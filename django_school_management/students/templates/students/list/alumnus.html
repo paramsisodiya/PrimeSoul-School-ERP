@@ -63,7 +63,7 @@
           {% for alumni in filter.qs %}
             <tr>
               <td>
-                <img src="{{ alumni.photo.url }}" class="mr-2 rounded-circle" height="24" width="24" alt="{{ alumni.admission_student.name }}">
+                {% if alumni.photo %}<img src="{{ alumni.photo.url }}" class="mr-2 rounded-circle" height="24" width="24" alt="{{ alumni.admission_student.name }}">{% endif %}
                 {{ alumni.admission_student.name }}
               </td>
               <td>

@@ -1,0 +1,288 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Breadcrumbs & Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'fees:fee_dashboard' %}" class="text-decoration-none">Fees</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Fee Heads</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Fee Heads & Component Categories</h4>
+      <p class="text-muted small mb-0">Configure standard fee components (Tuition, Computer, Lab, Activity, Annual Charges, etc.)</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addFeeHeadModal">
+        <i class="fas fa-plus mr-1"></i> Add Fee Head
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filters & Search Card -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-body p-3">
+      <form method="get" class="form-row align-items-center">
+        <div class="col-md-5 my-1">
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
+            </div>
+            <input type="text" name="q" value="{{ query }}" class="form-control border-left-0" placeholder="Search by name or code (e.g. TUITION)...">
+          </div>
+        </div>
+        <div class="col-md-4 my-1">
+          <select name="category" class="form-control" onchange="this.form.submit()">
+            <option value="">All Categories</option>
+            {% for cat_val, cat_label in categories %}
+              <option value="{{ cat_val }}" {% if category_filter == cat_val %}selected{% endif %}>{{ cat_label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 my-1 d-flex gap-2">
+          <button type="submit" class="btn btn-dark btn-block">Filter</button>
+          {% if query or category_filter %}
+            <a href="{% url 'fees:fee_heads' %}" class="btn btn-light border ml-2">Reset</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-0 table-responsive">
+      <table class="table-modern">
+        <thead>
+          <tr>
+            <th class="pl-4">Fee Head Name</th>
+            <th>Code</th>
+            <th>Category</th>
+            <th>Frequency Type</th>
+            <th>Status</th>
+            <th class="text-right pr-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for head in fee_heads %}
+          <tr>
+            <td class="pl-4 font-weight-bold text-dark">
+              {{ head.name }}
+              {% if head.description %}
+                <div class="text-muted small font-weight-normal">{{ head.description }}</div>
+              {% endif %}
+            </td>
+            <td><code class="text-dark bg-light px-2 py-1 rounded font-weight-bold">{{ head.code }}</code></td>
+            <td>
+              <span class="badge badge-info text-white font-weight-normal px-2 py-1">
+                {{ head.get_category_display }}
+              </span>
+            </td>
+            <td>
+              {% if head.is_recurring %}
+                <span class="badge badge-light border text-primary"><i class="fas fa-redo-alt mr-1"></i> Recurring</span>
+              {% else %}
+                <span class="badge badge-light border text-secondary"><i class="fas fa-check mr-1"></i> One-Time</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if head.is_active %}
+                <span class="badge badge-success">Active</span>
+              {% else %}
+                <span class="badge badge-secondary">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="text-right pr-4">
+              <button class="btn btn-sm btn-light border mr-1" data-toggle="modal" data-target="#editHeadModal{{ head.id }}">
+                <i class="fas fa-edit text-muted"></i>
+              </button>
+              <button class="btn btn-sm btn-light border text-danger" data-toggle="modal" data-target="#deleteHeadModal{{ head.id }}">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Edit Modal -->
+          <div class="modal fade" id="editHeadModal{{ head.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+              <div class="modal-content border-0 shadow">
+                <form method="post" action="{% url 'fees:fee_heads' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="edit">
+                  <input type="hidden" name="head_id" value="{{ head.id }}">
+                  <div class="modal-header border-bottom">
+                    <h5 class="modal-title font-weight-bold">Edit Fee Head: {{ head.name }}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body p-4">
+                    <div class="form-group">
+                      <label class="font-weight-bold small text-muted">Fee Head Name</label>
+                      <input type="text" name="name" class="form-control" value="{{ head.name }}" required>
+                    </div>
+                    <div class="form-group">
+                      <label class="font-weight-bold small text-muted">Category</label>
+                      <select name="category" class="form-control">
+                        {% for cat_val, cat_label in categories %}
+                          <option value="{{ cat_val }}" {% if head.category == cat_val %}selected{% endif %}>{{ cat_label }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="font-weight-bold small text-muted">Description</label>
+                      <textarea name="description" class="form-control" rows="2">{{ head.description }}</textarea>
+                    </div>
+                    <div class="form-check mb-2">
+                      <input type="checkbox" name="is_recurring" value="1" class="form-check-input" id="rec{{ head.id }}" {% if head.is_recurring %}checked{% endif %}>
+                      <label class="form-check-label small" for="rec{{ head.id }}">Recurring component across terms/months</label>
+                    </div>
+                    <div class="form-check">
+                      <input type="checkbox" name="is_active" value="1" class="form-check-input" id="act{{ head.id }}" {% if head.is_active %}checked{% endif %}>
+                      <label class="form-check-label small" for="act{{ head.id }}">Active</label>
+                    </div>
+                  </div>
+                  <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary font-weight-bold">Save Changes</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Delete Modal -->
+          <div class="modal fade" id="deleteHeadModal{{ head.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+              <div class="modal-content border-0 shadow">
+                <form method="post" action="{% url 'fees:fee_heads' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="head_id" value="{{ head.id }}">
+                  <div class="modal-header border-bottom">
+                    <h5 class="modal-title font-weight-bold text-danger">Delete Fee Head</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body p-4">
+                    <p>Are you sure you want to delete fee head <strong>{{ head.name }} ({{ head.code }})</strong>?</p>
+                    <p class="small text-muted mb-0">This action cannot be undone if not attached to active invoices.</p>
+                  </div>
+                  <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger font-weight-bold">Confirm Delete</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          {% empty %}
+          <tr>
+            <td colspan="6" class="p-0">
+              <div class="empty-state">
+                <div class="empty-state__icon">
+                  <i class="fas fa-tags"></i>
+                </div>
+                <div class="empty-state__title">No Fee Heads Found</div>
+                <div class="empty-state__desc">No fee components match your search or filter. Configure standard components like Tuition, Development, or Lab fees.</div>
+                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addFeeHeadModal">
+                  <i class="fas fa-plus mr-1"></i> Add Fee Head
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if fee_heads.has_other_pages %}
+    <div class="card-footer bg-white border-top py-3 d-flex justify-content-center">
+      <ul class="pagination pagination-sm mb-0">
+        {% if fee_heads.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ fee_heads.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}">Previous</a></li>
+        {% endif %}
+        {% for num in fee_heads.paginator.page_range %}
+          <li class="page-item {% if fee_heads.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}">{{ num }}</a>
+          </li>
+        {% endfor %}
+        {% if fee_heads.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ fee_heads.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}">Next</a></li>
+        {% endif %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Add Fee Head Modal -->
+<div class="modal fade" id="addFeeHeadModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow">
+      <form method="post" action="{% url 'fees:fee_heads' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title font-weight-bold">Create New Fee Head</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="form-group">
+            <label class="font-weight-bold small text-muted">Fee Head Name *</label>
+            <input type="text" name="name" class="form-control" placeholder="e.g. Tuition Fee, Science Lab Fee" required>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small text-muted">Unique Code *</label>
+            <input type="text" name="code" class="form-control text-uppercase" placeholder="e.g. TUITION, LAB, ANNUAL" required>
+            <small class="text-muted">Unique identifier across the school tenant.</small>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small text-muted">Category *</label>
+            <select name="category" class="form-control">
+              {% for cat_val, cat_label in categories %}
+                <option value="{{ cat_val }}">{{ cat_label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small text-muted">Description (Optional)</label>
+            <textarea name="description" class="form-control" rows="2" placeholder="Notes or instructions about this fee item..."></textarea>
+          </div>
+          <div class="form-check">
+            <input type="checkbox" name="is_recurring" value="1" class="form-check-input" id="newIsRecurring" checked>
+            <label class="form-check-label small" for="newIsRecurring">Recurring fee charged on monthly / quarterly intervals</label>
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary font-weight-bold">Create Fee Head</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

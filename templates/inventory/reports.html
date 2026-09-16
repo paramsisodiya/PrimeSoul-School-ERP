@@ -1,0 +1,144 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Reports</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Inventory & Asset Analytical Reports</h4>
+      <p class="text-muted small mb-0">Operational ledgers, low stock audits, goods receipts registers, and fixed asset balance statements.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'reports:inventory_reports' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-file-export mr-1"></i> Open Advanced Reports Hub
+      </a>
+    </div>
+  </div>
+
+  <!-- Report Cards Grid -->
+  <div class="row">
+    <!-- 1. Stock Valuation & Balances -->
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px;">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="bg-light p-3 rounded-circle text-primary mr-3">
+              <i class="fas fa-boxes fa-lg"></i>
+            </div>
+            <div>
+              <h6 class="font-weight-bold text-dark mb-0">Current Stock Balances</h6>
+              <small class="text-muted">Item quantities across stores</small>
+            </div>
+          </div>
+          <p class="text-muted small">Real-time balances per store location with reorder level checks and stock valuation.</p>
+          <a href="{% url 'reports:inventory_reports' %}?report=current_stock" class="btn btn-outline-primary btn-sm btn-block">Generate Report</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Low Stock Audit -->
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px;">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="bg-light p-3 rounded-circle text-warning mr-3">
+              <i class="fas fa-exclamation-triangle fa-lg"></i>
+            </div>
+            <div>
+              <h6 class="font-weight-bold text-dark mb-0">Low Stock & Reorder Audit</h6>
+              <small class="text-muted">Procurement planning</small>
+            </div>
+          </div>
+          <p class="text-muted small">Items below minimum reorder thresholds requiring urgent replenishment.</p>
+          <a href="{% url 'reports:inventory_reports' %}?report=low_stock" class="btn btn-outline-warning btn-sm btn-block">View Low Stock ({{ metrics.low_stock_count }})</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Stock Movement Ledger -->
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px;">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="bg-light p-3 rounded-circle text-info mr-3">
+              <i class="fas fa-history fa-lg"></i>
+            </div>
+            <div>
+              <h6 class="font-weight-bold text-dark mb-0">Stock Ledger Movement Log</h6>
+              <small class="text-muted">Full audit trail</small>
+            </div>
+          </div>
+          <p class="text-muted small">Complete timeline of Inward receipts, Outward issues, Transfers, Adjustments, and Returns.</p>
+          <a href="{% url 'inventory:movement_ledger' %}" class="btn btn-outline-info btn-sm btn-block">Open Movement Ledger</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Fixed Asset Register -->
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px;">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="bg-light p-3 rounded-circle text-success mr-3">
+              <i class="fas fa-laptop-house fa-lg"></i>
+            </div>
+            <div>
+              <h6 class="font-weight-bold text-dark mb-0">Fixed Asset Register</h6>
+              <small class="text-muted">Institutional capital inventory</small>
+            </div>
+          </div>
+          <p class="text-muted small">Complete asset master list, tags, serial numbers, custodians, purchase costs, and warranty status.</p>
+          <a href="{% url 'reports:inventory_reports' %}?report=asset_register" class="btn btn-outline-success btn-sm btn-block">Generate Asset Register</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Asset Custody & Allocations -->
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px;">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="bg-light p-3 rounded-circle text-purple mr-3" style="color: #8B5CF6;">
+              <i class="fas fa-user-tag fa-lg"></i>
+            </div>
+            <div>
+              <h6 class="font-weight-bold text-dark mb-0">Asset Custody Report</h6>
+              <small class="text-muted">Staff & Department holdings</small>
+            </div>
+          </div>
+          <p class="text-muted small">Active asset allocations grouped by faculty member and academic/admin departments.</p>
+          <a href="{% url 'reports:inventory_reports' %}?report=asset_assignments" class="btn btn-outline-dark btn-sm btn-block">View Allocations</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Maintenance & Repair Log -->
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px;">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="bg-light p-3 rounded-circle text-danger mr-3">
+              <i class="fas fa-tools fa-lg"></i>
+            </div>
+            <div>
+              <h6 class="font-weight-bold text-dark mb-0">Maintenance & Repair Cost</h6>
+              <small class="text-muted">Service logs & expenditure</small>
+            </div>
+          </div>
+          <p class="text-muted small">Historical log of breakdown repairs, preventive servicing, and cumulative maintenance costs.</p>
+          <a href="{% url 'reports:inventory_reports' %}?report=asset_maintenance" class="btn btn-outline-danger btn-sm btn-block">View Maintenance Log</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

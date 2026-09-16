@@ -12,6 +12,8 @@ from crispy_forms.layout import (
 from django_school_management.institute.models import EducationBoard
 from django_school_management.institute.education_boards import (
     COUNTRY_BD,
+    COUNTRY_IN,
+    IN_GROUPS,
     BD_GROUPS,
     APPLYING_FOR_CLASS_MIN,
     APPLYING_FOR_CLASS_MAX,
@@ -73,75 +75,90 @@ class StudentForm(forms.ModelForm):
         # Gender: required for all
         if 'gender' in self.fields:
             self.fields['gender'].required = True
-        # BD-only fields: show applying_for_class only for school/madrasah, admit_to_semester only for polytechnic
-        if not _is_bd(self.institute):
+
+        # Determine if institute is polytechnic or school/madrasah
+        is_poly = bool(self.institute and getattr(self.institute, 'is_polytechnic', False))
+        is_school = not is_poly  # Default to school for K-12
+
+        if is_poly:
             self.fields.pop('applying_for_class', None)
-            self.fields.pop('admit_to_semester', None)
-        else:
-            if self.institute and self.institute.is_school_or_madrasah:
-                self.fields.pop('admit_to_semester', None)
-                self.fields['applying_for_class'].required = False
-                self.fields['applying_for_class'].widget = forms.Select(
-                    choices=[('', '---------')] + [(i, 'Class %s' % i) for i in range(APPLYING_FOR_CLASS_MIN, APPLYING_FOR_CLASS_MAX + 1)]
-                )
-            elif self.institute and self.institute.is_polytechnic:
-                self.fields.pop('applying_for_class', None)
+            if 'admit_to_semester' in self.fields:
                 self.fields['admit_to_semester'].required = False
                 self.fields['admit_to_semester'].widget = forms.Select(
                     choices=[('', '---------'), (1, '1st Semester'), (4, '4th Semester (direct)')]
                 )
-            else:
-                self.fields.pop('applying_for_class', None)
-                self.fields.pop('admit_to_semester', None)
+        else:
+            self.fields.pop('admit_to_semester', None)
+            if 'applying_for_class' in self.fields:
+                self.fields['applying_for_class'].required = False
+                self.fields['applying_for_class'].widget = forms.Select(
+                    choices=[('', '---------')] + [(i, f'Class {i}') for i in range(APPLYING_FOR_CLASS_MIN, APPLYING_FOR_CLASS_MAX + 1)]
+                )
+
         if self.institute:
-            self.fields['department_choice'].queryset = (
-                self.fields['department_choice'].queryset.filter(institute=self.institute)
-            )
-            self.fields['department_choice'].label = (
-                self.institute.department_label or 'Department'
-            )
-            if self.institute.is_school_or_madrasah:
-                for f in ('exam_name', 'passing_year', 'group', 'board',
-                          'ssc_roll', 'ssc_registration', 'gpa', 'marksheet_image'):
-                    if f in self.fields:
-                        self.fields[f].required = False
-                if _is_bd(self.institute):
-                    boards_qs = EducationBoard.get_boards_for_country(self.institute.country)
-                    self.fields['board'].widget = forms.Select(
-                        choices=[('', '---------')] + [(b.name, b.name) for b in boards_qs]
-                    )
-                    self.fields['board'].label = 'Board (from where result is obtained)'
-                    self.fields['ssc_roll'].label = 'JSC/JDC Roll No.'
-                    self.fields['ssc_registration'].label = 'JSC/JDC Registration No.'
-                    self.fields['gpa'].label = 'Obtained Result (GPA out of 5.00)'
-                    # BD school/madrasah: only applying_for_class + JSC section (no exam_name, passing_year, group)
-                    for f in ('exam_name', 'passing_year', 'group'):
-                        self.fields.pop(f, None)
-            elif self.institute.is_polytechnic and _is_bd(self.institute):
-                boards_qs = EducationBoard.get_boards_for_country(self.institute.country)
+            if 'department_choice' in self.fields:
+                self.fields['department_choice'].queryset = (
+                    self.fields['department_choice'].queryset.filter(institute=self.institute)
+                )
+                self.fields['department_choice'].label = (
+                    self.institute.department_label or 'Class / Department'
+                )
+
+        if is_school:
+            for f in ('exam_name', 'passing_year', 'group', 'board',
+                      'ssc_roll', 'ssc_registration', 'gpa', 'marksheet_image'):
+                if f in self.fields:
+                    self.fields[f].required = False
+
+            # Set up boards (India boards by default)
+            country_code = getattr(self.institute, 'country', 'IN') if self.institute else 'IN'
+            code = getattr(country_code, 'code', country_code) or 'IN'
+            boards_qs = EducationBoard.get_boards_for_country(code)
+            if 'board' in self.fields:
                 self.fields['board'].widget = forms.Select(
                     choices=[('', '---------')] + [(b.name, b.name) for b in boards_qs]
                 )
+                self.fields['board'].label = 'Previous Board / School Board'
+            if 'group' in self.fields:
                 self.fields['group'].widget = forms.Select(
-                    choices=[('', '---------')] + list(BD_GROUPS)
+                    choices=[('', '---------')] + list(IN_GROUPS)
                 )
 
     def clean_gpa(self):
         gpa = self.cleaned_data.get('gpa')
-        if gpa is not None and (gpa < 0 or gpa > 5):
-            raise forms.ValidationError("GPA must be between 0.00 and 5.00.")
+        if gpa is not None and (gpa < 0 or gpa > 10):
+            raise forms.ValidationError("GPA / Marks percentage must be between 0.00 and 10.00.")
         return gpa
 
     def clean_mobile_number(self):
         value = self.cleaned_data.get('mobile_number', '')
-        if value and not re.match(r'^\d{11}$', value):
-            raise forms.ValidationError("Enter an 11-digit mobile number.")
+        if value:
+            clean_digits = re.sub(r'[^\d+]', '', value)
+            if clean_digits.startswith('+91'):
+                digits = clean_digits[3:]
+            elif clean_digits.startswith('0') and len(clean_digits) == 11:
+                digits = clean_digits[1:]
+            else:
+                digits = clean_digits.lstrip('+')
+            
+            # Support 10-digit Indian numbers starting with 6-9, or legacy 11-digit
+            if not (len(digits) == 10 and digits[0] in '6789') and not (len(digits) == 11):
+                raise forms.ValidationError("Enter a valid 10-digit Indian mobile number (e.g. 9876543210 or +91 9876543210).")
         return value
 
     def clean_guardian_mobile_number(self):
         value = self.cleaned_data.get('guardian_mobile_number', '')
-        if value and not re.match(r'^\d{11}$', value):
-            raise forms.ValidationError("Enter an 11-digit mobile number.")
+        if value:
+            clean_digits = re.sub(r'[^\d+]', '', value)
+            if clean_digits.startswith('+91'):
+                digits = clean_digits[3:]
+            elif clean_digits.startswith('0') and len(clean_digits) == 11:
+                digits = clean_digits[1:]
+            else:
+                digits = clean_digits.lstrip('+')
+            
+            if not (len(digits) == 10 and digits[0] in '6789') and not (len(digits) == 11):
+                raise forms.ValidationError("Enter a valid 10-digit Indian mobile number (e.g. 9876543210 or +91 9876543210).")
         return value
 
     def clean_date_of_birth(self):

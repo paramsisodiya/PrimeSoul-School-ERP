@@ -1,0 +1,147 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'timetable:dashboard' %}" class="text-decoration-none">Timetable</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Room Occupancy</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Room & Laboratory Utilization</h4>
+        {% if room %}
+          <span class="badge badge-primary px-2 py-1 ml-2 font-weight-normal">
+            {{ room.room_number }} - {{ room.name }}
+          </span>
+          <span class="badge badge-light border px-2 py-1 ml-1 text-muted">
+            Capacity: {{ room.capacity }}
+          </span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">Inspect facility schedules, laboratory occupancy, and prevent room double bookings.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print();">
+        <i class="fas fa-print mr-1"></i> Print Matrix
+      </button>
+      <a href="{% url 'timetable:dashboard' %}" class="btn btn-light border btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Timetable Hub
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Room Navigation Tabs -->
+  {% if classrooms %}
+    <div class="mb-3 d-flex flex-wrap gap-2">
+      {% for r in classrooms %}
+        <a href="{% url 'timetable:rooms' room_id=r.id %}"
+           class="btn btn-sm {% if room and r.id == room.id %}btn-dark font-weight-bold{% else %}btn-light border text-dark{% endif %} mr-1 mb-1">
+          <i class="fas fa-door-open mr-1"></i> {{ r.room_number }} ({{ r.name }})
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Room Schedule Matrix -->
+  {% if matrix and matrix.working_days %}
+    <div class="card shadow-sm border-0" style="border-radius: 10px;">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-bordered mb-0 text-center" style="font-size: 0.85rem; min-width: 800px;">
+            <thead class="bg-light">
+              <tr>
+                <th style="width: 140px;" class="align-middle text-uppercase font-weight-bold text-muted">Period / Slot</th>
+                {% for day in matrix.working_days %}
+                  <th class="align-middle text-uppercase font-weight-bold text-dark py-3">
+                    {{ day.day_name }}
+                  </th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in matrix.grid_rows %}
+                <tr {% if row.slot.is_break %}style="background-color: #FFFBEB;"{% endif %}>
+                  <!-- Slot Header -->
+                  <td class="bg-light text-left align-middle px-3">
+                    <div class="font-weight-bold text-dark">{{ row.slot.name }}</div>
+                    <div class="small text-muted font-weight-normal">
+                      {{ row.slot.start_time|time:"H:i" }} - {{ row.slot.end_time|time:"H:i" }}
+                    </div>
+                  </td>
+
+                  <!-- Day Cells -->
+                  {% for cell in row.cells %}
+                    <td class="align-middle p-2 position-relative" style="height: 85px; min-width: 130px;">
+                      {% if cell.entry %}
+                        <div class="p-2 rounded border text-left shadow-sm h-100 d-flex flex-column justify-content-between"
+                             style="background: #FDF4FF; border-left: 3px solid #7C3AED !important;">
+                          <div>
+                            <div class="font-weight-bold text-purple mb-1">
+                              {% if cell.entry.subject %}
+                                {{ cell.entry.subject.name }}
+                              {% else %}
+                                {{ cell.entry.get_entry_type_display }}
+                              {% endif %}
+                            </div>
+                            <div class="small text-dark font-weight-bold">
+                              <i class="fas fa-users text-muted mr-1"></i> {{ cell.entry.section }}
+                            </div>
+                            <div class="small text-muted">
+                              <i class="fas fa-chalkboard-teacher text-muted mr-1"></i> {{ cell.entry.teacher.name|default:"Unassigned" }}
+                            </div>
+                          </div>
+                        </div>
+                      {% elif cell.slot.is_break %}
+                        <div class="text-muted small font-italic py-3">
+                          <i class="fas fa-coffee text-warning mr-1"></i> Recess
+                        </div>
+                      {% else %}
+                        <div class="text-muted small font-italic py-3">
+                          <span class="badge badge-light border text-success">Vacant</span>
+                        </div>
+                      {% endif %}
+                    </td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="card shadow-sm border-0 text-center py-5" style="border-radius: 10px;">
+      <div class="card-body">
+        <i class="fas fa-door-closed text-muted mb-3" style="font-size: 3rem;"></i>
+        <h5 class="font-weight-bold text-dark">No Classrooms or Labs Registered</h5>
+        <p class="text-muted small mb-3">Add rooms under Timetable Setup to track space utilization.</p>
+        {% if can_manage %}
+          <a href="{% url 'timetable:setup' %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-cog mr-1"></i> Go to Setup
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

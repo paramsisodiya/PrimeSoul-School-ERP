@@ -1,0 +1,98 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}My Leaves - Teacher Portal{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <h4 class="font-weight-bold text-dark mb-1">My Leave Balances & Applications</h4>
+      <p class="text-muted small mb-0">Track your leave quota, applied leave history, and approval status.</p>
+    </div>
+    <div>
+      <a href="{% url 'portal:teacher_leave_apply' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus mr-1"></i> Apply for Leave
+      </a>
+    </div>
+  </div>
+
+  <!-- Leave Balances -->
+  <div class="portal-card mb-4">
+    <div class="card-header bg-white font-weight-bold py-3">
+      <i class="fas fa-calendar-check mr-2 text-primary"></i> Current Leave Quota
+    </div>
+    <div class="card-body p-0">
+      {% if balances %}
+        <div class="table-responsive">
+          <table class="table portal-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Leave Type</th>
+                <th>Allocated Quota</th>
+                <th>Used Days</th>
+                <th>Available Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for b in balances %}
+                <tr>
+                  <td class="font-weight-bold text-dark">{{ b.leave_type.name }} ({{ b.leave_type.code }})</td>
+                  <td>{{ b.allocated_days }} Days</td>
+                  <td class="text-danger">{{ b.used_days }} Days</td>
+                  <td class="font-weight-bold text-success" style="font-size: 1.05rem;">{{ b.closing_balance }} Days</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-4 text-center text-muted">No leave balance quotas assigned for this session.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Recent Leave Applications -->
+  <div class="portal-card">
+    <div class="card-header bg-white font-weight-bold py-3">
+      <i class="fas fa-history mr-2 text-secondary"></i> Leave Application History
+    </div>
+    <div class="card-body p-0">
+      {% if recent_requests %}
+        <div class="table-responsive">
+          <table class="table portal-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Leave Type</th>
+                <th>From Date</th>
+                <th>To Date</th>
+                <th>Days</th>
+                <th>Reason</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for req in recent_requests %}
+                <tr>
+                  <td class="font-weight-bold text-dark">{{ req.leave_type.name }}</td>
+                  <td>{{ req.start_date|date:"d M Y" }}</td>
+                  <td>{{ req.end_date|date:"d M Y" }}</td>
+                  <td class="font-weight-bold">{{ req.days_count|default:"-" }}</td>
+                  <td class="small text-muted">{{ req.reason|truncatewords:10 }}</td>
+                  <td>
+                    <span class="portal-badge {% if req.status == 'APPROVED' %}badge-paid{% elif req.status == 'REJECTED' %}badge-overdue{% else %}badge-pending{% endif %}">
+                      {{ req.get_status_display }}
+                    </span>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-4 text-center text-muted">No leave applications submitted.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

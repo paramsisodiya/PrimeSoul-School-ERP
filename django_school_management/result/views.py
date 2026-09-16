@@ -47,17 +47,39 @@ def result_detail_view(request, student_pk):
     return render(request, 'result/result_detail.html', ctx)
 
 
+from django.contrib.auth.decorators import login_required
+from django_school_management.accounts.permissions import academic_staff_required
+
+
+@login_required
+@academic_staff_required
 def find_student(request, student_id):
-    """ Find student by given id for result entry."""
-    student = Student.objects.get(
-        temporary_id=student_id
-    )
-    ctx = {
-        'student_name': student.admission_student.name,
-        'student_batch': student.batch.number,
-        'image_url': student.admission_student.photo.url
-    }
-    return JsonResponse({'data': ctx})
+    """
+    Find student by given id for result entry.
+    Requires staff authentication and scopes lookup to the user's active school.
+    """
+    tenant = getattr(request, 'tenant', None) or getattr(request.user, 'school', None)
+    qs = Student.objects.all()
+    if tenant and not request.user.is_superuser:
+        qs = qs.filter(school=tenant)
+    try:
+        student = qs.filter(
+            models.Q(temporary_id=student_id) | models.Q(admission_number=student_id) | models.Q(roll_number=student_id)
+        ).first()
+        if not student:
+            return JsonResponse({'error': 'Student not found'}, status=404)
+        
+        ctx = {
+            'student_name': student.get_full_name(),
+            'student_batch': getattr(student.batch, 'number', '') if hasattr(student, 'batch') and student.batch else '',
+            'grade_level': student.grade_level.name if student.grade_level else '',
+            'section': student.section.name if student.section else '',
+            'admission_number': student.admission_number or '',
+        }
+        return JsonResponse({'data': ctx})
+    except Exception as e:
+        return JsonResponse({'error': 'Could not process student lookup'}, status=400)
+
 
 
 @user_passes_test(user_is_teacher_or_administrative)

@@ -1,0 +1,65 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}{{ notice.title }} - School Notice{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'portal:portal_root' %}">Portal</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'portal:notices' %}">Notices</a></li>
+          <li class="breadcrumb-item active">{{ notice.title|truncatechars:20 }}</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">{{ notice.title }}</h4>
+    </div>
+    <div>
+      <a href="{% url 'portal:notices' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Notices
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8 mx-auto">
+      <div class="portal-card p-4">
+        <div class="d-flex justify-content-between align-items-center pb-3 mb-3 border-bottom">
+          <div>
+            <span class="badge {% if notice.notice_type == 'h' %}badge-warning text-dark{% else %}badge-primary{% endif %} px-2.5 py-1 mr-2">
+              {{ notice.get_notice_type_display }}
+            </span>
+            <span class="text-muted small"><i class="far fa-calendar-alt mr-1"></i> Published: {{ notice.created|date:"d M Y" }}</span>
+          </div>
+          {% if notice.expires_at %}
+            <span class="text-muted small"><i class="fas fa-hourglass-end mr-1"></i> Valid Till: {{ notice.expires_at|date:"d M Y" }}</span>
+          {% endif %}
+        </div>
+
+        <div class="notice-content mb-4 text-dark" style="font-size: 1rem; line-height: 1.7;">
+          {{ notice.content|safe }}
+        </div>
+
+        {% if notice.file %}
+          <div class="p-3 bg-light rounded border d-flex justify-content-between align-items-center flex-wrap">
+            <div class="d-flex align-items-center mb-2 mb-sm-0">
+              <i class="fas fa-file-pdf fa-2x text-danger mr-3"></i>
+              <div>
+                <span class="font-weight-bold text-dark d-block">Attached Circular Document</span>
+                <span class="text-muted small">Download official verified document</span>
+              </div>
+            </div>
+            <div>
+              <a href="{{ notice.file.url }}" target="_blank" class="btn btn-primary btn-sm">
+                <i class="fas fa-download mr-1"></i> Download Attachment
+              </a>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

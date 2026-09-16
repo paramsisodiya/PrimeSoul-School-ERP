@@ -1,0 +1,249 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'timetable:dashboard' %}" class="text-decoration-none">Timetable</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Weekly Grid</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Master Weekly Timetable Grid</h4>
+        {% if selected_section %}
+          <span class="badge badge-primary px-2 py-1 ml-2 font-weight-normal">
+            {{ selected_section }}
+          </span>
+        {% elif selected_teacher %}
+          <span class="badge badge-info px-2 py-1 ml-2 font-weight-normal">
+            Faculty: {{ selected_teacher.name }}
+          </span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">Unified cross-day schedule matrix with collision prevention and print view.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print();">
+        <i class="fas fa-print mr-1"></i> Print Schedule
+      </button>
+      {% if can_manage and selected_section %}
+        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addEntryModal">
+          <i class="fas fa-plus mr-1"></i> Add Entry
+        </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+    <div class="card-body py-3">
+      <form method="GET" action="{% url 'timetable:weekly' %}" class="form-row align-items-end">
+        <div class="col-md-5 mb-2 mb-md-0">
+          <label class="font-weight-bold small text-muted">View Class Section</label>
+          <select name="section" class="form-control form-control-sm" onchange="this.form.submit();">
+            <option value="">-- Choose Class Section --</option>
+            {% for s in sections %}
+              <option value="{{ s.id }}" {% if selected_section and selected_section.id == s.id %}selected{% endif %}>
+                {{ s.grade_level.name }} - Section {{ s.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-5 mb-2 mb-md-0">
+          <label class="font-weight-bold small text-muted">Or View Faculty Member</label>
+          <select name="teacher" class="form-control form-control-sm" onchange="this.form.submit();">
+            <option value="">-- Choose Faculty --</option>
+            {% for t in teachers %}
+              <option value="{{ t.id }}" {% if selected_teacher and selected_teacher.id == t.id %}selected{% endif %}>
+                {{ t.name }} ({{ t.designation|default:"Faculty" }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <a href="{% url 'timetable:weekly' %}" class="btn btn-outline-secondary btn-sm btn-block">Reset Filter</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Weekly Timetable Matrix -->
+  {% if matrix and matrix.working_days %}
+    <div class="card shadow-sm border-0" style="border-radius: 10px;">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-bordered mb-0 text-center" style="font-size: 0.85rem; min-width: 800px;">
+            <thead class="bg-light">
+              <tr>
+                <th style="width: 140px;" class="align-middle text-uppercase font-weight-bold text-muted">Period / Slot</th>
+                {% for day in matrix.working_days %}
+                  <th class="align-middle text-uppercase font-weight-bold text-dark py-3">
+                    {{ day.day_name }}
+                  </th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in matrix.grid_rows %}
+                <tr {% if row.slot.is_break %}style="background-color: #FFFBEB;"{% endif %}>
+                  <!-- Slot Header -->
+                  <td class="bg-light text-left align-middle px-3">
+                    <div class="font-weight-bold text-dark">{{ row.slot.name }}</div>
+                    <div class="small text-muted font-weight-normal">
+                      {{ row.slot.start_time|time:"H:i" }} - {{ row.slot.end_time|time:"H:i" }}
+                    </div>
+                    {% if row.slot.is_break %}
+                      <span class="badge badge-warning small mt-1">Break</span>
+                    {% endif %}
+                  </td>
+
+                  <!-- Day Cells -->
+                  {% for cell in row.cells %}
+                    <td class="align-middle p-2 position-relative" style="height: 80px; min-width: 130px;">
+                      {% if cell.entry %}
+                        <div class="p-2 rounded border text-left shadow-sm h-100 d-flex flex-column justify-content-between"
+                             style="background: #F8FAFC; border-left: 3px solid #4F46E5 !important;">
+                          <div>
+                            <div class="font-weight-bold text-primary mb-1">
+                              {% if cell.entry.subject %}
+                                {{ cell.entry.subject.name }}
+                              {% else %}
+                                {{ cell.entry.get_entry_type_display }}
+                              {% endif %}
+                            </div>
+                            <div class="small text-dark font-weight-500">
+                              {% if selected_teacher %}
+                                <i class="fas fa-users text-muted mr-1"></i> {{ cell.entry.section }}
+                              {% else %}
+                                <i class="fas fa-chalkboard-teacher text-muted mr-1"></i> {{ cell.entry.teacher.name|default:"Unassigned" }}
+                              {% endif %}
+                            </div>
+                            {% if cell.entry.room %}
+                              <div class="small text-muted">
+                                <i class="fas fa-map-marker-alt text-muted mr-1"></i> {{ cell.entry.room.room_number }}
+                              </div>
+                            {% endif %}
+                          </div>
+                          {% if can_manage %}
+                            <div class="text-right mt-1">
+                              <form method="POST" action="{% url 'timetable:entry_delete' pk=cell.entry.id %}" style="display:inline;" onsubmit="return confirm('Remove this slot entry?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="btn btn-link text-danger p-0 m-0" style="font-size: 0.75rem;" title="Delete">
+                                  <i class="fas fa-times-circle"></i>
+                                </button>
+                              </form>
+                            </div>
+                          {% endif %}
+                        </div>
+                      {% elif cell.slot.is_break %}
+                        <div class="text-muted small font-italic py-3">
+                          <i class="fas fa-coffee text-warning mr-1"></i> Recess
+                        </div>
+                      {% else %}
+                        <div class="text-muted small font-italic py-3">
+                          -- Free --
+                        </div>
+                      {% endif %}
+                    </td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="card shadow-sm border-0 text-center py-5" style="border-radius: 10px;">
+      <div class="card-body">
+        <i class="fas fa-calendar-times text-muted mb-3" style="font-size: 3rem;"></i>
+        <h5 class="font-weight-bold text-dark">No Schedule Configuration Found</h5>
+        <p class="text-muted small mb-4">Please select a class section or configure working days & periods under Timetable Setup.</p>
+        <a href="{% url 'timetable:setup' %}" class="btn btn-primary btn-sm">
+          <i class="fas fa-cog mr-1"></i> Go to Setup
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+
+<!-- Add Entry Modal -->
+{% if can_manage and entry_form and selected_section %}
+<div class="modal fade" id="addEntryModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content border-0 shadow">
+      <form method="POST" action="{% url 'timetable:entry_create' %}">
+        {% csrf_token %}
+        <input type="hidden" name="section" value="{{ selected_section.id }}">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title font-weight-bold">Add Timetable Entry for {{ selected_section }}</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">Day <span class="text-danger">*</span></label>
+              {{ entry_form.working_day }}
+            </div>
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">Period / Slot <span class="text-danger">*</span></label>
+              {{ entry_form.time_slot }}
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small">Subject</label>
+            {{ entry_form.subject }}
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small">Faculty Teacher</label>
+            {{ entry_form.teacher }}
+          </div>
+          <div class="row">
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">Room / Lab</label>
+              {{ entry_form.room }}
+            </div>
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">Period Type</label>
+              {{ entry_form.entry_type }}
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small">Notes / Topic</label>
+            {{ entry_form.notes }}
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm font-weight-bold">Schedule Period</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

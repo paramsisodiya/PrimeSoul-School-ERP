@@ -1,0 +1,147 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'inventory:purchase_list' %}" class="text-decoration-none">Goods Receipts</a></li>
+          <li class="breadcrumb-item active" aria-current="page">New GRN</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Record Goods Receipt Note (GRN)</h4>
+      <p class="text-muted small mb-0">Directly adds items to warehouse inventory stock and creates immutable Stock IN ledger movements.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'inventory:purchase_list' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to GRNs
+      </a>
+    </div>
+  </div>
+
+  <form method="post" id="grnForm">
+    {% csrf_token %}
+    <div class="row">
+      <!-- GRN Header Information -->
+      <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm border-0" style="border-radius: 10px;">
+          <div class="card-header bg-white py-3">
+            <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-file-invoice mr-2 text-primary"></i> Receipt Details</h6>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="font-weight-bold small">Supplier / Vendor *</label>
+              {{ form.supplier }}
+              {% if form.supplier.errors %}<small class="text-danger">{{ form.supplier.errors }}</small>{% endif %}
+            </div>
+
+            <div class="form-group">
+              <label class="font-weight-bold small">Destination Store / Warehouse *</label>
+              {{ form.store }}
+              {% if form.store.errors %}<small class="text-danger">{{ form.store.errors }}</small>{% endif %}
+            </div>
+
+            <div class="form-group">
+              <label class="font-weight-bold small">Receipt / Invoice Number</label>
+              {{ form.receipt_number }}
+              <small class="form-text text-muted">Auto-generated if left blank.</small>
+            </div>
+
+            <div class="form-group">
+              <label class="font-weight-bold small">Purchase Date *</label>
+              {{ form.purchase_date }}
+            </div>
+
+            <div class="form-group">
+              <label class="font-weight-bold small">Notes / Remarks</label>
+              {{ form.notes }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Line Items Section -->
+      <div class="col-lg-8 mb-4">
+        <div class="card shadow-sm border-0" style="border-radius: 10px;">
+          <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-list mr-2 text-success"></i> Received Line Items</h6>
+            <button type="button" class="btn btn-outline-success btn-sm" id="addItemBtn">
+              <i class="fas fa-plus mr-1"></i> Add Line Item
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-bordered mb-0" id="itemsTable">
+                <thead class="bg-light" style="font-size: 0.85rem;">
+                  <tr>
+                    <th style="width: 45%;">Inventory Item *</th>
+                    <th style="width: 25%;">Quantity *</th>
+                    <th style="width: 25%;">Unit Cost (₹)</th>
+                    <th style="width: 5%;"></th>
+                  </tr>
+                </thead>
+                <tbody id="itemsTableBody">
+                  <tr>
+                    <td>
+                      <select name="item_id[]" class="form-control form-control-sm" required>
+                        <option value="">-- Select Item --</option>
+                        {% for itm in items %}
+                          <option value="{{ itm.id }}">{{ itm.name }} ({{ itm.sku }})</option>
+                        {% endfor %}
+                      </select>
+                    </td>
+                    <td>
+                      <input type="number" name="quantity[]" step="0.01" min="0.01" class="form-control form-control-sm" placeholder="Qty" required>
+                    </td>
+                    <td>
+                      <input type="number" name="unit_cost[]" step="0.01" min="0.00" class="form-control form-control-sm" placeholder="0.00">
+                    </td>
+                    <td class="text-center">
+                      <button type="button" class="btn btn-sm text-danger remove-row-btn"><i class="fas fa-trash"></i></button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card-footer bg-white border-0 py-3 text-right">
+            <a href="{% url 'inventory:purchase_list' %}" class="btn btn-light btn-sm mr-2">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-sm px-4">Confirm Goods Receipt & Add to Stock</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const tableBody = document.getElementById('itemsTableBody');
+  const addBtn = document.getElementById('addItemBtn');
+
+  addBtn.addEventListener('click', function() {
+    const firstRow = tableBody.querySelector('tr');
+    const newRow = firstRow.cloneNode(true);
+    newRow.querySelectorAll('input').forEach(input => input.value = '');
+    newRow.querySelector('select').selectedIndex = 0;
+    tableBody.appendChild(newRow);
+  });
+
+  tableBody.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-row-btn')) {
+      if (tableBody.querySelectorAll('tr').length > 1) {
+        e.target.closest('tr').remove();
+      } else {
+        alert('At least one item row is required.');
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}My Assigned Classes - Teacher Portal{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <h4 class="font-weight-bold text-dark mb-1">My Assigned Classes & Sections</h4>
+      <p class="text-muted small mb-0">Authorized classes and subjects assigned to your faculty profile.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    {% for item in classes %}
+      <div class="col-md-6 col-lg-4 mb-4">
+        <div class="portal-card h-100 p-4 d-flex flex-column justify-content-between">
+          <div>
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <span class="badge badge-light border text-primary font-weight-bold px-2.5 py-1">
+                {{ item.grade_level.name }} - Section {{ item.section.name }}
+              </span>
+              <span class="badge badge-success px-2 py-1">{{ item.periods_per_week }} Periods/Wk</span>
+            </div>
+
+            <h4 class="font-weight-bold text-dark mb-1">{{ item.subject.name }}</h4>
+            <p class="text-muted small mb-3">Academic Session: {{ item.academic_year.name }}</p>
+
+            <div class="p-3 bg-light rounded mb-3">
+              <div class="d-flex justify-content-between small mb-1">
+                <span class="text-muted">Enrolled Students:</span>
+                <span class="font-weight-bold text-dark">{{ item.student_count }} Students</span>
+              </div>
+              <div class="d-flex justify-content-between small">
+                <span class="text-muted">Class Room:</span>
+                <span class="font-weight-bold text-dark">{{ item.section.room_number|default:"Standard Class" }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between pt-2">
+            <a href="{% url 'portal:teacher_students' %}?section_id={{ item.section.id }}" class="btn btn-outline-primary btn-sm">
+              <i class="fas fa-user-graduate mr-1"></i> Student Roster
+            </a>
+            <a href="{% url 'portal:teacher_attendance_mark' item.section.id %}" class="btn btn-primary btn-sm">
+              <i class="fas fa-calendar-check mr-1"></i> Attendance
+            </a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="portal-card p-5 text-center text-muted">
+          <i class="fas fa-chalkboard-teacher fa-3x mb-3 text-muted"></i>
+          <h5>No Teaching Assignments</h5>
+          <p class="small mb-0">You do not currently have active subject teaching assignments for this session.</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,282 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Breadcrumbs & Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'academics:academic_dashboard' %}" class="text-decoration-none">Academics</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Student Enrollments</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Student Enrollment Registry</h4>
+      <p class="text-muted small mb-0">Track student academic placement by session, class, section, and roll number with full historical retention.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex gap-2">
+      <a href="{% url 'academics:promotions' %}" class="btn btn-outline-primary btn-sm mr-2">
+        <i class="fas fa-graduation-cap mr-1"></i> Promotion Desk
+      </a>
+      <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#enrollStudentModal">
+        <i class="fas fa-user-plus mr-1"></i> Enroll Student
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filters & Search Card -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-body p-3">
+      <form method="get" class="form-row align-items-center">
+        <div class="col-md-3 my-1">
+          <select name="year" class="form-control" onchange="this.form.submit()">
+            {% for y in years %}
+              <option value="{{ y.id }}" {% if selected_year and selected_year.id == y.id %}selected{% endif %}>
+                Session: {{ y.name }}{% if y.is_current %} (Current){% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 my-1">
+          <select name="grade" class="form-control" onchange="this.form.submit()">
+            <option value="">All Classes</option>
+            {% for g in grades %}
+              <option value="{{ g.id }}" {% if grade_filter == g.id %}selected{% endif %}>{{ g.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 my-1">
+          <select name="section" class="form-control" onchange="this.form.submit()">
+            <option value="">All Sections</option>
+            {% for s in sections %}
+              <option value="{{ s.id }}" {% if section_filter == s.id %}selected{% endif %}>{{ s.grade_level.name }} - {{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 my-1">
+          <select name="status" class="form-control" onchange="this.form.submit()">
+            <option value="">All Statuses</option>
+            {% for s_val, s_label in statuses %}
+              <option value="{{ s_val }}" {% if status_filter == s_val %}selected{% endif %}>{{ s_label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 my-1">
+          <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search student / roll...">
+        </div>
+        <div class="col-md-1 my-1">
+          <button type="submit" class="btn btn-dark btn-block">Filter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-0 table-responsive">
+      <table class="table-modern">
+        <thead>
+          <tr>
+            <th class="pl-4">Student Name</th>
+            <th>Admission No</th>
+            <th>Class</th>
+            <th>Section</th>
+            <th>Roll No</th>
+            <th>Session</th>
+            <th>Enrollment Status</th>
+            <th class="text-right pr-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for enroll in enrollments %}
+          <tr>
+            <td class="pl-4 font-weight-bold text-dark">
+              {{ enroll.student.name }}
+              {% if enroll.notes %}
+                <div class="text-muted small font-weight-normal">{{ enroll.notes }}</div>
+              {% endif %}
+            </td>
+            <td><code class="text-dark bg-light px-2 py-1 rounded font-weight-bold">{{ enroll.student.admission_number|default:"-" }}</code></td>
+            <td><span class="badge badge-light border text-dark">{{ enroll.grade_level.name }}</span></td>
+            <td>
+              {% if enroll.section %}
+                <span class="badge badge-info text-white">Section {{ enroll.section.name }}</span>
+              {% else %}
+                <span class="badge badge-warning text-dark"><i class="fas fa-clock mr-1"></i> Pending Section</span>
+              {% endif %}
+            </td>
+            <td><code>{{ enroll.roll_number|default:"-" }}</code></td>
+            <td><span class="text-muted small font-weight-bold">{{ enroll.academic_year.name }}</span></td>
+            <td>
+              {% if enroll.status == 'ACTIVE' %}
+                <span class="badge badge-status-paid">Active</span>
+              {% elif enroll.status == 'PROMOTED' %}
+                <span class="badge badge-status-partial"><i class="fas fa-arrow-up mr-1"></i> Promoted</span>
+              {% elif enroll.status == 'COMPLETED' %}
+                <span class="badge badge-light border text-muted">Completed</span>
+              {% else %}
+                <span class="badge badge-status-cancelled">{{ enroll.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td class="text-right pr-4">
+              <button type="button" class="btn btn-sm btn-light border" data-toggle="modal" data-target="#changeSecModal{{ enroll.id }}" title="Change Section">
+                <i class="fas fa-exchange-alt text-primary mr-1"></i> Section
+              </button>
+            </td>
+          </tr>
+
+          <!-- Change Section Modal -->
+          <div class="modal fade" id="changeSecModal{{ enroll.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+              <div class="modal-content" style="border-radius: 12px;">
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="change_section">
+                  <input type="hidden" name="enrollment_id" value="{{ enroll.id }}">
+                  <div class="modal-header">
+                    <h5 class="modal-title font-weight-bold">Change Section: {{ enroll.student.name }}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body">
+                    <p class="text-muted small">
+                      Current Class: <strong>{{ enroll.grade_level.name }}</strong> |
+                      Current Section: <strong>{{ enroll.section.name|default:"None" }}</strong>
+                    </p>
+                    <div class="form-group">
+                      <label class="font-weight-bold text-dark">Assign Target Section</label>
+                      <select name="section_id" class="form-control">
+                        <option value="">-- No Section Assigned --</option>
+                        {% for s in sections %}
+                          {% if s.grade_level_id == enroll.grade_level_id %}
+                            <option value="{{ s.id }}" {% if enroll.section_id == s.id %}selected{% endif %}>
+                              Section {{ s.name }} (Room: {{ s.room_number|default:"-" }})
+                            </option>
+                          {% endif %}
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Section</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-5">
+              <div class="empty-state">
+                <i class="fas fa-user-graduate fa-3x text-muted mb-3" style="opacity: 0.4;"></i>
+                <h6 class="font-weight-bold text-dark">No Student Enrollments Found</h6>
+                <p class="text-muted small">Enroll admitted students into their designated classes and sections.</p>
+                <button type="button" class="btn btn-primary btn-sm mt-2" data-toggle="modal" data-target="#enrollStudentModal">
+                  <i class="fas fa-user-plus mr-1"></i> Enroll Student
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if enrollments.has_other_pages %}
+    <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3 border-top">
+      <div class="text-muted small">
+        Showing {{ enrollments.start_index }} to {{ enrollments.end_index }} of {{ enrollments.paginator.count }} enrollments
+      </div>
+      <ul class="pagination pagination-sm mb-0">
+        {% if enrollments.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ enrollments.previous_page_number }}{% if grade_filter %}&grade={{ grade_filter }}{% endif %}{% if query %}&q={{ query }}{% endif %}">Previous</a></li>
+        {% endif %}
+        {% for num in enrollments.paginator.page_range %}
+          <li class="page-item {% if enrollments.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}{% if grade_filter %}&grade={{ grade_filter }}{% endif %}{% if query %}&q={{ query }}{% endif %}">{{ num }}</a>
+          </li>
+        {% endfor %}
+        {% if enrollments.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ enrollments.next_page_number }}{% if grade_filter %}&grade={{ grade_filter }}{% endif %}{% if query %}&q={{ query }}{% endif %}">Next</a></li>
+        {% endif %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Enroll Student Modal -->
+  <div class="modal fade" id="enrollStudentModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content" style="border-radius: 12px;">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="enroll">
+          <div class="modal-header">
+            <h5 class="modal-title font-weight-bold">Enroll Student in Academic Session</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Student</label>
+              {{ form.student }}
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Academic Session</label>
+              {{ form.academic_year }}
+            </div>
+            <div class="form-row">
+              <div class="col-md-6 form-group">
+                <label class="font-weight-bold text-dark">Class / Grade</label>
+                {{ form.grade_level }}
+              </div>
+              <div class="col-md-6 form-group">
+                <label class="font-weight-bold text-dark">Section (Optional)</label>
+                {{ form.section }}
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="col-md-6 form-group">
+                <label class="font-weight-bold text-dark">Class Roll Number</label>
+                {{ form.roll_number }}
+              </div>
+              <div class="col-md-6 form-group">
+                <label class="font-weight-bold text-dark">Status</label>
+                {{ form.status }}
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Enrollment Notes</label>
+              {{ form.notes }}
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Enrollment</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock dashboard-body %}

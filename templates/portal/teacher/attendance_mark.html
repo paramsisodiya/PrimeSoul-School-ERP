@@ -1,0 +1,112 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}Mark Attendance - {{ section }}{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'portal:teacher_dashboard' %}">Teacher Portal</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'portal:teacher_attendance' %}">Attendance</a></li>
+          <li class="breadcrumb-item active">{{ section }}</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Mark Daily Attendance: {{ section }}</h4>
+    </div>
+    <div class="d-flex align-items-center mt-2 mt-sm-0">
+      <span class="badge badge-light border p-2 mr-3 font-weight-bold">
+        <i class="far fa-calendar-alt text-primary mr-1"></i> Date: {{ target_date|date:"d M Y" }}
+      </span>
+      <a href="{% url 'portal:teacher_attendance' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back
+      </a>
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="portal-card">
+      <div class="card-header bg-white font-weight-bold py-3 d-flex justify-content-between align-items-center flex-wrap">
+        <span><i class="fas fa-user-check mr-2 text-primary"></i> Student Attendance Sheet ({{ sheet|length }} Students)</span>
+        <div class="mt-2 mt-sm-0">
+          <button type="button" class="btn btn-sm btn-outline-success mr-2" id="markAllPresentBtn">
+            <i class="fas fa-check-double mr-1"></i> Set All Present
+          </button>
+          <button type="submit" class="btn btn-sm btn-primary">
+            <i class="fas fa-save mr-1"></i> Save Attendance
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        {% if sheet %}
+          <div class="table-responsive">
+            <table class="table portal-table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Roll</th>
+                  <th>Admission No</th>
+                  <th>Student Name</th>
+                  <th>Status</th>
+                  <th>Remarks (Optional)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in sheet %}
+                  <tr>
+                    <td class="font-weight-bold text-dark">{{ item.roll_number }}</td>
+                    <td><code>{{ item.admission_number }}</code></td>
+                    <td class="font-weight-bold">{{ item.student_name }}</td>
+                    <td>
+                      <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                        <label class="btn btn-sm btn-outline-success {% if item.status == 'PRESENT' %}active{% endif %}">
+                          <input type="radio" name="status_{{ item.student_id }}" value="PRESENT" class="status-radio" {% if item.status == 'PRESENT' %}checked{% endif %}> Present
+                        </label>
+                        <label class="btn btn-sm btn-outline-danger {% if item.status == 'ABSENT' %}active{% endif %}">
+                          <input type="radio" name="status_{{ item.student_id }}" value="ABSENT" class="status-radio" {% if item.status == 'ABSENT' %}checked{% endif %}> Absent
+                        </label>
+                        <label class="btn btn-sm btn-outline-warning {% if item.status == 'LATE' %}active{% endif %}">
+                          <input type="radio" name="status_{{ item.student_id }}" value="LATE" class="status-radio" {% if item.status == 'LATE' %}checked{% endif %}> Late
+                        </label>
+                        <label class="btn btn-sm btn-outline-info {% if item.status == 'HALF_DAY' %}active{% endif %}">
+                          <input type="radio" name="status_{{ item.student_id }}" value="HALF_DAY" class="status-radio" {% if item.status == 'HALF_DAY' %}checked{% endif %}> Half Day
+                        </label>
+                      </div>
+                    </td>
+                    <td>
+                      <input type="text" name="remarks_{{ item.student_id }}" value="{{ item.remarks }}" class="form-control form-control-sm" placeholder="e.g. Medical leave, fever" style="max-width: 250px;">
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="p-5 text-center text-muted">No students enrolled in this section.</div>
+        {% endif %}
+      </div>
+
+      <div class="card-footer bg-white text-right py-3">
+        <button type="submit" class="btn btn-primary font-weight-bold">
+          <i class="fas fa-save mr-1"></i> Save Daily Attendance
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  $('#markAllPresentBtn').on('click', function() {
+    $('input[type="radio"][value="PRESENT"]').each(function() {
+      $(this).prop('checked', true);
+      $(this).closest('.btn-group-toggle').find('.btn').removeClass('active');
+      $(this).closest('label').addClass('active');
+    });
+  });
+</script>
+{% endblock %}

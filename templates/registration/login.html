@@ -1,37 +1,130 @@
 {% extends 'layout.html' %}
-{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}Sign In | PrimeSoul School ERP{% endblock %}
 
 {% block content %}
-<section id="login-form-section">
-    <div id="login-form-section--inner">
-        <div class="container">
-            <div class="row justify-content-center py-5">
-                <div class="col-6">
-                    <h1 class="text-center">Login</h1>
-                    <form method="POST">
-                        {% csrf_token %}
-                        <div class="form-group">
-                            <label for="id_username">Username</label>
-                            <input type="text" name="username" class="form-control" id="id_username"
-                                placeholder="username">
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5" style="background: #f8fafc;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <!-- Branding Card -->
+                <div class="card border-0 shadow-sm mb-3" style="border-radius: 12px;">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="text-center mb-4">
+                            <div class="mx-auto mb-3" style="width: 48px; height: 48px; background: linear-gradient(135deg, #4f46e5, #6366f1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.4rem; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <div class="text-uppercase font-weight-bold text-primary mb-1" style="font-size: 0.75rem; letter-spacing: 0.08em;">PrimeSoul School ERP</div>
+                            <h4 class="font-weight-bold text-dark mb-1">Sign In to ERP Portal</h4>
+                            <p class="text-muted small mb-0">{{ school.name|default:"Enterprise School Management System" }}</p>
                         </div>
-                        <div class="form-group">
-                            <label for="id_password">Password</label>
-                            <input type="password" name="password" class="form-control" id="id_password"
-                                placeholder="password">
+
+                        {% if form.errors %}
+                            <div class="alert alert-danger py-2 small" role="alert">
+                                Invalid email/username or password. Please try again.
+                            </div>
+                        {% endif %}
+
+                        <form method="POST" action="">
+                            {% csrf_token %}
+                            <div class="form-group mb-3">
+                                <label for="id_username" class="font-weight-bold small text-muted">Email or Username</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-white border-right-0"><i class="fas fa-user text-muted"></i></span>
+                                    </div>
+                                    <input type="text" name="username" class="form-control border-left-0" id="id_username" placeholder="name@primesoul.com" required autofocus>
+                                </div>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="id_password" class="font-weight-bold small text-muted">Password</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-white border-right-0"><i class="fas fa-lock text-muted"></i></span>
+                                    </div>
+                                    <input type="password" name="password" class="form-control border-left-0" id="id_password" placeholder="••••••••" required>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between mb-4">
+                                <div class="custom-control custom-checkbox small">
+                                    <input type="checkbox" class="custom-control-input" id="rememberMe">
+                                    <label class="custom-control-label text-muted" for="rememberMe">Remember me</label>
+                                </div>
+                                <a href="/password-reset/" class="small text-primary font-weight-bold text-decoration-none">Forgot password?</a>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-block font-weight-bold py-2 shadow-sm">
+                                <i class="fas fa-sign-in-alt mr-1"></i> Sign In to Dashboard
+                            </button>
+                        </form>
+
+                        <div class="text-center mt-4">
+                            <span class="text-muted small">Need an account?</span>
+                            <a href="{% url 'account_signup' %}" class="small text-primary font-weight-bold ml-1 text-decoration-none">Create Account</a>
                         </div>
-                        <!-- <input type="hidden" name="next" value="{{ next }}"> -->
-                        <button type="submit" class="btn btn-outline-info float-right">Login</button>
-                    </form>
-                    <a class="d-block" href="{% url 'account_signup'  %}">
-                        Don't have an account? <b>Register Now.</b>
-                    </a>
-                    <a class="d-block" href="/password-reset/">
-                        Forgot password?
-                    </a>
+                    </div>
                 </div>
+
+                <!-- Local Demo Accounts Quick-Fill Box (Only visible in Development / Demo Environment) -->
+                {% if is_demo_env %}
+                <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-uppercase font-weight-bold text-muted" style="font-size: 0.68rem; letter-spacing: 0.05em;">Demo Fast Login (PW: demo@123)</span>
+                            <span class="badge badge-light border text-primary" style="font-size: 0.65rem;">Local Dev</span>
+                        </div>
+                        <div class="row no-gutters">
+                            <div class="col-6 pr-1 mb-2">
+                                <button type="button" class="btn btn-light btn-block text-left p-2 border" onclick="fillCreds('admin@primesoul.com')" style="font-size: 0.75rem;">
+                                    <div class="font-weight-bold text-dark">School Admin</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">admin@primesoul.com</div>
+                                </button>
+                            </div>
+                            <div class="col-6 pl-1 mb-2">
+                                <button type="button" class="btn btn-light btn-block text-left p-2 border" onclick="fillCreds('principal@primesoul.com')" style="font-size: 0.75rem;">
+                                    <div class="font-weight-bold text-dark">Principal</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">principal@primesoul.com</div>
+                                </button>
+                            </div>
+                            <div class="col-6 pr-1 mb-2">
+                                <button type="button" class="btn btn-light btn-block text-left p-2 border" onclick="fillCreds('accountant@primesoul.com')" style="font-size: 0.75rem;">
+                                    <div class="font-weight-bold text-dark">Accountant</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">accountant@primesoul.com</div>
+                                </button>
+                            </div>
+                            <div class="col-6 pl-1 mb-2">
+                                <button type="button" class="btn btn-light btn-block text-left p-2 border" onclick="fillCreds('receptionist@primesoul.com')" style="font-size: 0.75rem;">
+                                    <div class="font-weight-bold text-dark">Receptionist</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">receptionist@primesoul.com</div>
+                                </button>
+                            </div>
+                            <div class="col-6 pr-1">
+                                <button type="button" class="btn btn-light btn-block text-left p-2 border" onclick="fillCreds('teacher@primesoul.com')" style="font-size: 0.75rem;">
+                                    <div class="font-weight-bold text-dark">Teacher</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">teacher@primesoul.com</div>
+                                </button>
+                            </div>
+                            <div class="col-6 pl-1">
+                                <button type="button" class="btn btn-light btn-block text-left p-2 border" onclick="fillCreds('student@primesoul.com')" style="font-size: 0.75rem;">
+                                    <div class="font-weight-bold text-dark">Student</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">student@primesoul.com</div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                function fillCreds(email) {
+                    document.getElementById('id_username').value = email;
+                    document.getElementById('id_password').value = 'demo@123';
+                }
+                </script>
+                {% endif %}
+
             </div>
         </div>
     </div>
-</section>
+</div>
 {% endblock %}

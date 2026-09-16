@@ -1,0 +1,222 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Breadcrumbs & Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'academics:academic_dashboard' %}" class="text-decoration-none">Academics</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Promotion Desk</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Student Promotion & Batch Progression</h4>
+      <p class="text-muted small mb-0">Safely promote students from their current academic session and grade level into the upcoming academic session with automatic historical archiving.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'academics:enrollments' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Enrollments
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Promotion Workflow Form -->
+  <form method="post" id="promotionForm">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="promote">
+
+    <div class="row">
+      <!-- 1. Source Selection Card -->
+      <div class="col-lg-5 mb-4">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+          <div class="card-header bg-white py-3 border-bottom">
+            <h6 class="font-weight-bold text-dark mb-0"><i class="fas fa-layer-group text-primary mr-2"></i> 1. Source Academic Placement</h6>
+            <div class="text-muted small">Select current class/section to load eligible students</div>
+          </div>
+          <div class="card-body p-4">
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Source Academic Session</label>
+              <select name="source_year" id="sourceYearSelect" class="form-control" onchange="updateCandidates()">
+                {% for y in years %}
+                  <option value="{{ y.id }}" {% if source_year_id == y.id %}selected{% endif %}>
+                    {{ y.name }}{% if y.is_current %} (Current Session){% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Source Class / Grade</label>
+              <select name="source_grade" id="sourceGradeSelect" class="form-control" onchange="updateCandidates()" required>
+                <option value="">-- Select Source Class --</option>
+                {% for g in grades %}
+                  <option value="{{ g.id }}" {% if source_grade_id == g.id %}selected{% endif %}>{{ g.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Source Section (Optional)</label>
+              <select name="source_section" id="sourceSecSelect" class="form-control" onchange="updateCandidates()">
+                <option value="">All Sections</option>
+                {% for s in sections %}
+                  {% if not source_grade_id or s.grade_level_id == source_grade_id %}
+                    <option value="{{ s.id }}" {% if source_section_id == s.id %}selected{% endif %}>
+                      {{ s.grade_level.name }} - Section {{ s.name }}
+                    </option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Target Placement Card -->
+      <div class="col-lg-7 mb-4">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+          <div class="card-header bg-white py-3 border-bottom">
+            <h6 class="font-weight-bold text-dark mb-0"><i class="fas fa-arrow-alt-circle-right text-success mr-2"></i> 2. Target Academic Placement</h6>
+            <div class="text-muted small">Where should the promoted students be placed?</div>
+          </div>
+          <div class="card-body p-4">
+            <div class="form-row">
+              <div class="col-md-6 form-group">
+                <label class="font-weight-bold text-dark">Target Academic Session</label>
+                <select name="target_year" class="form-control" required>
+                  {% for y in years %}
+                    <option value="{{ y.id }}">{{ y.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6 form-group">
+                <label class="font-weight-bold text-dark">Target Class / Grade</label>
+                <select name="target_grade" class="form-control" required>
+                  <option value="">-- Select Target Class --</option>
+                  {% for g in grades %}
+                    <option value="{{ g.id }}">{{ g.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Target Section (Optional)</label>
+              <select name="target_section" class="form-control">
+                <option value="">-- Unassigned / Keep Pending --</option>
+                {% for s in sections %}
+                  <option value="{{ s.id }}">{{ s.grade_level.name }} - Section {{ s.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="alert alert-info py-2 px-3 small mb-0" style="border-radius: 8px;">
+              <i class="fas fa-shield-alt mr-1"></i>
+              <strong>Safe Guarantee:</strong> Current academic records will be updated to <em>PROMOTED</em> status and preserved forever. Duplicate enrollments are rejected automatically.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Candidate Students Selection -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+      <div class="card-header bg-white d-flex align-items-center justify-content-between py-3 border-bottom">
+        <div>
+          <h6 class="font-weight-bold text-dark mb-0"><i class="fas fa-users text-primary mr-2"></i> 3. Select Students to Promote</h6>
+          <div class="text-muted small">Check or uncheck individual students to be promoted</div>
+        </div>
+        <div>
+          <button type="button" class="btn btn-sm btn-light border" id="selectAllBtn" onclick="toggleSelectAll()">Select All</button>
+        </div>
+      </div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table-modern">
+          <thead>
+            <tr>
+              <th class="pl-4" style="width: 50px;">
+                <input type="checkbox" id="masterCheckbox" onclick="toggleSelectAll()">
+              </th>
+              <th>Student Name</th>
+              <th>Admission No</th>
+              <th>Current Class</th>
+              <th>Current Section</th>
+              <th>Current Roll</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c_enroll in candidate_students %}
+            <tr>
+              <td class="pl-4">
+                <input type="checkbox" name="student_ids" value="{{ c_enroll.student.id }}" class="student-checkbox" checked>
+              </td>
+              <td class="font-weight-bold text-dark">{{ c_enroll.student.name }}</td>
+              <td><code>{{ c_enroll.student.admission_number|default:"-" }}</code></td>
+              <td>{{ c_enroll.grade_level.name }}</td>
+              <td>{{ c_enroll.section.name|default:"-" }}</td>
+              <td><code>{{ c_enroll.roll_number|default:"-" }}</code></td>
+              <td><span class="badge badge-status-paid">{{ c_enroll.get_status_display }}</span></td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-5">
+                <div class="empty-state">
+                  <i class="fas fa-filter fa-3x text-muted mb-3" style="opacity: 0.4;"></i>
+                  <h6 class="font-weight-bold text-dark">No Eligible Students Selected</h6>
+                  <p class="text-muted small">Choose a source academic year and class above to populate active students.</p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if candidate_students %}
+      <div class="card-footer bg-white py-3 border-top d-flex justify-content-between align-items-center">
+        <span class="text-muted small">
+          <strong>{{ candidate_students|length }}</strong> candidate student(s) available for promotion.
+        </span>
+        <button type="submit" class="btn btn-primary" onclick="return confirm('Confirm execution of promotion for the selected students?');">
+          <i class="fas fa-check-circle mr-1"></i> Execute Student Promotion
+        </button>
+      </div>
+      {% endif %}
+    </div>
+
+  </form>
+
+</div>
+
+<script>
+function updateCandidates() {
+  const yr = document.getElementById('sourceYearSelect').value;
+  const gr = document.getElementById('sourceGradeSelect').value;
+  const sec = document.getElementById('sourceSecSelect').value;
+  let url = '?source_year=' + yr;
+  if (gr) url += '&source_grade=' + gr;
+  if (sec) url += '&source_section=' + sec;
+  window.location.href = url;
+}
+
+function toggleSelectAll() {
+  const master = document.getElementById('masterCheckbox');
+  const checkboxes = document.querySelectorAll('.student-checkbox');
+  const newState = !master.checked;
+  master.checked = newState;
+  checkboxes.forEach(cb => cb.checked = newState);
+}
+</script>
+{% endblock dashboard-body %}

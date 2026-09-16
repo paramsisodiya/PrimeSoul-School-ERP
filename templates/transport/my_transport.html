@@ -1,0 +1,172 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">My School Transport</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Student Transport & Route Card</h4>
+        <span class="badge badge-primary px-2 py-1 ml-2 font-weight-normal">
+          {{ student.get_full_name }} ({{ student.grade_level }} - {{ student.section.name }})
+        </span>
+      </div>
+      <p class="text-muted small mb-0">Assigned bus route, morning pickup landmark, afternoon drop-off timing, and fleet driver contact.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print();">
+        <i class="fas fa-print mr-1"></i> Print Pass
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if info %}
+    <div class="row">
+      <!-- Transport Card -->
+      <div class="col-lg-8 mb-4">
+        <div class="card shadow-sm border-0" style="border-radius: 12px; border-left: 5px solid #4F46E5 !important;">
+          <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <h6 class="font-weight-bold text-dark mb-0">
+              <i class="fas fa-bus-alt text-primary mr-2"></i> {{ info.route.code }} — {{ info.route.name }}
+            </h6>
+            <span class="badge badge-success px-2 py-1">Active Subscription</span>
+          </div>
+          <div class="card-body">
+            <div class="row mb-4">
+              <!-- Morning Pickup -->
+              <div class="col-md-6 border-right mb-3 mb-md-0">
+                <div class="d-flex align-items-start">
+                  <div class="p-3 bg-light rounded text-primary mr-3" style="font-size: 1.5rem;">
+                    <i class="fas fa-sun"></i>
+                  </div>
+                  <div>
+                    <span class="text-muted small font-weight-bold text-uppercase">Morning Pickup Landmark</span>
+                    <h5 class="font-weight-bold text-dark mb-1">{{ info.pickup_stop.name }}</h5>
+                    {% if info.pickup_stop.landmark %}
+                      <div class="small text-muted">{{ info.pickup_stop.landmark }}</div>
+                    {% endif %}
+                    <div class="mt-2">
+                      <span class="badge badge-primary px-2 py-1 font-weight-500">
+                        <i class="far fa-clock mr-1"></i> Pickup: {{ info.pickup_stop.pickup_time|time:"H:i"|default:"07:30 AM" }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Afternoon Drop -->
+              <div class="col-md-6">
+                <div class="d-flex align-items-start">
+                  <div class="p-3 bg-light rounded text-info mr-3" style="font-size: 1.5rem;">
+                    <i class="fas fa-home"></i>
+                  </div>
+                  <div>
+                    <span class="text-muted small font-weight-bold text-uppercase">Afternoon Drop Landmark</span>
+                    <h5 class="font-weight-bold text-dark mb-1">{{ info.drop_stop.name }}</h5>
+                    {% if info.drop_stop.landmark %}
+                      <div class="small text-muted">{{ info.drop_stop.landmark }}</div>
+                    {% endif %}
+                    <div class="mt-2">
+                      <span class="badge badge-info px-2 py-1 font-weight-500">
+                        <i class="far fa-clock mr-1"></i> Drop-off: {{ info.drop_stop.drop_time|time:"H:i"|default:"02:30 PM" }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Route Description -->
+            {% if info.route.description %}
+              <div class="alert alert-light border small text-muted mb-0">
+                <i class="fas fa-info-circle text-primary mr-1"></i> <strong>Route Coverage:</strong> {{ info.route.description }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Vehicle & Driver Card -->
+      <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm border-0" style="border-radius: 12px;">
+          <div class="card-header bg-white border-bottom py-3">
+            <h6 class="font-weight-bold text-dark mb-0">
+              <i class="fas fa-id-card text-success mr-2"></i> Fleet Vehicle & Staff
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <span class="text-muted small font-weight-bold text-uppercase">Assigned Vehicle</span>
+              <div class="font-weight-bold text-dark h5 mb-0 mt-1">
+                {% if info.vehicle %}
+                  {{ info.vehicle.vehicle_number }}
+                  <span class="badge badge-light border text-muted small font-weight-normal">{{ info.vehicle.registration_number }}</span>
+                {% else %}
+                  <span class="text-muted font-italic">Fleet Bus Assigned</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="mb-3 border-top pt-3">
+              <span class="text-muted small font-weight-bold text-uppercase">Designated Driver</span>
+              <div class="font-weight-bold text-dark mt-1">
+                <i class="fas fa-user-tie text-muted mr-1"></i> {{ info.driver_name }}
+              </div>
+              {% if info.driver_phone %}
+                <div class="mt-1">
+                  <a href="tel:{{ info.driver_phone }}" class="btn btn-sm btn-outline-success font-weight-bold btn-block">
+                    <i class="fas fa-phone-alt mr-1"></i> Call Driver ({{ info.driver_phone }})
+                  </a>
+                </div>
+              {% endif %}
+            </div>
+
+            {% if info.attendant_name %}
+              <div class="border-top pt-3">
+                <span class="text-muted small font-weight-bold text-uppercase">Bus Attendant / Ayah</span>
+                <div class="font-weight-bold text-dark mt-1">
+                  <i class="fas fa-user-friends text-muted mr-1"></i> {{ info.attendant_name }}
+                </div>
+                {% if info.attendant_phone %}
+                  <div class="small text-muted mt-1">Ph: {{ info.attendant_phone }}</div>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="card shadow-sm border-0 text-center py-5" style="border-radius: 12px;">
+      <div class="card-body">
+        <i class="fas fa-bus text-muted mb-3" style="font-size: 3.5rem;"></i>
+        <h5 class="font-weight-bold text-dark">No Active Transport Subscription</h5>
+        <p class="text-muted small" style="max-width: 450px; margin: 0 auto;">
+          {{ student.get_full_name }} is currently not enrolled in school bus transportation. Please contact the administrative desk or transport manager to allocate a route seat.
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

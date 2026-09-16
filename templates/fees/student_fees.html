@@ -1,0 +1,220 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Breadcrumbs & Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'fees:fee_dashboard' %}" class="text-decoration-none">Fees</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Student Fee Assignments</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Student Fee Assignments & Generation</h4>
+      <p class="text-muted small mb-0">Assign fee structures and scholarship concessions to students to generate structured installments.</p>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Search and Filters -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-body p-3">
+      <form method="get" class="form-row align-items-center">
+        <div class="col-md-5 my-1">
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
+            </div>
+            <input type="text" name="q" value="{{ query }}" class="form-control border-left-0" placeholder="Search by name, roll, or admission #...">
+          </div>
+        </div>
+        <div class="col-md-4 my-1">
+          <select name="grade_level" class="form-control" onchange="this.form.submit()">
+            <option value="">All Classes / Grade Levels</option>
+            {% for gl in grade_levels %}
+              <option value="{{ gl.id }}" {% if gl_filter == gl.id|stringformat:"i" %}selected{% endif %}>{{ gl.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 my-1 d-flex gap-2">
+          <button type="submit" class="btn btn-dark btn-block">Filter</button>
+          {% if query or gl_filter %}
+            <a href="{% url 'fees:student_fees' %}" class="btn btn-light border ml-2">Reset</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Students Table -->
+  <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-0 table-responsive">
+      <table class="table-modern align-middle mb-0">
+        <thead>
+          <tr>
+            <th class="pl-4">Student Details</th>
+            <th>Class & Section</th>
+            <th>Assigned Fee Structure</th>
+            <th>Installments Generated</th>
+            <th class="text-right pr-4">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for st in students %}
+          <tr>
+            <td class="pl-4">
+              <div class="font-weight-bold text-dark">{{ st.get_full_name }}</div>
+              <div class="small text-muted">Adm No: {{ st.admission_number|default:"-" }} | Roll: {{ st.roll_number|default:"-" }}</div>
+            </td>
+            <td>
+              <span class="badge badge-light border text-dark font-weight-bold">{{ st.grade_level.name }}</span>
+              {% if st.section %}<span class="badge badge-light border ml-1">Sec {{ st.section.name }}</span>{% endif %}
+            </td>
+            <td>
+              {% if st.fee_assignments.first %}
+                <span class="font-weight-bold text-primary">{{ st.fee_assignments.first.fee_structure.name }}</span>
+                {% if st.fee_assignments.first.concession %}
+                  <div class="small text-success"><i class="fas fa-tag mr-1"></i>{{ st.fee_assignments.first.concession.name }}</div>
+                {% endif %}
+              {% else %}
+                <span class="text-muted font-italic">Not Assigned</span>
+              {% endif %}
+            </td>
+            <td>
+              {% with count=st.fee_installments.count %}
+                {% if count > 0 %}
+                  <span class="badge-status badge-status-paid"><i class="fas fa-check-circle mr-1"></i>{{ count }} Active</span>
+                {% else %}
+                  <span class="badge-status badge-status-pending"><i class="fas fa-clock mr-1"></i>None</span>
+                {% endif %}
+              {% endwith %}
+            </td>
+            <td class="text-right pr-4">
+              <button class="btn btn-sm btn-primary font-weight-bold" data-toggle="modal" data-target="#assignModal{{ st.id }}">
+                <i class="fas fa-calculator mr-1"></i> Assign & Generate
+              </button>
+            </td>
+          </tr>
+
+          <!-- Assign & Generate Modal -->
+          <div class="modal fade" id="assignModal{{ st.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+              <div class="modal-content border-0 shadow">
+                <form method="post" action="{% url 'fees:student_fees' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="assign_and_generate">
+                  <input type="hidden" name="student_id" value="{{ st.id }}">
+                  <div class="modal-header border-bottom">
+                    <h5 class="modal-title font-weight-bold">Assign Fee & Generate Installments</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body p-4">
+                    <div class="bg-light p-3 rounded mb-3">
+                      <div class="font-weight-bold text-dark">{{ st.get_full_name }}</div>
+                      <div class="small text-muted">{{ st.grade_level.name }} | Adm: {{ st.admission_number }} | Roll: {{ st.roll_number }}</div>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="font-weight-bold small text-muted">Academic Session *</label>
+                      <select name="academic_year_id" class="form-control" required>
+                        {% for ay in academic_years %}
+                          <option value="{{ ay.id }}" {% if ay.is_current %}selected{% endif %}>{{ ay.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="font-weight-bold small text-muted">Fee Structure Template *</label>
+                      <select name="fee_structure_id" class="form-control" required>
+                        {% for fs in fee_structures %}
+                          <option value="{{ fs.id }}" {% if st.grade_level_id == fs.grade_level_id %}selected{% endif %}>
+                            {{ fs.name }} (₹{{ fs.total_structure_amount }}/yr - {{ fs.get_frequency_display }})
+                          </option>
+                        {% endfor %}
+                      </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="font-weight-bold small text-muted">Concession / Scholarship (Optional)</label>
+                      <select name="concession_id" class="form-control">
+                        <option value="">-- No Concession --</option>
+                        {% for conc in concessions %}
+                          <option value="{{ conc.id }}">{{ conc.name }} ({{ conc.get_concession_type_display }}: {{ conc.value }})</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="font-weight-bold small text-muted">Custom One-Off Concession Amount (₹)</label>
+                      <input type="number" step="0.01" min="0" name="custom_concession" class="form-control" placeholder="0.00" value="0.00">
+                      <small class="text-muted">Direct deduction applied equally across installments.</small>
+                    </div>
+                  </div>
+                  <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary font-weight-bold">Generate Installments</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          {% empty %}
+          <tr>
+            <td colspan="5" class="p-0">
+              <div class="empty-state">
+                <div class="empty-state__icon">
+                  <i class="fas fa-user-graduate"></i>
+                </div>
+                <div class="empty-state__title">No Students Found</div>
+                <div class="empty-state__desc">No active student records match your filter criteria or no students are enrolled in this class yet.</div>
+                <a href="{% url 'students:add_student' %}" class="btn btn-primary btn-sm">
+                  <i class="fas fa-user-plus mr-1"></i> Add New Student
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if students.has_other_pages %}
+    <div class="card-footer bg-white border-top py-3 d-flex justify-content-center">
+      <ul class="pagination pagination-sm mb-0">
+        {% if students.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ students.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if gl_filter %}&grade_level={{ gl_filter }}{% endif %}">Previous</a></li>
+        {% endif %}
+        {% for num in students.paginator.page_range %}
+          <li class="page-item {% if students.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if gl_filter %}&grade_level={{ gl_filter }}{% endif %}">{{ num }}</a>
+          </li>
+        {% endfor %}
+        {% if students.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ students.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if gl_filter %}&grade_level={{ gl_filter }}{% endif %}">Next</a></li>
+        {% endif %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

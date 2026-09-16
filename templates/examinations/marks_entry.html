@@ -1,0 +1,290 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'examinations:dashboard' %}">Examinations</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Marks Entry</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Class Marks Entry</h4>
+        {% if selected_exam %}
+          <span class="badge badge-primary px-2 py-1">{{ selected_exam.grade_level.name }}</span>
+          {% if selected_es %}
+            <span class="badge badge-info px-2 py-1">{{ selected_es.subject.name }} (Max: {{ selected_es.max_marks|floatformat:0 }})</span>
+          {% endif %}
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">Enter student evaluation scores, manage absentee tracking, and save class evaluations atomically.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex gap-2">
+      {% if selected_exam and selected_es %}
+        <a href="{% url 'examinations:export_marks_csv' selected_exam.id selected_es.id %}" class="btn btn-outline-secondary btn-sm">
+          <i class="fas fa-file-csv mr-1"></i> Export CSV
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filter Bar: Exam -> Subject -> Section -->
+  <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background: #f8fafc;">
+    <div class="card-body p-3">
+      <form method="GET" class="row align-items-end" id="selection-form">
+        <!-- Exam Selection -->
+        <div class="col-md-4 form-group mb-2 mb-md-0">
+          <label class="form-label font-weight-bold small text-muted">Select Examination *</label>
+          <select name="exam" class="form-select form-control" onchange="document.getElementById('selection-form').submit();">
+            {% for ex in exams %}
+              <option value="{{ ex.id }}" {% if selected_exam and selected_exam.id == ex.id %}selected{% endif %}>
+                {{ ex.name }} ({{ ex.grade_level.name }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Subject Selection -->
+        <div class="col-md-4 form-group mb-2 mb-md-0">
+          <label class="form-label font-weight-bold small text-muted">Select Subject *</label>
+          <select name="subject" class="form-select form-control" onchange="document.getElementById('selection-form').submit();">
+            {% if selected_exam %}
+              {% for es in selected_exam.subjects.all %}
+                <option value="{{ es.id }}" {% if selected_es and selected_es.id == es.id %}selected{% endif %}>
+                  {{ es.subject.name }} (Max: {{ es.max_marks|floatformat:0 }})
+                </option>
+              {% endfor %}
+            {% else %}
+              <option value="">-- Select Exam First --</option>
+            {% endif %}
+          </select>
+        </div>
+
+        <!-- Section Selection -->
+        <div class="col-md-3 form-group mb-2 mb-md-0">
+          <label class="form-label font-weight-bold small text-muted">Section (Optional)</label>
+          <select name="section" class="form-select form-control" onchange="document.getElementById('selection-form').submit();">
+            <option value="">All Sections</option>
+            {% for sec in sections %}
+              <option value="{{ sec.id }}" {% if selected_section and selected_section.id == sec.id %}selected{% endif %}>
+                Section {{ sec.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-1 mb-2 mb-md-0">
+          <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-search"></i></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if selected_exam and selected_es %}
+  <!-- Bulk Marks Entry Table Form -->
+  <form method="POST" id="marks-entry-form">
+    {% csrf_token %}
+    <input type="hidden" name="exam_id" value="{{ selected_exam.id }}">
+    <input type="hidden" name="subject_id" value="{{ selected_es.id }}">
+    <input type="hidden" name="section_id" value="{{ selected_section.id|default:'' }}">
+
+    <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+      <div class="card-header bg-white py-3 border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="font-weight-bold text-dark">Enrolled Students: {{ sheet_data|length }}</span>
+          <span class="badge badge-light border text-primary">Max: {{ selected_es.max_marks|floatformat:0 }} Marks</span>
+          <span class="badge badge-light border text-danger">Passing: {{ selected_es.passing_marks|floatformat:0 }} Marks</span>
+        </div>
+        <div class="btn-group btn-group-sm">
+          <button type="button" class="btn btn-outline-success" onclick="markAllPresent();">
+            <i class="fas fa-check mr-1"></i> Mark All Present
+          </button>
+          <button type="button" class="btn btn-outline-danger" onclick="markAllAbsent();">
+            <i class="fas fa-user-times mr-1"></i> Mark All Absent
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="marks-table" style="font-size: 0.9rem;">
+          <thead class="bg-light text-muted small text-uppercase">
+            <tr>
+              <th class="pl-4" style="width: 80px;">Roll No</th>
+              <th style="width: 250px;">Student Name</th>
+              <th style="width: 100px;">Section</th>
+              <th style="width: 140px;">Status</th>
+              <th style="width: 150px;">Marks Obtained</th>
+              <th style="width: 80px;">Grade</th>
+              <th>Remarks</th>
+              <th class="text-right pr-4" style="width: 90px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in sheet_data %}
+            <tr id="row-{{ row.student_id }}">
+              <td class="pl-4 font-weight-bold text-muted">
+                {{ row.roll_number|default:"—" }}
+                <input type="hidden" name="student_id" value="{{ row.student_id }}">
+              </td>
+              <td>
+                <div class="font-weight-bold text-dark">{{ row.student_name }}</div>
+                <small class="text-muted">Adm: {{ row.admission_number|default:"N/A" }}</small>
+              </td>
+              <td>
+                <span class="badge badge-light border font-weight-bold">Section {{ row.section_name|default:"A" }}</span>
+              </td>
+              <td>
+                <select name="status_{{ row.student_id }}" id="status-{{ row.student_id }}" class="form-select form-control form-control-sm status-select" onchange="handleStatusChange('{{ row.student_id }}');">
+                  <option value="PRESENT" {% if row.status == 'PRESENT' %}selected{% endif %}>Present</option>
+                  <option value="ABSENT" {% if row.status == 'ABSENT' %}selected{% endif %}>Absent</option>
+                  <option value="NOT_ENTERED" {% if row.status == 'NOT_ENTERED' %}selected{% endif %}>Not Entered</option>
+                </select>
+              </td>
+              <td>
+                <div class="input-group input-group-sm">
+                  <input type="number" step="0.5" min="0" max="{{ selected_es.max_marks }}"
+                         name="marks_{{ row.student_id }}" id="marks-{{ row.student_id }}"
+                         value="{% if row.marks_obtained is not None %}{{ row.marks_obtained|floatformat:1 }}{% endif %}"
+                         class="form-control font-weight-bold marks-input"
+                         placeholder="0 - {{ selected_es.max_marks|floatformat:0 }}"
+                         {% if row.status == 'ABSENT' %}disabled{% endif %}
+                         oninput="validateMarksInput(this, {{ selected_es.max_marks }});">
+                  <div class="input-group-append">
+                    <span class="input-group-text bg-light text-muted">/{{ selected_es.max_marks|floatformat:0 }}</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="badge badge-light border font-weight-bold text-primary" id="grade-{{ row.student_id }}">
+                  {{ row.grade|default:"—" }}
+                </span>
+              </td>
+              <td>
+                <input type="text" name="remarks_{{ row.student_id }}" value="{{ row.remarks }}" class="form-control form-control-sm" placeholder="Optional remark">
+              </td>
+              <td class="text-right pr-4">
+                {% if row.mark_id %}
+                  <a href="{% url 'examinations:correct_mark' row.mark_id %}" class="btn btn-sm btn-outline-warning" title="Audit Correction">
+                    <i class="fas fa-history"></i>
+                  </a>
+                {% else %}
+                  <span class="text-muted small">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">
+                No students enrolled in this class and section.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Sticky Save Bar -->
+      <div class="card-footer bg-white py-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          {% if selected_exam.status in 'FINALIZED,PUBLISHED,LOCKED' %}
+            <div class="input-group input-group-sm" style="max-width: 400px;">
+              <div class="input-group-prepend">
+                <span class="input-group-text bg-warning text-dark font-weight-bold">Correction Reason *</span>
+              </div>
+              <input type="text" name="correction_reason" class="form-control" placeholder="Mandatory audit explanation for finalized exam" required>
+            </div>
+          {% else %}
+            <span class="text-muted small"><i class="fas fa-info-circle mr-1"></i> Marks will be saved atomically in a single transaction.</span>
+          {% endif %}
+        </div>
+        <div>
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="fas fa-save mr-1"></i> Save Class Marks
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+  {% endif %}
+
+</div>
+
+<script>
+function handleStatusChange(studentId) {
+  var statusSel = document.getElementById('status-' + studentId);
+  var marksInput = document.getElementById('marks-' + studentId);
+  if (statusSel.value === 'ABSENT') {
+    marksInput.value = '';
+    marksInput.disabled = true;
+  } else if (statusSel.value === 'PRESENT') {
+    marksInput.disabled = false;
+    marksInput.focus();
+  } else {
+    marksInput.disabled = false;
+  }
+}
+
+function markAllPresent() {
+  document.querySelectorAll('.status-select').forEach(function(sel) {
+    sel.value = 'PRESENT';
+    var sid = sel.id.replace('status-', '');
+    var marksInput = document.getElementById('marks-' + sid);
+    if (marksInput) marksInput.disabled = false;
+  });
+}
+
+function markAllAbsent() {
+  document.querySelectorAll('.status-select').forEach(function(sel) {
+    sel.value = 'ABSENT';
+    var sid = sel.id.replace('status-', '');
+    var marksInput = document.getElementById('marks-' + sid);
+    if (marksInput) {
+      marksInput.value = '';
+      marksInput.disabled = true;
+    }
+  });
+}
+
+function validateMarksInput(input, maxMarks) {
+  var val = parseFloat(input.value);
+  if (val > maxMarks) {
+    input.classList.add('is-invalid');
+  } else if (val < 0) {
+    input.classList.add('is-invalid');
+  } else {
+    input.classList.remove('is-invalid');
+  }
+}
+
+// Keyboard navigation: Enter moves to next input row
+document.addEventListener('DOMContentLoaded', function() {
+  var inputs = Array.from(document.querySelectorAll('.marks-input'));
+  inputs.forEach(function(input, index) {
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (inputs[index + 1]) {
+          inputs[index + 1].focus();
+          inputs[index + 1].select();
+        }
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

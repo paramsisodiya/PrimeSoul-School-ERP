@@ -4,11 +4,13 @@ from django_school_management.pages.payment_views.sslpay import (
      ssl_payment_success,
      ssl_payment_fail,
      ssl_payment_cancel,
+     ssl_ipn_webhook,
 )
 from django_school_management.pages.payment_views.stripe_pay import (
      online_admission_stripepayment,
      stripe_payment_cancel,
      stripe_payment_success,
+     stripe_webhook,
 )
 from . import views
 
@@ -26,11 +28,16 @@ urlpatterns = [
           name='ssl_payment_fail'),
      path('admission/ssl-cancel/<int:pk>/', ssl_payment_cancel,
           name='ssl_payment_cancel'),
+     path('admission/ssl-webhook/', ssl_ipn_webhook,
+          name='ssl_ipn_webhook'),
      path('admission/stripepayment/<int:pk>/', online_admission_stripepayment,
           name='online_admission_stripepayment'),
      path('admission/stripe-success/<int:pk>/', stripe_payment_success,
           name='stripe_payment_success'),
      path('admission/stripe-cancel/<int:pk>/', stripe_payment_cancel,
           name='stripe_payment_cancel'),
+     path('admission/stripe-webhook/', stripe_webhook,
+          name='stripe_webhook'),
      path('admission/paynow/<int:pk>/', views.payment, name='payment'),
 ]
+

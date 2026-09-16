@@ -1,0 +1,140 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'transport:dashboard' %}" class="text-decoration-none">Transport</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Routes</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Transport Routes & Networks</h4>
+      <p class="text-muted small mb-0">Manage bus routes, coverage corridors, monthly fares, and landmark stops.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      {% if can_manage %}
+        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addRouteModal">
+          <i class="fas fa-plus mr-1"></i> Add Route
+        </button>
+      {% endif %}
+      <a href="{% url 'transport:dashboard' %}" class="btn btn-light border btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Transport Hub
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Routes List -->
+  <div class="row">
+    {% for r in routes %}
+      <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-top: 4px solid #4F46E5 !important;">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <div>
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="badge badge-primary font-weight-bold">{{ r.code }}</span>
+                {% if r.fare > 0 %}
+                  <span class="text-dark font-weight-bold small">₹{{ r.fare }}/mo</span>
+                {% endif %}
+              </div>
+              <h5 class="font-weight-bold text-dark mb-1">{{ r.name }}</h5>
+              <p class="text-muted small mb-3">{{ r.description|default:"Standard school coverage corridor." }}</p>
+
+              <div class="d-flex justify-content-between small text-muted border-top pt-2 mb-2">
+                <span><i class="fas fa-map-marker-alt text-danger mr-1"></i> {{ r.stops.count }} Stops</span>
+                <span><i class="fas fa-user-graduate text-success mr-1"></i> {{ r.student_transport_assignments.count }} Students</span>
+              </div>
+            </div>
+            <div class="mt-2 text-right">
+              <a href="{% url 'transport:route_detail' pk=r.id %}" class="btn btn-sm btn-outline-primary btn-block font-weight-bold">
+                <i class="fas fa-eye mr-1"></i> View Route & Stops
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="card shadow-sm border-0 text-center py-5" style="border-radius: 10px;">
+          <div class="card-body">
+            <i class="fas fa-route text-muted mb-3" style="font-size: 3rem;"></i>
+            <h5 class="font-weight-bold text-dark">No Routes Configured</h5>
+            <p class="text-muted small mb-3">Create your first bus route to begin adding stops and assigning vehicles.</p>
+            {% if can_manage %}
+              <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addRouteModal">
+                <i class="fas fa-plus mr-1"></i> Add Route
+              </button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<!-- Add Route Modal -->
+{% if can_manage and form %}
+<div class="modal fade" id="addRouteModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content border-0 shadow">
+      <form method="POST" action="{% url 'transport:route_create' %}">
+        {% csrf_token %}
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title font-weight-bold">Create Transport Route</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="font-weight-bold small">Academic Session</label>
+            {{ form.academic_year }}
+          </div>
+          <div class="row">
+            <div class="col-4 form-group">
+              <label class="font-weight-bold small">Route Code <span class="text-danger">*</span></label>
+              {{ form.code }}
+            </div>
+            <div class="col-8 form-group">
+              <label class="font-weight-bold small">Route Name <span class="text-danger">*</span></label>
+              {{ form.name }}
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small">Standard Monthly Fare (₹)</label>
+            {{ form.fare }}
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small">Description / Area Coverage</label>
+            {{ form.description }}
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm font-weight-bold">Save Route</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

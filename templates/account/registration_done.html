@@ -1,63 +1,29 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-<section id="admin-body">
-  <div id="admin-body--inner">
-    <div class="container-fluid px-0">
-      <div class="row mr-0">
-        <div class="col-2 pr-0 bg-sidebarbg">
-          <div class="sidenav">
-            <div class="sidenav-header text-center text-light mt-4 mb-5">
-              <h3>SMS LIO</h3>
-            </div>
-            <div class="sidenav sidelink">
-              <a href="{% url 'students:add_student' %}">Admission</a>
-            </div>
-            <div class="sidenav sidelink">
-              <a href="{% url 'students:all_student' %}">Students Table</a>
-            </div>
-            <div class="sidenav sidelink">
-              <a href="{% url 'teachers:add_teacher' %}">New Teacher</a>
-            </div>
-            <div class="sidenav sidelink">
-              <a href="{% url 'teachers:all_teacher' %}">Teacher Table</a>
-            </div>
-            <div class="sidenav sidelink">
-              <a href="">Departments</a>
-            </div>
-            <div class="sidenav sidelink">
-              <a href="{% url 'students:all_semester' %}">Semesters</a>
-            </div>
-            <div class="sidenav sidelink">
-              <a href="{% url 'students:add_semester' %}">New Semester</a>
-            </div>
-          </div>
-        </div>
-        <div class="col-10">
-          <div class="dashboard-body py-5">
-            <!-- top cards -->
-            <div class="top-cards">
-              <div class="info-card">
-                <h4>Students</h4>
-                <h2>2000</h2>
-              </div>
-              <div class="info-card">
-                <h4>Teachers</h4>
-                <h2>20</h2>
-              </div>
-              <div class="info-card">
-                <h4>Departments</h4>
-                <h2>10</h2>
-              </div>
-              <div class="info-card">
-                <h4>Unpaid</h4>
-                <h2>400</h2>
+<section id="login-form-section">
+  <div id="login-form-section--inner">
+    <div class="container">
+      <div class="row justify-content-center py-5">
+        <div class="col-md-6 col-lg-5">
+          <div class="card shadow-sm border-0 p-4 text-center" style="border-radius: 12px;">
+            <div class="mb-3">
+              <div style="width: 64px; height: 64px; border-radius: 50%; background: #ecfdf5; color: #10b981; display: inline-flex; align-items: center; justify-content: center; font-size: 2rem;">
+                <i class="fas fa-check-circle"></i>
               </div>
             </div>
-            <hr>
-            <!--/top cards -->
-
-
+            <h3 class="font-weight-bold text-dark">Registration Successful</h3>
+            <p class="text-muted small mb-4">
+              Your account registration request has been submitted successfully. Once approved by the school administrator, you will be able to log in.
+            </p>
+            <div class="d-flex flex-column gap-2">
+              <a href="{% url 'account_login' %}" class="btn btn-primary btn-block font-weight-bold py-2">
+                <i class="fas fa-sign-in-alt mr-1"></i> Proceed to Login
+              </a>
+              <a href="{% url 'index_view' %}" class="btn btn-outline-secondary btn-block font-weight-bold py-2 mt-2">
+                <i class="fas fa-home mr-1"></i> Back to Homepage
+              </a>
+            </div>
           </div>
         </div>
       </div>

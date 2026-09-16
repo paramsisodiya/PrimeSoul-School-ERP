@@ -6,16 +6,23 @@ from django.contrib.auth import views as auth_views
 
 from django_school_management.institute.models import InstituteProfile
 from django_school_management.accounts.views import dashboard
-from django_school_management.utils.views import health_view
+from django_school_management.core.views import health_check, readiness_check
+from django_school_management.examinations.views import public_result_verification_view
+from django_school_management.api.urls import schema_view
 
-admin.site.site_header = 'Django Administration'
-admin.site.site_title = 'Django Site Admin'
-admin.site.index_title = 'Django Administration'
+admin.site.site_header = 'PrimeSoul School ERP Administration'
+admin.site.site_title = 'PrimeSoul Site Admin'
+admin.site.index_title = 'PrimeSoul School ERP Administration'
 
 DJANGO_ADMIN_URL = settings.DJANGO_ADMIN_URL + '/'
 urlpatterns = [
-    # Health check for load balancers / k8s
-    path('health/', health_view),
+    # Health checks for load balancers, container probes & monitoring
+    path('health/', health_check, name='health_check'),
+    path('health/ready/', readiness_check, name='readiness_check'),
+    # API Documentation (Swagger UI & ReDoc)
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='swagger-ui'),
+    path('docs/', schema_view.with_ui('swagger', cache_timeout=0), name='api-docs'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='redoc-ui'),
     # Prometheus metrics (no auth; protect in production via network/firewall)
     path('', include('django_prometheus.urls')),
     # admin_honeypot doesn't support Django 4
@@ -66,7 +73,30 @@ urlpatterns = [
         name='password_reset_complete'
     ),
     path('dashboard/payments/', include('django_school_management.payments.urls')),
+    path('fees/', include('django_school_management.fees.urls', namespace='fees')),
+    path('attendance/', include('django_school_management.attendance.urls', namespace='attendance')),
+    path('examinations/', include('django_school_management.examinations.urls', namespace='examinations')),
+    path('timetable/', include('django_school_management.timetable.urls', namespace='timetable')),
+    path('transport/', include('django_school_management.transport.urls', namespace='transport')),
+    path('library/', include('django_school_management.library.urls', namespace='library')),
+    path('hr/', include('django_school_management.hr.urls', namespace='hr')),
+    path('portal/', include('django_school_management.portal.urls', namespace='portal')),
+    path('communication/', include('django_school_management.communication.urls', namespace='communication')),
+    path('admissions/', include('django_school_management.admissions.urls', namespace='admissions')),
+    path('inventory/', include('django_school_management.inventory.urls', namespace='inventory')),
+    path('reports/', include('django_school_management.reports.urls', namespace='reports')),
+    path('verify/result/<str:verification_code>/', public_result_verification_view, name='verify_result'),
     # API URLS
+    path('api/v1/fees/', include('django_school_management.fees.api.urls')),
+    path('api/v1/attendance/', include('django_school_management.attendance.api.urls')),
+    path('api/v1/examinations/', include('django_school_management.examinations.api.urls')),
+    path('api/v1/timetable/', include('django_school_management.timetable.api.urls')),
+    path('api/v1/transport/', include('django_school_management.transport.api.urls')),
+    path('api/v1/library/', include('django_school_management.library.api.urls')),
+    path('api/v1/hr/', include('django_school_management.hr.api.urls')),
+    path('api/v1/portal/', include('django_school_management.portal.api.urls')),
+    path('api/v1/communication/', include('django_school_management.communication.api.urls')),
+    path('api/v1/admissions/', include('django_school_management.admissions.api.urls')),
     path('api/', include('django_school_management.articles.api.routes')),
     path('upload/', include('django_file_form.urls')),
 ]

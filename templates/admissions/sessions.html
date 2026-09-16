@@ -1,0 +1,152 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'admissions:dashboard' %}" class="text-decoration-none">Admissions</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Sessions</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Admission Intake Sessions</h4>
+      <p class="text-muted small mb-0">Manage admission intake periods, academic years, date windows, and application number prefixes.</p>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row">
+    <!-- Session Creator Form -->
+    <div class="col-lg-5 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="font-weight-bold text-dark mb-0">Create Admission Session</h6>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-dark">Session Name <span class="text-danger">*</span></label>
+              {{ form.name }}
+            </div>
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-dark">Academic Year <span class="text-danger">*</span></label>
+              {{ form.academic_year }}
+            </div>
+            <div class="row">
+              <div class="col-md-6 form-group mb-3">
+                <label class="small font-weight-bold text-dark">App Start</label>
+                {{ form.application_start }}
+              </div>
+              <div class="col-md-6 form-group mb-3">
+                <label class="small font-weight-bold text-dark">App End</label>
+                {{ form.application_end }}
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 form-group mb-3">
+                <label class="small font-weight-bold text-dark">Admission Start</label>
+                {{ form.admission_start }}
+              </div>
+              <div class="col-md-6 form-group mb-3">
+                <label class="small font-weight-bold text-dark">Admission End</label>
+                {{ form.admission_end }}
+              </div>
+            </div>
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-dark">Session Status</label>
+              {{ form.status }}
+            </div>
+            <div class="row">
+              <div class="col-md-6 form-group mb-3">
+                <label class="small font-weight-bold text-dark">App # Prefix</label>
+                {{ form.application_number_prefix }}
+              </div>
+              <div class="col-md-6 form-group mb-3">
+                <label class="small font-weight-bold text-dark">Adm # Prefix</label>
+                {{ form.admission_number_prefix }}
+              </div>
+            </div>
+            <div class="form-group mb-3 form-check">
+              {{ form.active }}
+              <label class="form-check-label small font-weight-bold text-dark ml-2">Active Intake</label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm btn-block font-weight-bold">
+              <i class="fas fa-save mr-1"></i> Save Admission Session
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sessions List -->
+    <div class="col-lg-7 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="font-weight-bold text-dark mb-0">Admission Sessions Directory</h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="bg-light text-muted small">
+                <tr>
+                  <th>Session Name</th>
+                  <th>Academic Year</th>
+                  <th>App Window</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for s in sessions %}
+                <tr>
+                  <td>
+                    <div class="font-weight-bold text-dark">{{ s.name }}</div>
+                    <code class="small text-muted">{{ s.application_number_prefix }} / {{ s.admission_number_prefix }}</code>
+                  </td>
+                  <td>{{ s.academic_year.name }}</td>
+                  <td class="small text-muted">
+                    {{ s.application_start|date:"d M" }} - {{ s.application_end|date:"d M Y" }}
+                  </td>
+                  <td>
+                    {% if s.status == 'OPEN' %}
+                      <span class="badge badge-success">Open</span>
+                    {% elif s.status == 'CLOSED' %}
+                      <span class="badge badge-secondary">Closed</span>
+                    {% elif s.status == 'DRAFT' %}
+                      <span class="badge badge-info">Draft</span>
+                    {% else %}
+                      <span class="badge badge-dark">{{ s.get_status_display }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-muted">No admission sessions configured yet.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

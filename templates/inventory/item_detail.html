@@ -1,0 +1,173 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'inventory:item_list' %}" class="text-decoration-none">Items</a></li>
+          <li class="breadcrumb-item active" aria-current="page">{{ item.sku }}</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">{{ item.name }}</h4>
+        <span class="badge badge-primary">{{ item.sku }}</span>
+        {% if item.is_out_of_stock %}
+          <span class="badge badge-danger ml-1">Out of Stock</span>
+        {% elif item.is_low_stock %}
+          <span class="badge badge-warning ml-1">Low Stock</span>
+        {% else %}
+          <span class="badge badge-success ml-1">In Stock</span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">{{ item.category.name }} | Unit: {{ item.unit.name }} ({{ item.unit.short_code }}) | Reorder Level: {{ item.reorder_level }}</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      {% if is_admin %}
+        <a href="{% url 'inventory:issue_create' %}" class="btn btn-info btn-sm text-white">
+          <i class="fas fa-hand-holding mr-1"></i> Issue Item
+        </a>
+        <a href="{% url 'inventory:transfer_create' %}" class="btn btn-secondary btn-sm">
+          <i class="fas fa-exchange-alt mr-1"></i> Transfer Stock
+        </a>
+        <a href="{% url 'inventory:adjustment_create' %}" class="btn btn-warning btn-sm text-white">
+          <i class="fas fa-sliders-h mr-1"></i> Adjust Count
+        </a>
+      {% endif %}
+      <a href="{% url 'inventory:item_list' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Items
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Store Stock Balances -->
+    <div class="col-lg-5 mb-4">
+      <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-warehouse mr-2 text-primary"></i> Stock by Store / Location</h6>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+            <thead class="bg-light">
+              <tr>
+                <th>Store</th>
+                <th>Location</th>
+                <th class="text-right">Quantity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ss in store_stocks %}
+                <tr>
+                  <td class="font-weight-bold text-dark">{{ ss.store.name }} [{{ ss.store.code }}]</td>
+                  <td class="text-muted small">{{ ss.store.location|default:"-" }}</td>
+                  <td class="text-right font-weight-bold text-primary">{{ ss.quantity }} {{ item.unit.short_code }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center py-3 text-muted">No store balances initialized yet.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot class="bg-light font-weight-bold">
+              <tr>
+                <td colspan="2">Aggregated Total Stock:</td>
+                <td class="text-right text-success h6 mb-0">{{ item.total_stock }} {{ item.unit.short_code }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Item Attributes -->
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-info-circle mr-2 text-secondary"></i> Item Specifications</h6>
+        </div>
+        <div class="card-body" style="font-size: 0.88rem;">
+          <dl class="row mb-0">
+            <dt class="col-sm-5 text-muted">Default Purchase Price:</dt>
+            <dd class="col-sm-7 font-weight-bold">₹{{ item.default_purchase_price }}</dd>
+
+            <dt class="col-sm-5 text-muted">Reorder Threshold:</dt>
+            <dd class="col-sm-7">{{ item.reorder_level }} {{ item.unit.short_code }}</dd>
+
+            <dt class="col-sm-5 text-muted">Description / Notes:</dt>
+            <dd class="col-sm-7 text-muted">{{ item.description|default:"No special notes provided." }}</dd>
+
+            <dt class="col-sm-5 text-muted">Created On:</dt>
+            <dd class="col-sm-7 text-muted">{{ item.created|date:"d M Y, H:i" }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Movement History -->
+    <div class="col-lg-7 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-history mr-2 text-info"></i> Stock Movement Ledger</h6>
+          <a href="{% url 'inventory:movement_ledger' %}?item={{ item.id }}" class="btn btn-outline-primary btn-sm">Full History</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+            <thead class="bg-light">
+              <tr>
+                <th>Type</th>
+                <th>Quantity</th>
+                <th>Source / Dest</th>
+                <th>Reference</th>
+                <th>Date & Staff</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for mov in movements %}
+                <tr>
+                  <td>
+                    {% if mov.movement_type == 'IN' %}
+                      <span class="badge badge-success">IN</span>
+                    {% elif mov.movement_type == 'OUT' %}
+                      <span class="badge badge-danger">OUT</span>
+                    {% elif mov.movement_type == 'TRANSFER' %}
+                      <span class="badge badge-info">TRANSFER</span>
+                    {% elif mov.movement_type == 'RETURN' %}
+                      <span class="badge badge-primary">RETURN</span>
+                    {% else %}
+                      <span class="badge badge-secondary">{{ mov.movement_type }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="font-weight-bold">{{ mov.quantity }} {{ item.unit.short_code }}</td>
+                  <td>
+                    {% if mov.movement_type == 'TRANSFER' %}
+                      {{ mov.source_store.code }} &rarr; {{ mov.destination_store.code }}
+                    {% elif mov.destination_store %}
+                      &rarr; {{ mov.destination_store.name }}
+                    {% elif mov.source_store %}
+                      {{ mov.source_store.name }} &rarr;
+                    {% endif %}
+                  </td>
+                  <td class="text-muted">{{ mov.reference_number|default:"-" }}</td>
+                  <td>
+                    {{ mov.timestamp|date:"d M Y, H:i" }}<br>
+                    <small class="text-muted">{{ mov.performed_by.get_full_name|default:"System" }}</small>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center py-4 text-muted">No stock movements recorded for this item.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

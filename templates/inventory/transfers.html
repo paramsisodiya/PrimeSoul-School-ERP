@@ -1,0 +1,81 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Store Transfers</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Inter-Store Stock Transfers</h4>
+      <p class="text-muted small mb-0">Atomic movement of stock balances between school stores / departmental warehouses.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'inventory:transfer_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-exchange-alt mr-1"></i> New Store Transfer
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Stock Transfers Table -->
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="bg-light">
+          <tr>
+            <th>Item</th>
+            <th>Source Store</th>
+            <th>Destination Store</th>
+            <th>Quantity</th>
+            <th>Transfer Date</th>
+            <th>Reference</th>
+            <th>Transferred By</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tr in transfers %}
+            <tr>
+              <td>
+                <span class="font-weight-bold text-dark">{{ tr.item.name }}</span><br>
+                <small class="text-muted">{{ tr.item.sku }}</small>
+              </td>
+              <td><span class="badge badge-light border">{{ tr.source_store.name }}</span></td>
+              <td><span class="badge badge-primary border">{{ tr.destination_store.name }}</span></td>
+              <td class="font-weight-bold text-info">{{ tr.quantity }} {{ tr.item.unit.short_code }}</td>
+              <td>{{ tr.transfer_date|date:"d M Y" }}</td>
+              <td>{{ tr.reference_number|default:"-" }}</td>
+              <td class="text-muted small">{{ tr.transferred_by.get_full_name|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">
+                <i class="fas fa-exchange-alt fa-3x mb-3 text-muted d-block"></i>
+                No store transfers recorded yet.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

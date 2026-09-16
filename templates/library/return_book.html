@@ -1,0 +1,61 @@
+{% extends 'dashboard.html' %}
+{% load static crispy_forms_tags %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'library:dashboard' %}">Library</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'library:issues' %}">Issues</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Return Book</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Return Book</h4>
+    </div>
+    <div>
+      <a href="{% url 'library:issues' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-times mr-1"></i> Cancel
+      </a>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+        <div class="card-header bg-white font-weight-bold">
+          <i class="fas fa-undo mr-1 text-success"></i> Return Confirmation & Fine Assessment
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled mb-3" style="font-size: 0.9rem; line-height: 2;">
+            <li><strong>Book:</strong> {{ issue.book_copy.book.title }} (<code>{{ issue.book_copy.accession_number }}</code>)</li>
+            <li><strong>Member:</strong> {{ issue.member.get_name }} ({{ issue.member.member_code }})</li>
+            <li><strong>Issued On:</strong> {{ issue.issue_date|date:"d M Y" }}</li>
+            <li><strong>Due Date:</strong> {{ issue.due_date|date:"d M Y" }}</li>
+            <li><strong>Calculated Overdue Fine:</strong> 
+              {% if fine_preview > 0 %}
+                <span class="text-danger font-weight-bold">₹{{ fine_preview }}</span>
+              {% else %}
+                <span class="text-success font-weight-bold">₹0.00 (On Time)</span>
+              {% endif %}
+            </li>
+          </ul>
+
+          <form method="post">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <div class="mt-4 pt-3 border-top text-right">
+              <a href="{% url 'library:issues' %}" class="btn btn-secondary mr-2">Cancel</a>
+              <button type="submit" class="btn btn-success"><i class="fas fa-check-circle mr-1"></i> Confirm Return</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

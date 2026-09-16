@@ -4,11 +4,12 @@ from collections import OrderedDict
 from django.contrib import messages
 from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponseNotFound, JsonResponse
+from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, UpdateView
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.mixins import UserPassesTestMixin
+from django.views.decorators.http import require_POST
 
 from django_school_management.academics.models import (
     Department,
@@ -408,6 +409,7 @@ def reject_applicant(request, pk):
     return redirect("students:all_applicants")
 
 
+@require_POST
 @user_passes_test(user_is_admin_su_or_ac_officer)
 def mark_as_paid_or_unpaid(request):
     """Change student applicants payment status"""
@@ -676,3 +678,56 @@ def student_my_portal(request, student_id: str):
         "classmates": classmates,
     }
     return render(request, "students/my-portal.html", ctx)
+
+
+@user_passes_test(user_is_admin_su_or_ac_officer)
+def import_students_csv_view(request):
+    """
+    Handles CSV bulk import for students with preview and validation reporting.
+    """
+    from django_school_management.core.services.csv_import_service import StudentCSVImporter
+    school = getattr(request, 'school', None) or getattr(request.user, 'school', None)
+
+    if request.method == "POST" and request.FILES.get("csv_file"):
+        csv_file = request.FILES["csv_file"]
+        if not csv_file.name.endswith(".csv"):
+            messages.error(request, "Please upload a valid .csv file.")
+            return redirect("students:import_students_csv")
+
+        try:
+            content = csv_file.read().decode("utf-8-sig")
+            dry_run = request.POST.get("dry_run") == "1"
+            result = StudentCSVImporter.import_csv(school=school, file_content=content, dry_run=dry_run)
+            
+            if result.errors:
+                messages.error(request, f"Import validation found {len(result.errors)} errors. No records were modified.")
+            elif result.duplicates:
+                messages.warning(request, f"Found {len(result.duplicates)} duplicates.")
+            
+            if result.imported_rows > 0:
+                messages.success(request, f"Successfully imported {result.imported_rows} students!")
+                return redirect("students:all_student")
+
+            context = {
+                "result": result.to_dict(),
+                "dry_run": dry_run,
+                "school": school,
+            }
+            return render(request, "students/import_students_csv.html", context)
+        except Exception as exc:
+            messages.error(request, f"Error processing CSV file: {str(exc)}")
+
+    return render(request, "students/import_students_csv.html", {"school": school})
+
+
+@user_passes_test(user_is_admin_su_or_ac_officer)
+def download_sample_students_csv_view(request):
+    """
+    Returns downloadable sample CSV template for students import.
+    """
+    from django_school_management.core.services.csv_import_service import StudentCSVImporter
+    sample = StudentCSVImporter.get_sample_csv()
+    response = HttpResponse(sample, content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="students_import_sample.csv"'
+    return response
+

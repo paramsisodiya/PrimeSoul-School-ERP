@@ -1,0 +1,69 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}My Payslips - Teacher Portal{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <h4 class="font-weight-bold text-dark mb-1">My Salary & Monthly Payslips</h4>
+      <p class="text-muted small mb-0">Salary statements, itemized earnings, deductions, and payment records.</p>
+    </div>
+  </div>
+
+  <div class="portal-card">
+    <div class="card-header bg-white font-weight-bold py-3">
+      <i class="fas fa-file-invoice-dollar mr-2 text-success"></i> Monthly Payslip Statements
+    </div>
+    <div class="card-body p-0">
+      {% if payslips %}
+        <div class="table-responsive">
+          <table class="table portal-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Payroll Period</th>
+                <th>Working Days</th>
+                <th>Paid Days</th>
+                <th>Gross Earnings</th>
+                <th>Total Deductions</th>
+                <th>Net Salary</th>
+                <th>Status</th>
+                <th>Payslip</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in payslips %}
+                <tr>
+                  <td class="font-weight-bold text-dark">{{ p.payroll_period }}</td>
+                  <td>{{ p.working_days }}</td>
+                  <td>{{ p.paid_days }}</td>
+                  <td class="text-dark">₹{{ p.gross_earnings }}</td>
+                  <td class="text-danger">-₹{{ p.total_deductions }}</td>
+                  <td class="font-weight-bold text-success" style="font-size: 1.05rem;">₹{{ p.net_salary }}</td>
+                  <td>
+                    <span class="portal-badge {% if p.payment_status == 'PAID' %}badge-paid{% else %}badge-pending{% endif %}">
+                      {{ p.get_payment_status_display }}
+                    </span>
+                  </td>
+                  <td>
+                    <a href="{% url 'hr:payslip_detail' p.id %}" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2 font-weight-500">
+                      <i class="fas fa-file-pdf mr-1"></i> View Statement
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-5 text-center text-muted">
+          <i class="fas fa-file-invoice-dollar fa-3x mb-3 text-muted"></i>
+          <h5>No Payslips Generated</h5>
+          <p class="small mb-0">No monthly payroll cycles have been processed for your employee account yet.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

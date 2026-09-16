@@ -1,0 +1,246 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'examinations:dashboard' %}">Examinations</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Results</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Examination Results</h4>
+        {% if selected_exam %}
+          <span class="badge badge-primary px-2 py-1">{{ selected_exam.name }}</span>
+          <span class="badge badge-light border text-dark">{{ selected_exam.get_status_display }}</span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">Aggregate class evaluations, calculate standings, finalize grades, and publish digital report cards.</p>
+    </div>
+    
+    <!-- Action Buttons for Exam Workflow -->
+    {% if selected_exam %}
+    <div class="mt-2 mt-md-0 d-flex align-items-center flex-wrap gap-2">
+      <!-- Calculate Results -->
+      <form method="POST" action="{% url 'examinations:calculate_results' selected_exam.id %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-primary" title="Calculate/Recalculate Grades & Ranks">
+          <i class="fas fa-calculator mr-1"></i> Calculate Results
+        </button>
+      </form>
+
+      <!-- Finalize Results -->
+      {% if selected_exam.status in 'COMPLETED,CALCULATED' %}
+      <form method="POST" action="{% url 'examinations:finalize_results' selected_exam.id %}" style="display:inline;" onsubmit="return confirm('Finalize results for {{ selected_exam.name }}?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-info text-white" title="Mark as Finalized">
+          <i class="fas fa-check-circle mr-1"></i> Finalize
+        </button>
+      </form>
+      {% endif %}
+
+      <!-- Publish Results -->
+      {% if selected_exam.status == 'FINALIZED' or selected_exam.status == 'COMPLETED' %}
+      <form method="POST" action="{% url 'examinations:publish_results' selected_exam.id %}" style="display:inline;" onsubmit="return confirm('Publish results? Students and parents will be able to view report cards.');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-success" title="Publish to Student & Parent Portal">
+          <i class="fas fa-bullhorn mr-1"></i> Publish
+        </button>
+      </form>
+      {% endif %}
+
+      <!-- Lock Results -->
+      {% if selected_exam.status == 'PUBLISHED' %}
+      <form method="POST" action="{% url 'examinations:lock_results' selected_exam.id %}" style="display:inline;" onsubmit="return confirm('Lock results? Further modifications will strictly require administrative audit corrections.');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-secondary" title="Lock Results against Editing">
+          <i class="fas fa-lock mr-1"></i> Lock
+        </button>
+      </form>
+      {% endif %}
+
+      <a href="{% url 'examinations:export_results_csv' selected_exam.id %}" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-file-csv mr-1"></i> CSV
+      </a>
+      <a href="{% url 'examinations:class_summary' selected_exam.id %}" class="btn btn-sm btn-outline-dark">
+        <i class="fas fa-chart-pie mr-1"></i> Analytics
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filter Bar -->
+  <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background: #f8fafc;">
+    <div class="card-body p-3">
+      <form method="GET" class="row align-items-end">
+        <div class="col-md-4 form-group mb-2 mb-md-0">
+          <label class="form-label font-weight-bold small text-muted">Examination *</label>
+          <select name="exam" class="form-select form-control" onchange="this.form.submit();">
+            {% for ex in exams %}
+              <option value="{{ ex.id }}" {% if selected_exam and selected_exam.id == ex.id %}selected{% endif %}>
+                {{ ex.name }} ({{ ex.grade_level.name }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 form-group mb-2 mb-md-0">
+          <label class="form-label font-weight-bold small text-muted">Section</label>
+          <select name="section" class="form-select form-control" onchange="this.form.submit();">
+            <option value="">All Sections</option>
+            {% for sec in sections %}
+              <option value="{{ sec.id }}" {% if selected_section_id == sec.id %}selected{% endif %}>Section {{ sec.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 form-group mb-2 mb-md-0">
+          <label class="form-label font-weight-bold small text-muted">Search Student</label>
+          <input type="text" name="search" value="{{ request.GET.search }}" class="form-control" placeholder="Name or Adm No">
+        </div>
+        <div class="col-md-2 mb-2 mb-md-0">
+          <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-filter mr-1"></i> Filter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Results Table -->
+  <div class="card shadow-sm border-0" style="border-radius: 12px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+        <thead class="bg-light text-muted small text-uppercase">
+          <tr>
+            <th class="pl-4">Rank</th>
+            <th>Roll</th>
+            <th>Student Name</th>
+            <th>Section</th>
+            <th>Marks</th>
+            <th>Percentage</th>
+            <th>Grade</th>
+            <th>Result</th>
+            <th>Status</th>
+            <th class="text-right pr-4">Report Card</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in page_obj %}
+          <tr>
+            <td class="pl-4 font-weight-bold">
+              {% if r.class_rank %}
+                <span class="badge {% if r.class_rank == 1 %}badge-warning text-dark{% elif r.class_rank <= 3 %}badge-info text-white{% else %}badge-light border{% endif %} px-2 py-1">
+                  #{{ r.class_rank }}
+                </span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td class="text-muted">{{ r.student.roll_number|default:"—" }}</td>
+            <td>
+              <div class="font-weight-bold text-dark">
+                <a href="{% url 'examinations:student_results' r.student.id %}" class="text-dark">
+                  {{ r.student.name }}
+                </a>
+              </div>
+              <small class="text-muted">Adm: {{ r.student.admission_number|default:"N/A" }}</small>
+            </td>
+            <td>Section {{ r.enrollment.section.name|default:"A" }}</td>
+            <td>
+              <span class="font-weight-bold">{{ r.total_marks_obtained|floatformat:1 }}</span>
+              <small class="text-muted">/ {{ r.total_max_marks|floatformat:0 }}</small>
+            </td>
+            <td class="font-weight-bold text-primary">{{ r.percentage|floatformat:2 }}%</td>
+            <td>
+              <span class="badge badge-light border font-weight-bold text-dark">
+                {{ r.overall_grade|default:"—" }}
+              </span>
+            </td>
+            <td>
+              {% if r.result_status == 'PASSED' %}
+                <span class="badge badge-success px-2 py-1">Passed</span>
+              {% elif r.result_status == 'COMPARTMENT' %}
+                <span class="badge badge-warning px-2 py-1 text-dark">Compartment</span>
+              {% elif r.result_status == 'ABSENT' %}
+                <span class="badge badge-secondary px-2 py-1">Absent</span>
+              {% else %}
+                <span class="badge badge-danger px-2 py-1">Failed</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if r.status == 'PUBLISHED' %}
+                <span class="badge badge-success px-2 py-1">Published</span>
+              {% elif r.status == 'LOCKED' %}
+                <span class="badge badge-secondary px-2 py-1"><i class="fas fa-lock mr-1"></i> Locked</span>
+              {% elif r.status == 'FINALIZED' %}
+                <span class="badge badge-info px-2 py-1">Finalized</span>
+              {% else %}
+                <span class="badge badge-light border text-muted">Calculated</span>
+              {% endif %}
+            </td>
+            <td class="text-right pr-4">
+              <div class="btn-group btn-group-sm">
+                <a href="{% url 'examinations:report_card' r.id %}" class="btn btn-outline-primary" title="View Report Card">
+                  <i class="fas fa-eye"></i>
+                </a>
+                <a href="{% url 'examinations:report_card_pdf' r.id %}" class="btn btn-outline-danger" title="Download PDF" target="_blank">
+                  <i class="fas fa-file-pdf"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="text-center py-5 text-muted">
+              <i class="fas fa-poll-h fa-2x mb-2 text-muted"></i>
+              <p class="mb-0">No results calculated yet for this examination.</p>
+              {% if selected_exam %}
+                <form method="POST" action="{% url 'examinations:calculate_results' selected_exam.id %}" class="mt-2">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="fas fa-calculator mr-1"></i> Calculate Results Now
+                  </button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-white py-3 border-top d-flex justify-content-between align-items-center">
+      <div class="text-muted small">Showing {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ total_count }} results</div>
+      <ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&exam={{ selected_exam.id }}">&laquo;</a></li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}&exam={{ selected_exam.id }}">{{ num }}</a>
+          </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&exam={{ selected_exam.id }}">&raquo;</a></li>
+        {% endif %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

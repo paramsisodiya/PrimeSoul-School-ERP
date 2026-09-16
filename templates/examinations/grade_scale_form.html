@@ -1,0 +1,55 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'examinations:grade_scale_list' %}">Grade Scales</a></li>
+          <li class="breadcrumb-item active" aria-current="page">New Scale</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Create Grading Scale</h4>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0" style="border-radius: 12px; max-width: 600px;">
+    <div class="card-body p-4">
+      <form method="POST">
+        {% csrf_token %}
+        <div class="form-group mb-3">
+          <label class="form-label font-weight-bold small text-muted">Scale Name *</label>
+          {{ form.name }}
+          {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors }}</div>{% endif %}
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label font-weight-bold small text-muted">Code *</label>
+          {{ form.code }}
+          {% if form.code.errors %}<div class="text-danger small mt-1">{{ form.code.errors }}</div>{% endif %}
+        </div>
+        <div class="form-group mb-3">
+          <div class="custom-control custom-checkbox">
+            {{ form.is_default }}
+            <label class="custom-control-label font-weight-bold text-dark" for="{{ form.is_default.id_for_label }}">
+              Set as Default Grading Scale
+            </label>
+          </div>
+        </div>
+        <div class="form-group mb-4">
+          <label class="form-label font-weight-bold small text-muted">Description</label>
+          {{ form.description }}
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Save Scale</button>
+          <a href="{% url 'examinations:grade_scale_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

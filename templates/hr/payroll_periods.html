@@ -1,0 +1,93 @@
+{% extends 'dashboard.html' %}
+{% load static crispy_forms_tags %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'hr:dashboard' %}">HR</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Payroll Periods</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Monthly Payroll Cycles</h4>
+    </div>
+    <div>
+      <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addPeriodModal">
+        <i class="fas fa-plus mr-1"></i> Open New Payroll Cycle
+      </button>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="thead-light">
+          <tr>
+            <th>Payroll Period</th>
+            <th>Status</th>
+            <th>Processed At</th>
+            <th>Records Count</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in periods %}
+            <tr>
+              <td><strong>{{ p.get_month_display }} {{ p.year }}</strong></td>
+              <td>
+                {% if p.status == 'LOCKED' %}
+                  <span class="badge badge-dark"><i class="fas fa-lock mr-1"></i> Locked</span>
+                {% elif p.status == 'PROCESSED' %}
+                  <span class="badge badge-success">Processed</span>
+                {% else %}
+                  <span class="badge badge-warning">Draft</span>
+                {% endif %}
+              </td>
+              <td>{{ p.processed_at|date:"d M Y, H:i"|default:"Not processed" }}</td>
+              <td><span class="badge badge-light border">{{ p.records.count }} payslips</span></td>
+              <td class="text-right">
+                <a href="{% url 'hr:payroll_process' p.pk %}" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.8rem;">
+                  <i class="fas fa-calculator mr-1"></i> Manage / Process
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-4 text-muted">No payroll periods created yet.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Open Period Modal -->
+<div class="modal fade" id="addPeriodModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title font-weight-bold"><i class="fas fa-calendar-alt mr-2"></i> Open Payroll Period</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="modal-body">
+          {{ form|crispy }}
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Create Payroll Cycle</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

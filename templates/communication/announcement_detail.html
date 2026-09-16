@@ -1,0 +1,181 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'communication:dashboard' %}" class="text-decoration-none">Communication</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'communication:announcement_list' %}" class="text-decoration-none">Announcements</a></li>
+          <li class="breadcrumb-item active" aria-current="page">{{ announcement.title|truncatechars:25 }}</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">{{ announcement.title }}</h4>
+        {% if announcement.status == 'PUBLISHED' %}
+          <span class="badge badge-success ml-2">Published</span>
+        {% elif announcement.status == 'DRAFT' %}
+          <span class="badge badge-secondary ml-2">Draft</span>
+        {% elif announcement.status == 'SCHEDULED' %}
+          <span class="badge badge-info ml-2">Scheduled</span>
+        {% else %}
+          <span class="badge badge-dark ml-2">{{ announcement.get_status_display }}</span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">Created by {{ announcement.created_by.get_full_name|default:announcement.created_by.username }} on {{ announcement.created|date:"d M Y, h:i A" }}</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      {% if announcement.status != 'PUBLISHED' %}
+      <form method="post" action="{% url 'communication:announcement_publish' announcement.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success btn-sm">
+          <i class="fas fa-paper-plane mr-1"></i> Publish Now
+        </button>
+      </form>
+      {% endif %}
+      <a href="{% url 'communication:announcement_edit' announcement.pk %}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-edit mr-1"></i> Edit
+      </a>
+      <a href="{% url 'communication:announcement_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Overview Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 text-center p-3" style="border-radius: 10px;">
+        <small class="text-muted text-uppercase font-weight-bold">Recipients Reached</small>
+        <div class="h3 font-weight-bold text-dark mb-0">{{ delivery_summary.total_recipients }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 text-center p-3" style="border-radius: 10px;">
+        <small class="text-muted text-uppercase font-weight-bold">Delivered Count</small>
+        <div class="h3 font-weight-bold text-success mb-0">{{ delivery_summary.delivered_count }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 text-center p-3" style="border-radius: 10px;">
+        <small class="text-muted text-uppercase font-weight-bold">Read by Users</small>
+        <div class="h3 font-weight-bold text-info mb-0">{{ delivery_summary.read_count }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 text-center p-3" style="border-radius: 10px;">
+        <small class="text-muted text-uppercase font-weight-bold">Delivery Failures</small>
+        <div class="h3 font-weight-bold text-danger mb-0">{{ delivery_summary.failed_count }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Announcement Content & Audit Logs -->
+  <div class="row">
+    <div class="col-lg-7 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="font-weight-bold text-dark mb-0">Announcement Content</h6>
+        </div>
+        <div class="card-body">
+          <div class="mb-3 d-flex gap-2">
+            <span class="badge badge-light border">Category: {{ announcement.category_name|default:announcement.category.name|default:"General" }}</span>
+            <span class="badge badge-light border">Priority: {{ announcement.get_priority_display }}</span>
+          </div>
+
+          <div class="p-3 bg-light rounded text-dark mb-3" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.6;">
+            {{ announcement.content }}
+          </div>
+
+          {% if announcement.attachment %}
+          <div class="p-2 border rounded d-flex align-items-center justify-content-between">
+            <div>
+              <i class="fas fa-file-download text-primary mr-2"></i>
+              <span class="font-weight-bold small">Attachment Available</span>
+            </div>
+            <a href="{{ announcement.attachment.url }}" class="btn btn-sm btn-outline-primary" target="_blank">Download</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Target Audiences -->
+      <div class="card shadow-sm border-0 mt-4" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="font-weight-bold text-dark mb-0">Target Audiences</h6>
+        </div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush">
+            {% for target in announcement.targets.all %}
+            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+              <span class="font-weight-bold text-dark">{{ target }}</span>
+              <span class="badge badge-primary">{{ target.get_target_type_display }}</span>
+            </li>
+            {% empty %}
+            <li class="list-group-item py-2 px-3 text-muted">Broadcasting to entire school.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="font-weight-bold text-dark mb-0">Recent Delivery Dispatches</h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="bg-light text-muted small">
+                <tr>
+                  <th>Recipient</th>
+                  <th>Channel</th>
+                  <th>Status</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for log in logs %}
+                <tr>
+                  <td class="font-weight-bold small text-dark">{{ log.notification.recipient_user.username }}</td>
+                  <td><span class="badge badge-light border">{{ log.channel }}</span></td>
+                  <td>
+                    <span class="badge {% if log.status == 'DELIVERED' or log.status == 'SENT' %}badge-success{% else %}badge-danger{% endif %}">
+                      {{ log.status }}
+                    </span>
+                  </td>
+                  <td class="small text-muted">{{ log.attempted_at|timesince }} ago</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-muted">No delivery dispatches recorded yet.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

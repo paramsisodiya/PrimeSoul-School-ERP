@@ -1,0 +1,68 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'library:dashboard' %}">Library</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Overdue</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Overdue Books Tracker</h4>
+    </div>
+    <div>
+      <a href="{% url 'library:issues' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-list mr-1"></i> All Circulation
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="thead-light">
+          <tr>
+            <th>Book Title</th>
+            <th>Accession</th>
+            <th>Member</th>
+            <th>Issue Date</th>
+            <th>Due Date</th>
+            <th>Days Overdue</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for issue in overdue_issues %}
+            <tr class="table-danger-light">
+              <td><strong>{{ issue.book_copy.book.title }}</strong></td>
+              <td><code>{{ issue.book_copy.accession_number }}</code></td>
+              <td>{{ issue.member.get_name }} <span class="badge badge-light border">{{ issue.member.member_code }}</span></td>
+              <td>{{ issue.issue_date|date:"d M Y" }}</td>
+              <td><span class="text-danger font-weight-bold">{{ issue.due_date|date:"d M Y" }}</span></td>
+              <td><span class="badge badge-danger">{{ issue.days_overdue }} days</span></td>
+              <td class="text-right">
+                <a href="{% url 'library:return_book' issue.pk %}" class="btn btn-danger btn-sm py-0 px-2" style="font-size: 0.8rem;">
+                  <i class="fas fa-undo mr-1"></i> Return
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">
+                <i class="fas fa-check-circle text-success fa-2x mb-2"></i><br>
+                Great! No overdue books at present.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

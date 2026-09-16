@@ -1,6 +1,7 @@
 import random
 from datetime import date, timedelta
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from django_school_management.accounts.models import User
@@ -30,8 +31,19 @@ class Command(BaseCommand):
             default=2000,
             help="Target number of enrolled Student rows (default: 2000)",
         )
+        parser.add_argument(
+            "--force-demo-dangerous",
+            action="store_true",
+            help="Force execution in production / non-debug environments (DANGEROUS).",
+        )
 
     def handle(self, *args, **options):
+        if not settings.DEBUG and not options.get("force_demo_dangerous"):
+            raise CommandError(
+                "CRITICAL SECURITY GUARD: 'seed_performance_data' cannot be run in production (DEBUG=False). "
+                "If this is a staging/test environment, re-run with --force-demo-dangerous."
+            )
+
         admissions_target = max(0, options["admissions"])
         students_target = max(0, options["students"])
 

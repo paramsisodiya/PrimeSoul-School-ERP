@@ -1,0 +1,120 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'reports:dashboard' %}" class="text-decoration-none">Reports</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Attendance</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Student Attendance Analytics</h4>
+      <p class="text-muted small mb-0">Daily attendance roll, section-wise present/absent trends, and low attendance monitoring.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <a href="?export=csv&date={{ selected_date }}&grade={{ selected_grade|default:'' }}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-file-csv mr-1"></i> Export CSV
+      </a>
+      <a href="?export=pdf&date={{ selected_date }}&grade={{ selected_grade|default:'' }}" class="btn btn-outline-danger btn-sm">
+        <i class="fas fa-file-pdf mr-1"></i> Export PDF
+      </a>
+      <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Hub
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+    <div class="card-body py-3">
+      <form method="get" class="row align-items-center">
+        <div class="col-md-4 mb-2 mb-md-0">
+          <label class="small text-muted font-weight-bold mb-1">Date</label>
+          <input type="date" name="date" class="form-control form-control-sm" value="{{ selected_date }}">
+        </div>
+        <div class="col-md-4 mb-2 mb-md-0">
+          <label class="small text-muted font-weight-bold mb-1">Grade / Class</label>
+          <select name="grade" class="form-control form-control-sm">
+            <option value="">-- All Classes --</option>
+            {% for g in grades %}
+              <option value="{{ g.id }}" {% if selected_grade|stringformat:"s" == g.id|stringformat:"s" %}selected{% endif %}>{{ g.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 mt-3">
+          <button type="submit" class="btn btn-primary btn-sm btn-block"><i class="fas fa-filter mr-1"></i> Filter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Daily Summary KPI Row -->
+  <div class="row mb-4">
+    <div class="col-md-3 mb-2">
+      <div class="card shadow-sm border-0 text-center py-2" style="border-radius: 8px; background: #EEF2FF;">
+        <div class="small font-weight-bold text-primary text-uppercase">Total Marked</div>
+        <div class="h4 mb-0 font-weight-bold text-primary">{{ data.daily_summary.total|default:0 }}</div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-2">
+      <div class="card shadow-sm border-0 text-center py-2" style="border-radius: 8px; background: #ECFDF5;">
+        <div class="small font-weight-bold text-success text-uppercase">Present Today</div>
+        <div class="h4 mb-0 font-weight-bold text-success">{{ data.daily_summary.present|default:0 }}</div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-2">
+      <div class="card shadow-sm border-0 text-center py-2" style="border-radius: 8px; background: #FEE2E2;">
+        <div class="small font-weight-bold text-danger text-uppercase">Absent</div>
+        <div class="h4 mb-0 font-weight-bold text-danger">{{ data.daily_summary.absent|default:0 }}</div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-2">
+      <div class="card shadow-sm border-0 text-center py-2" style="border-radius: 8px; background: #FEF3C7;">
+        <div class="small font-weight-bold text-warning text-uppercase">Late / Half Day</div>
+        <div class="h4 mb-0 font-weight-bold text-warning">{{ data.daily_summary.late|add:data.daily_summary.half_day|default:0 }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Class Breakdown Table -->
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="card-header bg-white py-3">
+      <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-calendar-check mr-2 text-primary"></i> Class-Wise Attendance Summary ({{ data.date }})</h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="bg-light">
+          <tr>
+            <th>Class / Grade</th>
+            <th>Section</th>
+            <th>Total Marked</th>
+            <th>Present</th>
+            <th>Absent</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cb in data.class_breakdown %}
+            <tr>
+              <td class="font-weight-bold text-dark">{{ cb.grade_level__name }}</td>
+              <td><span class="badge badge-light border">{{ cb.section__name }}</span></td>
+              <td>{{ cb.total }}</td>
+              <td class="font-weight-bold text-success">{{ cb.present }}</td>
+              <td class="font-weight-bold text-danger">{{ cb.absent }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-4 text-muted">No attendance records logged for selected date.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,378 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'timetable:dashboard' %}" class="text-decoration-none">Timetable</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Setup</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Timetable Structure & Period Configuration</h4>
+      <p class="text-muted small mb-0">Manage school operating days, daily period timings, instructional vs break periods, and physical rooms.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" data-target="#cloneModal">
+        <i class="fas fa-copy mr-1"></i> Clone from Session...
+      </button>
+      <a href="{% url 'timetable:dashboard' %}" class="btn btn-light border btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Setup Tabs -->
+  <ul class="nav nav-pills mb-4" id="setupTabs" role="tablist">
+    <li class="nav-item mr-2">
+      <a class="nav-link active font-weight-bold" id="days-tab" data-toggle="pill" href="#daysPane" role="tab">
+        <i class="fas fa-calendar-day mr-1"></i> Working Days ({{ working_days.count }})
+      </a>
+    </li>
+    <li class="nav-item mr-2">
+      <a class="nav-link font-weight-bold" id="slots-tab" data-toggle="pill" href="#slotsPane" role="tab">
+        <i class="fas fa-clock mr-1"></i> Periods & Slots ({{ time_slots.count }})
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link font-weight-bold" id="rooms-tab" data-toggle="pill" href="#roomsPane" role="tab">
+        <i class="fas fa-door-open mr-1"></i> Classrooms & Labs ({{ classrooms.count }})
+      </a>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="setupTabsContent">
+
+    <!-- 1. WORKING DAYS TAB -->
+    <div class="tab-pane fade show active" id="daysPane" role="tabpanel">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="font-weight-bold text-dark mb-0">Operating Days for {{ academic_year.name }}</h6>
+            <small class="text-muted">Click any day to toggle between Working Day and Off Day.</small>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="bg-light text-muted">
+                <tr>
+                  <th class="border-0 px-3">Weekday</th>
+                  <th class="border-0">Display Name</th>
+                  <th class="border-0">Operational Status</th>
+                  <th class="border-0 text-right px-3">Toggle Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for d in working_days %}
+                  <tr>
+                    <td class="px-3 font-weight-bold text-dark">{{ d.get_weekday_display }}</td>
+                    <td>{{ d.day_name }}</td>
+                    <td>
+                      {% if d.is_working %}
+                        <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Working Day</span>
+                      {% else %}
+                        <span class="badge badge-secondary px-2 py-1"><i class="fas fa-bed mr-1"></i> Off Day</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-right px-3">
+                      <form method="POST" action="{% url 'timetable:working_day_toggle' pk=d.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm {% if d.is_working %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+                          {% if d.is_working %}Set Off{% else %}Set Working{% endif %}
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. PERIODS / TIME SLOTS TAB -->
+    <div class="tab-pane fade" id="slotsPane" role="tabpanel">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="font-weight-bold text-dark mb-0">School Periods & Daily Schedule</h6>
+            <small class="text-muted">Instructional periods, zero periods, assemblies, and break slots.</small>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addSlotModal">
+            <i class="fas fa-plus mr-1"></i> Add Period / Slot
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="bg-light text-muted">
+                <tr>
+                  <th class="border-0 px-3">Order</th>
+                  <th class="border-0">Period Name</th>
+                  <th class="border-0">Timing (Start - End)</th>
+                  <th class="border-0">Slot Type</th>
+                  <th class="border-0 text-right px-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for slot in time_slots %}
+                  <tr>
+                    <td class="px-3 text-muted">{{ slot.display_order }}</td>
+                    <td class="font-weight-bold text-dark">
+                      {{ slot.name }}
+                      {% if slot.period_number %}
+                        <span class="badge badge-light border ml-1">Period #{{ slot.period_number }}</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <span class="text-dark font-weight-500">
+                        <i class="far fa-clock text-muted mr-1"></i>
+                        {{ slot.start_time|time:"H:i" }} - {{ slot.end_time|time:"H:i" }}
+                      </span>
+                    </td>
+                    <td>
+                      {% if slot.is_break %}
+                        <span class="badge badge-warning px-2 py-1"><i class="fas fa-coffee mr-1"></i> Break / Recess</span>
+                      {% else %}
+                        <span class="badge badge-primary px-2 py-1"><i class="fas fa-book-reader mr-1"></i> Instruction</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-right px-3">
+                      <form method="POST" action="{% url 'timetable:time_slot_delete' pk=slot.id %}" style="display:inline;" onsubmit="return confirm('Remove this time slot?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Slot">
+                          <i class="fas fa-trash-alt"></i>
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">
+                      No periods configured yet. Click "Add Period / Slot" above.
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. CLASSROOMS & LABS TAB -->
+    <div class="tab-pane fade" id="roomsPane" role="tabpanel">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="font-weight-bold text-dark mb-0">Classrooms, Labs & Facilities</h6>
+            <small class="text-muted">Track physical spaces and prevent double-booking of specialty rooms.</small>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addRoomModal">
+            <i class="fas fa-plus mr-1"></i> Add Classroom / Lab
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="bg-light text-muted">
+                <tr>
+                  <th class="border-0 px-3">Room Number</th>
+                  <th class="border-0">Room Name</th>
+                  <th class="border-0">Facility Type</th>
+                  <th class="border-0">Capacity</th>
+                  <th class="border-0 text-right px-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for room in classrooms %}
+                  <tr>
+                    <td class="px-3 font-weight-bold text-primary">{{ room.room_number }}</td>
+                    <td class="font-weight-bold text-dark">{{ room.name }}</td>
+                    <td><span class="badge badge-light border">{{ room.get_room_type_display }}</span></td>
+                    <td>{{ room.capacity }} students</td>
+                    <td class="text-right px-3">
+                      <form method="POST" action="{% url 'timetable:classroom_delete' pk=room.id %}" style="display:inline;" onsubmit="return confirm('Delete this room?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                          <i class="fas fa-trash-alt"></i>
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">
+                      No rooms registered yet. Click "Add Classroom / Lab" to configure.
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Add Period Modal -->
+<div class="modal fade" id="addSlotModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content border-0 shadow">
+      <form method="POST" action="{% url 'timetable:time_slot_create' %}">
+        {% csrf_token %}
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title font-weight-bold">Add Period / Time Slot</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="font-weight-bold small">Slot Name <span class="text-danger">*</span></label>
+            {{ slot_form.name }}
+          </div>
+          <div class="row">
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">Period #</label>
+              {{ slot_form.period_number }}
+            </div>
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">Order</label>
+              {{ slot_form.display_order }}
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">Start Time <span class="text-danger">*</span></label>
+              {{ slot_form.start_time }}
+            </div>
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">End Time <span class="text-danger">*</span></label>
+              {{ slot_form.end_time }}
+            </div>
+          </div>
+          <div class="form-check mt-2">
+            {{ slot_form.is_break }}
+            <label class="form-check-label small font-weight-bold" for="{{ slot_form.is_break.id_for_label }}">
+              Mark as Break / Recess (Non-instructional)
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm font-weight-bold">Save Period</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Room Modal -->
+<div class="modal fade" id="addRoomModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content border-0 shadow">
+      <form method="POST" action="{% url 'timetable:classroom_create' %}">
+        {% csrf_token %}
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title font-weight-bold">Add Classroom or Laboratory</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-5 form-group">
+              <label class="font-weight-bold small">Room # <span class="text-danger">*</span></label>
+              {{ room_form.room_number }}
+            </div>
+            <div class="col-7 form-group">
+              <label class="font-weight-bold small">Room Name <span class="text-danger">*</span></label>
+              {{ room_form.name }}
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-7 form-group">
+              <label class="font-weight-bold small">Facility Type</label>
+              {{ room_form.room_type }}
+            </div>
+            <div class="col-5 form-group">
+              <label class="font-weight-bold small">Capacity</label>
+              {{ room_form.capacity }}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm font-weight-bold">Save Room</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Clone Modal -->
+<div class="modal fade" id="cloneModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content border-0 shadow">
+      <form method="POST" action="{% url 'timetable:clone' %}">
+        {% csrf_token %}
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title font-weight-bold"><i class="fas fa-copy mr-2"></i> Clone Timetable Configuration</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="font-weight-bold small">Source Session</label>
+            {{ clone_form.source_academic_year }}
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small">Target Session</label>
+            {{ clone_form.target_academic_year }}
+          </div>
+          <div class="form-check mb-2">
+            {{ clone_form.clone_working_days }}
+            <label class="form-check-label small" for="{{ clone_form.clone_working_days.id_for_label }}">Copy Working Days</label>
+          </div>
+          <div class="form-check mb-2">
+            {{ clone_form.clone_time_slots }}
+            <label class="form-check-label small" for="{{ clone_form.clone_time_slots.id_for_label }}">Copy Time Slots / Periods</label>
+          </div>
+          <div class="form-check">
+            {{ clone_form.clone_entries }}
+            <label class="form-check-label small" for="{{ clone_form.clone_entries.id_for_label }}">Copy Active Class Allocations</label>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm font-weight-bold">Proceed with Clone</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

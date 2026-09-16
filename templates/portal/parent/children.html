@@ -1,0 +1,77 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}My Children - Parent Portal{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <h4 class="font-weight-bold text-dark mb-1">My Children</h4>
+      <p class="text-muted small mb-0">Select a child to view academic records, attendance, fees, and results.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    {% for item in children_data %}
+      <div class="col-md-6 col-lg-4 mb-4">
+        <div class="portal-card h-100 p-4 d-flex flex-column justify-content-between {% if item.is_selected %}border-primary shadow-sm{% endif %}">
+          <div>
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div class="rounded-circle {% if item.is_selected %}bg-primary text-white{% else %}bg-light text-primary border{% endif %} font-weight-bold d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-size: 1.25rem;">
+                {{ item.student.first_name|first|upper }}
+              </div>
+              {% if item.is_selected %}
+                <span class="badge badge-primary px-2.5 py-1">Active View</span>
+              {% endif %}
+            </div>
+
+            <h5 class="font-weight-bold text-dark mb-1">{{ item.student.name }}</h5>
+            <p class="text-muted small mb-3">
+              {{ item.student.grade_level.name }} - Section {{ item.student.section.name }} • Roll: {{ item.student.roll_number|default:"-" }}
+            </p>
+
+            <div class="p-3 bg-light rounded mb-3">
+              <div class="d-flex justify-content-between small mb-1">
+                <span class="text-muted">Admission No:</span>
+                <span class="font-weight-bold text-dark">{{ item.student.admission_number|default:"-" }}</span>
+              </div>
+              <div class="d-flex justify-content-between small mb-1">
+                <span class="text-muted">Attendance:</span>
+                <span class="font-weight-bold {% if item.attendance_pct >= 75 %}text-success{% else %}text-danger{% endif %}">{{ item.attendance_pct }}%</span>
+              </div>
+              <div class="d-flex justify-content-between small">
+                <span class="text-muted">Outstanding Fees:</span>
+                <span class="font-weight-bold {% if item.outstanding_fees > 0 %}text-danger{% else %}text-success{% endif %}">₹{{ item.outstanding_fees }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center pt-2">
+            <a href="{% url 'portal:parent_child_detail' item.student.id %}" class="btn btn-outline-secondary btn-sm">
+              <i class="fas fa-user mr-1"></i> Profile
+            </a>
+            {% if not item.is_selected %}
+              <a href="{% url 'portal:parent_child_switch' item.student.id %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-check mr-1"></i> Switch to Child
+              </a>
+            {% else %}
+              <a href="{% url 'portal:parent_dashboard' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-tachometer-alt mr-1"></i> Open Dashboard
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="portal-card p-5 text-center text-muted">
+          <i class="fas fa-users fa-3x mb-3 text-muted"></i>
+          <h5>No children registered</h5>
+          <p class="small">Contact the school administration to link your student ward.</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

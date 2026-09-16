@@ -1,0 +1,92 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Goods Receipts</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Goods Receipt Notes (GRN) / Purchases</h4>
+      <p class="text-muted small mb-0">Inward stock ledger receipts from vendors with line item costs and destination store balances.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'inventory:purchase_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-truck-loading mr-1"></i> New Goods Receipt Note
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Purchases Table -->
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="bg-light">
+          <tr>
+            <th>GRN Number</th>
+            <th>Vendor / Supplier</th>
+            <th>Destination Store</th>
+            <th>Date</th>
+            <th>Items Received</th>
+            <th>Total Value</th>
+            <th>Status</th>
+            <th>Received By</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in purchases %}
+            <tr>
+              <td class="font-weight-bold text-primary">{{ p.receipt_number }}</td>
+              <td class="font-weight-bold text-dark">{{ p.supplier.name }}</td>
+              <td><span class="badge badge-light border">{{ p.store.name }}</span></td>
+              <td>{{ p.purchase_date|date:"d M Y" }}</td>
+              <td>
+                <small>
+                  {% for itm in p.items.all %}
+                    <div>&bull; {{ itm.item.name }} ({{ itm.quantity }} {{ itm.item.unit.short_code }}) @ ₹{{ itm.unit_cost }}</div>
+                  {% endfor %}
+                </small>
+              </td>
+              <td class="font-weight-bold text-dark">₹{{ p.total_amount }}</td>
+              <td>
+                {% if p.status == 'RECEIVED' %}
+                  <span class="badge badge-success">Received & Added</span>
+                {% else %}
+                  <span class="badge badge-secondary">{{ p.status }}</span>
+                {% endif %}
+              </td>
+              <td class="text-muted small">{{ p.received_by.get_full_name|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-5 text-muted">
+                <i class="fas fa-truck-loading fa-3x mb-3 text-muted d-block"></i>
+                No goods receipt notes recorded yet.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

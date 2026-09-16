@@ -1,0 +1,248 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'reports:dashboard' %}" class="text-decoration-none">Reports</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Inventory & Assets</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Inventory & Fixed Asset Reports</h4>
+      <p class="text-muted small mb-0">Live stock valuation, low stock audit, capital asset register, and maintenance logs.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <a href="?export=csv&report={{ data.report_type }}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-file-csv mr-1"></i> Export CSV
+      </a>
+      <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Hub
+      </a>
+    </div>
+  </div>
+
+  <!-- Report Type Selector Tabs -->
+  <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+    <div class="card-body py-2">
+      <ul class="nav nav-pills" style="font-size: 0.88rem;">
+        <li class="nav-item">
+          <a class="nav-link {% if data.report_type == 'current_stock' %}active{% endif %}" href="?report=current_stock">
+            <i class="fas fa-boxes mr-1"></i> Current Stock Balances
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if data.report_type == 'low_stock' %}active{% endif %}" href="?report=low_stock">
+            <i class="fas fa-exclamation-triangle mr-1"></i> Low Stock Audit
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if data.report_type == 'asset_register' %}active{% endif %}" href="?report=asset_register">
+            <i class="fas fa-laptop-house mr-1"></i> Fixed Asset Register
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if data.report_type == 'asset_maintenance' %}active{% endif %}" href="?report=asset_maintenance">
+            <i class="fas fa-tools mr-1"></i> Maintenance Log
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  {% if data.report_type == 'asset_register' %}
+    <!-- Fixed Asset Register Table -->
+    <div class="card shadow-sm border-0" style="border-radius: 10px;">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-laptop-house mr-2 text-primary"></i> Fixed Asset Register</h6>
+        <span class="badge badge-primary font-weight-bold">Total Valuation: ₹{{ data.total_asset_valuation }}</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+          <thead class="bg-light">
+            <tr>
+              <th>Asset Tag</th>
+              <th>Asset Name</th>
+              <th>Category</th>
+              <th>Custodian / Location</th>
+              <th>Purchase Cost (₹)</th>
+              <th>Status</th>
+              <th>Condition</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in data.assets %}
+              <tr>
+                <td class="font-weight-bold text-primary">{{ a.asset_tag }}</td>
+                <td class="font-weight-bold text-dark">{{ a.name }}</td>
+                <td><span class="badge badge-light border">{{ a.category.name }}</span></td>
+                <td>
+                  {% if a.assigned_employee %}
+                    {{ a.assigned_employee.full_name }} (Staff)
+                  {% elif a.department %}
+                    {{ a.department.name }} (Dept)
+                  {% else %}
+                    {{ a.current_location|default:"Storage" }}
+                  {% endif %}
+                </td>
+                <td class="font-weight-bold">₹{{ a.purchase_cost }}</td>
+                <td>
+                  {% if a.status == 'AVAILABLE' %}
+                    <span class="badge badge-info">Available</span>
+                  {% elif a.status == 'ASSIGNED' %}
+                    <span class="badge badge-success">Assigned</span>
+                  {% elif a.status == 'IN_REPAIR' %}
+                    <span class="badge badge-warning">In Repair</span>
+                  {% else %}
+                    <span class="badge badge-secondary">{{ a.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td><span class="badge badge-light border">{{ a.get_condition_display }}</span></td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="text-center py-4 text-muted">No fixed assets registered.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  {% elif data.report_type == 'low_stock' %}
+    <!-- Low Stock Table -->
+    <div class="card shadow-sm border-0" style="border-radius: 10px;">
+      <div class="card-header bg-white py-3">
+        <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-exclamation-triangle mr-2 text-warning"></i> Low Stock & Reorder Level Audit</h6>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+          <thead class="bg-light">
+            <tr>
+              <th>SKU</th>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>Current Stock</th>
+              <th>Reorder Threshold</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for itm in data.low_stock_items %}
+              <tr>
+                <td class="font-weight-bold text-primary">{{ itm.sku }}</td>
+                <td class="font-weight-bold text-dark">{{ itm.name }}</td>
+                <td><span class="badge badge-light border">{{ itm.category.name }}</span></td>
+                <td class="font-weight-bold text-warning">{{ itm.current_stock }} {{ itm.unit.short_code }}</td>
+                <td>{{ itm.reorder_level }} {{ itm.unit.short_code }}</td>
+                <td><span class="badge badge-warning">Low Stock</span></td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-4 text-success font-weight-bold">
+                  <i class="fas fa-check-circle mr-1"></i> All stock items are currently above reorder safety thresholds.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  {% elif data.report_type == 'asset_maintenance' %}
+    <!-- Maintenance Table -->
+    <div class="card shadow-sm border-0" style="border-radius: 10px;">
+      <div class="card-header bg-white py-3">
+        <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-tools mr-2 text-warning"></i> Asset Maintenance & Repair Expenditure Log</h6>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+          <thead class="bg-light">
+            <tr>
+              <th>Asset Tag</th>
+              <th>Asset Name</th>
+              <th>Type</th>
+              <th>Issue Description</th>
+              <th>Start Date</th>
+              <th>Completion Date</th>
+              <th>Repair Cost (₹)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in data.maintenance_records %}
+              <tr>
+                <td class="font-weight-bold text-primary">{{ m.asset.asset_tag }}</td>
+                <td class="font-weight-bold text-dark">{{ m.asset.name }}</td>
+                <td><span class="badge badge-light border">{{ m.get_maintenance_type_display }}</span></td>
+                <td>{{ m.issue_description }}</td>
+                <td>{{ m.start_date|date:"d M Y" }}</td>
+                <td>{{ m.completion_date|date:"d M Y"|default:"-" }}</td>
+                <td class="font-weight-bold">₹{{ m.cost }}</td>
+                <td><span class="badge badge-light border">{{ m.get_status_display }}</span></td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="8" class="text-center py-4 text-muted">No maintenance records logged.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  {% else %}
+    <!-- Current Stock Balances Table -->
+    <div class="card shadow-sm border-0" style="border-radius: 10px;">
+      <div class="card-header bg-white py-3">
+        <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-boxes mr-2 text-primary"></i> Current Stock Balances & Valuation</h6>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+          <thead class="bg-light">
+            <tr>
+              <th>SKU</th>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>Unit</th>
+              <th>Reorder Lvl</th>
+              <th>Total Quantity</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for itm in data.items %}
+              <tr>
+                <td class="font-weight-bold text-primary">{{ itm.sku }}</td>
+                <td class="font-weight-bold text-dark">{{ itm.name }}</td>
+                <td><span class="badge badge-light border">{{ itm.category.name }}</span></td>
+                <td>{{ itm.unit.short_code }}</td>
+                <td>{{ itm.reorder_level }}</td>
+                <td class="font-weight-bold">{{ itm.current_stock }}</td>
+                <td>
+                  {% if itm.current_stock <= 0 %}
+                    <span class="badge badge-danger">Out of Stock</span>
+                  {% elif itm.current_stock <= itm.reorder_level %}
+                    <span class="badge badge-warning">Low Stock</span>
+                  {% else %}
+                    <span class="badge badge-success">Healthy</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="text-center py-4 text-muted">No inventory items found.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

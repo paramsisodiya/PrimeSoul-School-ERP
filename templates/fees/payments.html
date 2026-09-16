@@ -1,0 +1,379 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Breadcrumbs & Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'fees:fee_dashboard' %}" class="text-decoration-none">Fees</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Payments</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Fee Collections & Payment Transactions</h4>
+      <p class="text-muted small mb-0">Record offline cash/cheque/UPI payments, manage cheque clearance/bounce workflows, and track online settlements.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <button type="button" class="btn btn-primary font-weight-bold" data-toggle="modal" data-target="#collectPaymentModal">
+        <i class="fas fa-hand-holding-usd mr-1"></i> Collect Payment
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-body p-3">
+      <form method="get" class="form-row align-items-center">
+        <div class="col-md-4 my-1">
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
+            </div>
+            <input type="text" name="q" value="{{ query }}" class="form-control border-left-0" placeholder="Search Txn ID, student, chq #...">
+          </div>
+        </div>
+        <div class="col-md-3 my-1">
+          <select name="gateway" class="form-control" onchange="this.form.submit()">
+            <option value="">All Payment Modes</option>
+            {% for g_val, g_lbl in gateways %}
+              <option value="{{ g_val }}" {% if gateway_filter == g_val %}selected{% endif %}>{{ g_lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 my-1">
+          <select name="status" class="form-control" onchange="this.form.submit()">
+            <option value="">All Statuses</option>
+            {% for s_val, s_lbl in statuses %}
+              <option value="{{ s_val }}" {% if status_filter == s_val %}selected{% endif %}>{{ s_lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 my-1 d-flex gap-2">
+          <button type="submit" class="btn btn-dark btn-block">Filter</button>
+          {% if query or gateway_filter or status_filter %}
+            <a href="{% url 'fees:payments' %}" class="btn btn-light border ml-1">Reset</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-0 table-responsive">
+      <table class="table-modern">
+        <thead>
+          <tr>
+            <th class="pl-4">Transaction ID</th>
+            <th>Student Details</th>
+            <th>Mode / Gateway</th>
+            <th>Amount</th>
+            <th>Payment Status</th>
+            <th>Cheque Info / Status</th>
+            <th>Date & Collector</th>
+            <th class="text-right pr-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pay in payments %}
+          <tr>
+            <td class="pl-4 font-weight-bold text-dark">
+              <code>{{ pay.transaction_id }}</code>
+              {% if pay.invoice %}
+                <div class="small text-muted">Inv: {{ pay.invoice.invoice_number }}</div>
+              {% endif %}
+            </td>
+            <td>
+              <div class="font-weight-bold text-dark">{{ pay.student.get_full_name }}</div>
+              <div class="small text-muted">{{ pay.student.grade_level.name }} | Adm: {{ pay.student.admission_number|default:"-" }}</div>
+            </td>
+            <td>
+              <span class="badge badge-light border text-dark">
+                {% if pay.gateway == 'CASH' %}<i class="fas fa-money-bill-wave text-success mr-1"></i> Cash
+                {% elif pay.gateway == 'CHEQUE' %}<i class="fas fa-money-check-alt text-info mr-1"></i> Cheque/DD
+                {% elif pay.gateway == 'UPI' %}<i class="fas fa-mobile-alt text-primary mr-1"></i> UPI
+                {% elif pay.gateway == 'CARD' %}<i class="fas fa-credit-card text-secondary mr-1"></i> POS Card
+                {% elif pay.gateway == 'RAZORPAY' %}<i class="fas fa-bolt text-warning mr-1"></i> Razorpay
+                {% else %}{{ pay.get_gateway_display }}{% endif %}
+              </span>
+            </td>
+            <td class="font-weight-bold text-success" style="font-size: 1rem;">₹{{ pay.amount }}</td>
+            <td>
+              {% if pay.status == 'SUCCESS' %}
+                <span class="badge-status badge-status-paid">SUCCESS</span>
+              {% elif pay.status == 'PENDING' %}
+                <span class="badge-status badge-status-pending">PENDING</span>
+              {% elif pay.status == 'FAILED' %}
+                <span class="badge-status badge-status-overdue">FAILED</span>
+              {% else %}
+                <span class="badge-status badge-status-cancelled">{{ pay.status }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if pay.gateway == 'CHEQUE' %}
+                <div class="small font-weight-bold text-dark">Chq #{{ pay.cheque_number }} ({{ pay.bank_name }})</div>
+                {% if pay.clearance_status == 'CLEARED' %}
+                  <span class="badge badge-status-paid">Cleared</span>
+                {% elif pay.clearance_status == 'BOUNCED' %}
+                  <span class="badge badge-status-overdue">Bounced</span>
+                {% else %}
+                  <span class="badge badge-status-pending">Pending Clearance</span>
+                {% endif %}
+              {% else %}
+                <span class="text-muted small">&mdash;</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="text-dark small font-weight-bold">{{ pay.created_at|date:"d M Y, h:i A" }}</div>
+              <div class="text-muted small">by {{ pay.collected_by.get_full_name|default:"Self" }}</div>
+            </td>
+            <td class="text-right pr-4">
+              {% if pay.gateway == 'CHEQUE' and pay.clearance_status == 'PENDING' %}
+                <button class="btn btn-sm btn-success font-weight-bold mr-1" data-toggle="modal" data-target="#clearChequeModal{{ pay.id }}" title="Clear Cheque">
+                  <i class="fas fa-check mr-1"></i> Clear
+                </button>
+                <button class="btn btn-sm btn-danger font-weight-bold" data-toggle="modal" data-target="#bounceChequeModal{{ pay.id }}" title="Bounce Cheque">
+                  <i class="fas fa-times mr-1"></i> Bounce
+                </button>
+              {% elif pay.receipt %}
+                <a href="{% url 'fees:receipts' %}?q={{ pay.receipt.receipt_number }}" class="btn btn-sm btn-light border font-weight-bold text-primary" title="View Receipt">
+                  <i class="fas fa-receipt mr-1"></i> Receipt
+                </a>
+              {% else %}
+                <span class="text-muted small">&mdash;</span>
+              {% endif %}
+            </td>
+          </tr>
+
+          <!-- Clear Cheque Modal -->
+          <div class="modal fade" id="clearChequeModal{{ pay.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+              <div class="modal-content border-0 shadow">
+                <form method="post" action="{% url 'fees:payments' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="clear_cheque">
+                  <input type="hidden" name="payment_id" value="{{ pay.id }}">
+                  <div class="modal-header border-bottom">
+                    <h5 class="modal-title font-weight-bold text-success">Clear Cheque Payment</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body p-4">
+                    <p>Mark Cheque <strong>#{{ pay.cheque_number }}</strong> ({{ pay.bank_name }}) for <strong>₹{{ pay.amount }}</strong> as <span class="text-success font-weight-bold">CLEARED / REALIZED</span>?</p>
+                    <p class="small text-muted mb-0">This will record revenue, allocate dues, update invoice status, and generate a printable fee receipt.</p>
+                  </div>
+                  <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success font-weight-bold">Confirm Clearance</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bounce Cheque Modal -->
+          <div class="modal fade" id="bounceChequeModal{{ pay.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+              <div class="modal-content border-0 shadow">
+                <form method="post" action="{% url 'fees:payments' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="bounce_cheque">
+                  <input type="hidden" name="payment_id" value="{{ pay.id }}">
+                  <div class="modal-header border-bottom">
+                    <h5 class="modal-title font-weight-bold text-danger">Record Cheque Bounce</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body p-4">
+                    <p class="text-danger font-weight-bold">Mark Cheque #{{ pay.cheque_number }} as BOUNCED / DISHONORED?</p>
+                    <div class="form-group">
+                      <label class="font-weight-bold small text-muted">Bounce Reason *</label>
+                      <input type="text" name="bounce_reason" class="form-control" placeholder="e.g. Insufficient Funds, Signature Mismatch" required>
+                    </div>
+                  </div>
+                  <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger font-weight-bold">Record Bounce</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          {% empty %}
+          <tr>
+            <td colspan="8" class="p-0">
+              <div class="empty-state">
+                <div class="empty-state__icon">
+                  <i class="fas fa-cash-register"></i>
+                </div>
+                <div class="empty-state__title">No Payments Recorded</div>
+                <div class="empty-state__desc">No fee collections or transactions match your filter. Record offline cash, UPI, or cheque payments above.</div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if payments.has_other_pages %}
+    <div class="card-footer bg-white border-top py-3 d-flex justify-content-center">
+      <ul class="pagination pagination-sm mb-0">
+        {% if payments.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ payments.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if gateway_filter %}&gateway={{ gateway_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Previous</a></li>
+        {% endif %}
+        {% for num in payments.paginator.page_range %}
+          <li class="page-item {% if payments.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if gateway_filter %}&gateway={{ gateway_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+          </li>
+        {% endfor %}
+        {% if payments.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ payments.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if gateway_filter %}&gateway={{ gateway_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Next</a></li>
+        {% endif %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Collect Offline Payment Modal -->
+<div class="modal fade" id="collectPaymentModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow">
+      <form method="post" action="{% url 'fees:payments' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="collect_offline">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title font-weight-bold">Collect Offline Fee Payment</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="form-group">
+            <label class="font-weight-bold small text-muted">Select Student *</label>
+            <select name="student_id" class="form-control" id="payStudentSelect" required>
+              <option value="">-- Choose Student --</option>
+              {% for s in students %}
+                <option value="{{ s.id }}">{{ s.get_full_name }} ({{ s.grade_level.name }} - Adm: {{ s.admission_number|default:"-" }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold small text-muted">Linked Pending Invoice (Optional)</label>
+            <select name="invoice_id" class="form-control" id="payInvoiceSelect">
+              <option value="">-- Auto Waterfall (Oldest dues first) --</option>
+              {% for inv in invoices %}
+                <option value="{{ inv.id }}">{{ inv.invoice_number }} - {{ inv.student.get_full_name }} (Due: ₹{{ inv.balance_amount }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold small text-muted">Amount (₹) *</label>
+              <input type="number" step="0.01" min="1" name="amount" class="form-control" placeholder="5000.00" required>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold small text-muted">Payment Mode *</label>
+              <select name="gateway" class="form-control" id="payGatewaySelect" onchange="togglePaymentFields()">
+                <option value="CASH">Cash</option>
+                <option value="UPI">UPI (GPay / PhonePe / QR)</option>
+                <option value="CHEQUE">Cheque / Demand Draft</option>
+                <option value="CARD">Debit / Credit Card (POS)</option>
+                <option value="NET_BANKING">Net Banking / NEFT</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- UPI Section -->
+          <div id="upiFields" class="d-none">
+            <div class="form-group">
+              <label class="font-weight-bold small text-muted">UPI UTR / Reference ID</label>
+              <input type="text" name="transaction_id" class="form-control" placeholder="e.g. UPI-9842145521">
+            </div>
+          </div>
+
+          <!-- Cheque Section -->
+          <div id="chequeFields" class="d-none bg-light p-3 rounded mb-3">
+            <h6 class="font-weight-bold text-dark small mb-2"><i class="fas fa-money-check mr-1"></i> Cheque / DD Details</h6>
+            <div class="row">
+              <div class="col-md-6 form-group">
+                <label class="small text-muted font-weight-bold">Cheque Number *</label>
+                <input type="text" name="cheque_number" class="form-control form-control-sm" placeholder="e.g. 004521">
+              </div>
+              <div class="col-md-6 form-group">
+                <label class="small text-muted font-weight-bold">Bank Name *</label>
+                <input type="text" name="bank_name" class="form-control form-control-sm" placeholder="e.g. HDFC Bank, SBI">
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 form-group">
+                <label class="small text-muted font-weight-bold">Cheque Date</label>
+                <input type="date" name="cheque_date" class="form-control form-control-sm">
+              </div>
+              <div class="col-md-6 form-group">
+                <label class="small text-muted font-weight-bold">Initial Clearance Status</label>
+                <select name="clearance_status" class="form-control form-control-sm">
+                  <option value="CLEARED">Cleared / Realized</option>
+                  <option value="PENDING" selected>Pending Clearance</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold small text-muted">Notes / Remarks</label>
+            <input type="text" name="notes" class="form-control" placeholder="e.g. Term 1 partial tuition fee">
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary font-weight-bold">Record Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePaymentFields() {
+  var gateway = document.getElementById('payGatewaySelect').value;
+  var upiDiv = document.getElementById('upiFields');
+  var chqDiv = document.getElementById('chequeFields');
+
+  if (gateway === 'UPI') {
+    upiDiv.classList.remove('d-none');
+    chqDiv.classList.add('d-none');
+  } else if (gateway === 'CHEQUE') {
+    upiDiv.classList.add('d-none');
+    chqDiv.classList.remove('d-none');
+  } else {
+    upiDiv.classList.add('d-none');
+    chqDiv.classList.add('d-none');
+  }
+}
+</script>
+{% endblock %}

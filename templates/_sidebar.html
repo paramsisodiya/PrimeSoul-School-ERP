@@ -1,304 +1,866 @@
 {% load static %}
 {% load permission_tags %}
 
-<div class="sidebar">
+<aside class="sidebar" id="appSidebar">
   <div class="sidebar-inner">
+    <!-- BRAND LOGO -->
     <div class="sidebar-logo">
-      <div class="peers ai-c fxw-nw">
-        <div class="peer peer-greed"><a class="sidebar-link td-n" href="{% url account_urls.dashboard %}">
-            <div class="peers ai-c fxw-nw">
-              <div class="peer">
-                <div class="logo pl-2">
-                  <img src="{{ request_institute.logo.url }}" 
-                    alt="{{ request_institute.name }}"
-                    width="40"
-                    style="border-radius: 8px;">
-                </div>
-              </div>
-              <div class="peer" style="margin-left: 12px;">
-                <span style="color: #fff; font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em;">
-                  {{ request_institute.name }}
-                </span>
-              </div>
-            </div>
-          </a></div>
-        <div class="peer">
-          <div class="mobile-toggle sidebar-toggle">
-            <a href="" class="td-n"><i class="ti-arrow-circle-left"></i></a>
+      <a class="sidebar-brand" href="{% url 'index_view' %}">
+        <div class="sidebar-brand-logo">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        <div class="sidebar-brand-text">
+          <div class="sidebar-brand-title">
+            Prime<span>Soul</span><span class="sidebar-brand-badge">ERP</span>
+          </div>
+          <div class="sidebar-brand-school">
+            {{ school.name|default:"PrimeSoul School ERP" }}
           </div>
         </div>
-      </div>
+      </a>
+      <button type="button" class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Close Sidebar">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
 
-    <ul class="sidebar-menu scrollable pos-r">
+    <!-- SIDEBAR NAV ITEMS -->
+    <div class="sidebar-nav-container">
+      <ul class="sidebar-menu">
 
-      <!-- MAIN NAV LABEL -->
-      <li class="nav-label">Main</li>
-
-      <li class="nav-item mT-5">
-        <a class="sidebar-link" href="{% url account_urls.dashboard %}">
-          <span class="icon-holder">
-            <i class="fas fa-home"></i>
-          </span>
-          <span class="title">Dashboard</span>
-        </a>
-      </li>
-
-      <li class="nav-item">
-        <a class="sidebar-link" href="{% url 'pages:landing' %}" target="_blank">
-          <span class="icon-holder">
-            <i class="fas fa-external-link-alt"></i>
-          </span>
-          <span class="title">Visit Site</span>
-        </a>
-      </li>
-
-      {% if user|has_role:'academic_officer, admin' %}
-      <!-- ACADEMICS LABEL -->
-      <li class="nav-label">Academics</li>
-
-      <li class="nav-item dropdown">
-        <a class="dropdown-toggle" href="javascript:void(0);">
-          <span class="icon-holder">
-            <i class="fas fa-chart-bar"></i>
-          </span>
-          <span class="title">Counsel & Admissions</span>
-          <span class="arrow"><i class="ti-angle-right"></i></span>
-        </a>
-        <ul class="dropdown-menu">
-          <li>
-            <a class="sidebar-link" href="{% url 'students:students_dashboard_index' %}">
-              Applicants
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" href="{% url 'students:all_applicants' %}">
-              All Applicants
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" href="{% url 'students:unpaid_registrants' %}">
-              Unpaid Applicants
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" href="{% url 'students:paid_registrants' %}">
-              Paid (pending admission)
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" href="{% url 'students:admitted_student_list' %}">
-              Admitted / Cleared
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" href="{% url 'students:admission_confirmation' %}">
-              Create student profiles
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" href="{% url 'students:rejected_registrants' %}">
-              Rejected
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" href="{% url 'students:add_student' %}">
-              New application (offline)
-            </a>
-          </li>
-        </ul>
-      </li>
-      {% endif %}
-
-      <li class="nav-item dropdown">
-        <a class="dropdown-toggle" href="javascript:void(0);">
-          <span class="icon-holder"><i class="fas fa-user-graduate"></i></span>
-          <span class="title">Students</span>
-          <span class="arrow"><i class="ti-angle-right"></i></span>
-        </a>
-        <ul class="dropdown-menu">
-          {% for menu_item in student_menu_items %}
-            <li>
-              <a class="sidebar-link" href="{{ menu_item.url }}">
-                {{ menu_item.title }}
+        <!-- 1. OVERVIEW -->
+        <li class="nav-label">OVERVIEW</li>
+        <li class="nav-item {% if request.path == '/dashboard/' %}active{% endif %}">
+          <a class="nav-link-item {% if request.path == '/dashboard/' %}active{% endif %}" href="{% url 'index_view' %}">
+            <span class="nav-icon"><i class="fas fa-chart-pie"></i></span>
+            <span class="nav-title">Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item {% if '/portal/' in request.path %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-user-astronaut"></i></span>
+            <span class="nav-title">Self-Service Portals</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if '/portal/' in request.path %}style="display: block;"{% endif %}>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/portal/' %}active{% endif %}" href="{% url 'portal:portal_root' %}">
+                <i class="fas fa-compass mr-2"></i> My Portal
               </a>
             </li>
-          {% endfor %}
-        </ul>
-      </li>
-
-      <li class="nav-item dropdown">
-        <a class="dropdown-toggle" href="javascript:void(0);">
-          <span class="icon-holder"><i class="fas fa-chalkboard-teacher"></i></span>
-          <span class="title">Teachers</span>
-          <span class="arrow"><i class="ti-angle-right"></i></span>
-        </a>
-        <ul class="dropdown-menu">
-          {% for menu_item in teacher_menu_items %}
-            <li>
-              <a class="sidebar-link" href="{{ menu_item.url }}">
-                {{ menu_item.title }}
+            {% if user.is_superuser or user.requested_role in 'PARENT,SCHOOL_ADMIN,PRINCIPAL' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/portal/parent/' in request.path %}active{% endif %}" href="{% url 'portal:parent_dashboard' %}">
+                <i class="fas fa-user-friends mr-2"></i> Parent Portal
               </a>
             </li>
-          {% endfor %}
-        </ul>
-      </li>
-
-    {% if user|has_role:'academic_officer, admin' %}
-      <li class="nav-item dropdown">
-        <a class="dropdown-toggle" href="javascript:void(0);">
-          <span class="icon-holder">
-            <i class="fas fa-cogs"></i>
-          </span>
-          <span class="title">Academic setup</span>
-          <span class="arrow"><i class="ti-angle-right"></i></span>
-        </a>
-        <ul class="dropdown-menu">
-          <li>
-            <a class="sidebar-link" href="{% url academic_urls.setup_hub %}">
-              Setup overview
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" href="{% url academic_urls.academic_sessions %}">
-              Academic Sessions
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" href="{% url academic_urls.departments %}">
-              {{ department_label_plural }}
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" href="{% url academic_urls.all_semester %}">
-              {{ semester_label_plural }}
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" href="{% url academic_urls.batch_list %}">
-              Batches
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" href="{% url academic_urls.subject_list %}">
-              Subjects
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" href="{% url 'result:subject_groups' %}">
-              Subject groups
-            </a>
-          </li>
-        </ul>
-      </li>
-    {% endif %}
-
-      <!-- MANAGEMENT LABEL -->
-      {% if user|has_role:'admin, editor' or user|has_role:'accounts, admin' %}
-      <li class="nav-label">Management</li>
-      {% endif %}
-
-      {% if user|has_role:'admin, editor' %}
-      <li class="nav-item dropdown">
-        <a class="dropdown-toggle" href="javascript:void(0);">
-          <span class="icon-holder">
-            <i class="fas fa-pen-fancy"></i>
-          </span>
-          <span class="title">Publishing</span>
-          <span class="arrow"><i class="ti-angle-right"></i></span>
-        </a>
-        <ul class="dropdown-menu">
-          <li>
-            <a class="sidebar-link" href="{% url 'articles:publish_article_from_dashboard' %}">
-              Publish Article
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" 
-              href="{% url 'articles:dashboard_manage' %}">
-              Manage Articles
-            </a>
-          </li>
-          <li>
-            <a href="{% url 'articles:subscribers' %}"
-              class="sidebar-link">
-              Manage Subscribers
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" href="{% url 'notices_dashboard:publish_notice_documents' %}">
-              Publish Notice
-            </a>
-          </li>
-        </ul>
-      </li>
-      {% endif %}
-
-      {% if user|has_role:'accounts, admin' %}
-      <li class="nav-item dropdown">
-        <a class="dropdown-toggle" href="javascript:void(0);">
-          <span class="icon-holder">
-            <i class="fas fa-wallet"></i>
-          </span>
-          <span class="title">Payments</span>
-          <span class="arrow"><i class="ti-angle-right"></i></span>
-        </a>
-        <ul class="dropdown-menu">
-          <li>
-            <a class="sidebar-link" 
-              href="{% url 'payments:dashboard_ssl_payments_list' %}">
-              Manage Payments
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" 
-              href="{% url 'payments:dashboard_ssl_payments_list' %}">
-              Student Payments
-            </a>
-          </li>
-        </ul>
-      </li>
-      {% endif %}
-
-      {% if user|has_role:'admin' %}
-      <li class="nav-label">Administration</li>
-
-      <li class="nav-item dropdown">
-        <a class="dropdown-toggle" href="javascript:void(0);">
-          <span class="icon-holder"><i class="fas fa-shield-alt"></i></span>
-          <span class="title">Administrative</span>
-          <span class="arrow"><i class="ti-angle-right"></i></span>
-        </a>
-        <ul class="dropdown-menu">
-          {% if perms.auth.add_user %}
-            <li>
-              <a class="sidebar-link" 
-                href="{% url account_urls.add_user %}">
-                Add People
+            {% endif %}
+            {% if user.is_superuser or user.requested_role in 'STUDENT,SCHOOL_ADMIN,PRINCIPAL' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/portal/student/' in request.path %}active{% endif %}" href="{% url 'portal:student_dashboard' %}">
+                <i class="fas fa-user-graduate mr-2"></i> Student Portal
               </a>
             </li>
-            <li>
-            <a class="sidebar-link" 
-                href="{% url account_urls.user_requests %}">
-                User Requests
+            {% endif %}
+            {% if user.is_superuser or user.requested_role in 'TEACHER,SCHOOL_ADMIN,PRINCIPAL' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/portal/teacher/' in request.path %}active{% endif %}" href="{% url 'portal:teacher_dashboard' %}">
+                <i class="fas fa-chalkboard-teacher mr-2"></i> Teacher Portal
               </a>
             </li>
-          {% endif %}
-          <li>
-            <a class="sidebar-link" 
-              href="{% url account_urls.all_accounts %}">
-              Users
-            </a>
-          </li>
-          <li>
-            <a class="sidebar-link" 
-              href="{% url account_urls.groups %}">
-              Groups
-            </a>
-          </li>
-        </ul>
-      </li>
-      {% endif %}
-    </ul>
+            {% endif %}
+          </ul>
+        </li>
+
+        <!-- 2. ACADEMICS -->
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,TEACHER' %}
+        <li class="nav-label">ACADEMICS</li>
+        <li class="nav-item {% if '/academics/' in request.path %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-school"></i></span>
+            <span class="nav-title">Academic Setup</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if '/academics/' in request.path %}style="display: block;"{% endif %}>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/academics/' %}active{% endif %}" href="{% url 'academics:academic_dashboard' %}">
+                <i class="fas fa-chart-line mr-2"></i> Academic Dashboard
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/academics/years/' %}active{% endif %}" href="{% url 'academics:academic_years' %}">
+                <i class="fas fa-calendar-alt mr-2"></i> Academic Sessions
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/academics/classes/' %}active{% endif %}" href="{% url 'academics:classes' %}">
+                <i class="fas fa-layer-group mr-2"></i> Classes / Grades
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/academics/sections/' %}active{% endif %}" href="{% url 'academics:sections' %}">
+                <i class="fas fa-columns mr-2"></i> Sections
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/academics/subjects/' in request.path %}active{% endif %}" href="{% url 'academics:subjects_directory' %}">
+                <i class="fas fa-book mr-2"></i> Subjects Catalog
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/academics/assignments/' %}active{% endif %}" href="{% url 'academics:assignments' %}">
+                <i class="fas fa-chalkboard-teacher mr-2"></i> Subject Allocations
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/academics/enrollments/' %}active{% endif %}" href="{% url 'academics:enrollments' %}">
+                <i class="fas fa-user-graduate mr-2"></i> Enrollments
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/academics/promotions/' %}active{% endif %}" href="{% url 'academics:promotions' %}">
+                <i class="fas fa-arrow-circle-up mr-2"></i> Promotion Desk
+              </a>
+            </li>
+          </ul>
+        </li>
+        {% endif %}
+
+        <!-- ATTENDANCE & OPERATIONS -->
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,TEACHER,RECEPTIONIST,STUDENT,PARENT' %}
+        <li class="nav-label">ATTENDANCE</li>
+        <li class="nav-item {% if '/attendance/' in request.path %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-calendar-check"></i></span>
+            <span class="nav-title">Attendance</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if '/attendance/' in request.path %}style="display: block;"{% endif %}>
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,TEACHER,RECEPTIONIST' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/attendance/' %}active{% endif %}" href="{% url 'attendance:dashboard' %}">
+                <i class="fas fa-chart-line mr-2"></i> Attendance Hub
+              </a>
+            </li>
+            {% endif %}
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,TEACHER' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/attendance/mark/' %}active{% endif %}" href="{% url 'attendance:mark_daily' %}">
+                <i class="fas fa-check-double mr-2"></i> Mark Daily
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/attendance/pending/' %}active{% endif %}" href="{% url 'attendance:pending' %}">
+                <i class="fas fa-clock mr-2"></i> Pending Sections
+              </a>
+            </li>
+            {% endif %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/attendance/history/' %}active{% endif %}" href="{% url 'attendance:history' %}">
+                <i class="fas fa-history mr-2"></i> Attendance Log
+              </a>
+            </li>
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,TEACHER,RECEPTIONIST' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/attendance/monthly/' %}active{% endif %}" href="{% url 'attendance:monthly_summary' %}">
+                <i class="fas fa-calendar-alt mr-2"></i> Monthly Summary
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/attendance/low-attendance/' %}active{% endif %}" href="{% url 'attendance:low_attendance' %}">
+                <i class="fas fa-user-clock mr-2"></i> Low Attendance (<75%)
+              </a>
+            </li>
+            {% endif %}
+            {% if user.is_superuser or user.requested_role in 'STUDENT,PARENT' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/attendance/students/' in request.path %}active{% endif %}" href="{% url 'attendance:student_profile' %}">
+                <i class="fas fa-user mr-2"></i> My Attendance
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </li>
+        {% endif %}
+
+        <!-- EXAMINATIONS & RESULTS -->
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,TEACHER,STUDENT,PARENT,RECEPTIONIST' %}
+        <li class="nav-label">EXAMINATIONS</li>
+        <li class="nav-item {% if '/examinations/' in request.path %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-file-signature"></i></span>
+            <span class="nav-title">Exams & Results</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if '/examinations/' in request.path %}style="display: block;"{% endif %}>
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,TEACHER' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/examinations/' %}active{% endif %}" href="{% url 'examinations:dashboard' %}">
+                <i class="fas fa-chart-line mr-2"></i> Exam Dashboard
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/examinations/marks/' in request.path %}active{% endif %}" href="{% url 'examinations:marks_entry' %}">
+                <i class="fas fa-edit mr-2"></i> Marks Entry
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/examinations/results/' in request.path and '/class/' not in request.path and '/student/' not in request.path %}active{% endif %}" href="{% url 'examinations:results_list' %}">
+                <i class="fas fa-poll-h mr-2"></i> Final Results
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/examinations/results/class/' in request.path %}active{% endif %}" href="{% url 'examinations:class_summary_default' %}">
+                <i class="fas fa-chart-pie mr-2"></i> Class Analytics
+              </a>
+            </li>
+            {% endif %}
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/examinations/sessions/' in request.path %}active{% endif %}" href="{% url 'examinations:session_list' %}">
+                <i class="fas fa-calendar-alt mr-2"></i> Exam Sessions
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/examinations/exams/' in request.path %}active{% endif %}" href="{% url 'examinations:exam_list' %}">
+                <i class="fas fa-book mr-2"></i> Manage Exams
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/examinations/grades/' in request.path %}active{% endif %}" href="{% url 'examinations:grade_scale_list' %}">
+                <i class="fas fa-sliders-h mr-2"></i> Grade Scales
+              </a>
+            </li>
+            {% endif %}
+            {% if user.requested_role in 'STUDENT,PARENT' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/examinations/results/student/' in request.path %}active{% endif %}" href="{% url 'examinations:student_results_default' %}">
+                <i class="fas fa-user-graduate mr-2"></i> My Report Card
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </li>
+        {% endif %}
+
+        <!-- TIMETABLE & SCHEDULING -->
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,ACADEMIC_COORDINATOR,TEACHER,STUDENT,PARENT,RECEPTIONIST' %}
+        <li class="nav-label">TIMETABLE</li>
+        <li class="nav-item {% if '/timetable/' in request.path %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-calendar-alt"></i></span>
+            <span class="nav-title">Timetable</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if '/timetable/' in request.path %}style="display: block;"{% endif %}>
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,ACADEMIC_COORDINATOR' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/timetable/' %}active{% endif %}" href="{% url 'timetable:dashboard' %}">
+                <i class="fas fa-chart-line mr-2"></i> Timetable Hub
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/timetable/setup/' in request.path %}active{% endif %}" href="{% url 'timetable:setup' %}">
+                <i class="fas fa-cogs mr-2"></i> Setup & Periods
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/timetable/generate/' in request.path %}active{% endif %}" href="{% url 'timetable:generate' %}">
+                <i class="fas fa-magic mr-2"></i> Auto-Generate
+              </a>
+            </li>
+            {% endif %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/timetable/weekly/' in request.path %}active{% endif %}" href="{% url 'timetable:weekly' %}">
+                <i class="fas fa-th mr-2"></i> Weekly Master
+              </a>
+            </li>
+            {% if user.is_superuser or user.requested_role in 'TEACHER' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/timetable/teacher/' in request.path %}active{% endif %}" href="{% url 'timetable:my_timetable' %}">
+                <i class="fas fa-chalkboard-teacher mr-2"></i> My Schedule
+              </a>
+            </li>
+            {% endif %}
+            {% if user.is_superuser or user.requested_role in 'STUDENT,PARENT' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/timetable/my-timetable/' in request.path %}active{% endif %}" href="{% url 'timetable:my_timetable' %}">
+                <i class="fas fa-user-clock mr-2"></i> Class Routine
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </li>
+        {% endif %}
+
+        <!-- TRANSPORT MANAGEMENT -->
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,ACADEMIC_COORDINATOR,TRANSPORT_MANAGER,RECEPTIONIST,TEACHER,STUDENT,PARENT' %}
+        <li class="nav-label">LOGISTICS</li>
+        <li class="nav-item {% if '/transport/' in request.path %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-bus-alt"></i></span>
+            <span class="nav-title">Transport</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if '/transport/' in request.path %}style="display: block;"{% endif %}>
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,ACADEMIC_COORDINATOR,TRANSPORT_MANAGER' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/transport/' %}active{% endif %}" href="{% url 'transport:dashboard' %}">
+                <i class="fas fa-tachometer-alt mr-2"></i> Logistics Hub
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/transport/vehicles/' in request.path %}active{% endif %}" href="{% url 'transport:vehicles' %}">
+                <i class="fas fa-bus mr-2"></i> Fleet Vehicles
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/transport/routes/' in request.path %}active{% endif %}" href="{% url 'transport:routes' %}">
+                <i class="fas fa-route mr-2"></i> Routes & Stops
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/transport/staff/' in request.path %}active{% endif %}" href="{% url 'transport:staff' %}">
+                <i class="fas fa-id-card mr-2"></i> Transport Staff
+              </a>
+            </li>
+            {% endif %}
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,TRANSPORT_MANAGER,RECEPTIONIST,TEACHER' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/transport/students/' in request.path %}active{% endif %}" href="{% url 'transport:students' %}">
+                <i class="fas fa-users mr-2"></i> Student Transport
+              </a>
+            </li>
+            {% endif %}
+            {% if user.is_superuser or user.requested_role in 'STUDENT,PARENT' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/transport/my-transport/' in request.path %}active{% endif %}" href="{% url 'transport:my_transport' %}">
+                <i class="fas fa-id-badge mr-2"></i> My Transport
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </li>
+        {% endif %}
+
+        <!-- 3. STUDENTS -->
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,RECEPTIONIST,TEACHER' %}
+        <li class="nav-label">STUDENTS</li>
+        <li class="nav-item {% if '/students/' in request.path %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-user-graduate"></i></span>
+            <span class="nav-title">Student Registry</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if '/students/' in request.path %}style="display: block;"{% endif %}>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/students/' %}active{% endif %}" href="{% url 'students:all_student' %}">
+                <i class="fas fa-users mr-2"></i> Students Roster
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/students/addstudent/' %}active{% endif %}" href="{% url 'students:add_student' %}">
+                <i class="fas fa-user-plus mr-2"></i> Admissions Entry
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link" href="javascript:void(0);" style="opacity: 0.6; cursor: not-allowed;">
+                <i class="fas fa-user-friends mr-2"></i> Parents
+                <span class="badge-coming-soon">Coming Soon</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+        {% endif %}
+
+        <!-- LIBRARY MANAGEMENT -->
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,ACADEMIC_COORDINATOR,LIBRARIAN,TEACHER,STUDENT,PARENT,RECEPTIONIST' %}
+        <li class="nav-label">LIBRARY</li>
+        <li class="nav-item {% if '/library/' in request.path %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-book-reader"></i></span>
+            <span class="nav-title">Library</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if '/library/' in request.path %}style="display: block;"{% endif %}>
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,LIBRARIAN' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/library/' %}active{% endif %}" href="{% url 'library:dashboard' %}">
+                <i class="fas fa-chart-pie mr-2"></i> Library Hub
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/library/issues/' in request.path %}active{% endif %}" href="{% url 'library:issues' %}">
+                <i class="fas fa-exchange-alt mr-2"></i> Circulation Desk
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/library/members/' in request.path %}active{% endif %}" href="{% url 'library:members' %}">
+                <i class="fas fa-id-card mr-2"></i> Members
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/library/overdue/' in request.path %}active{% endif %}" href="{% url 'library:overdue' %}">
+                <i class="fas fa-clock mr-2"></i> Overdue Tracker
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/library/fines/' in request.path %}active{% endif %}" href="{% url 'library:fines' %}">
+                <i class="fas fa-receipt mr-2"></i> Fines Register
+              </a>
+            </li>
+            {% endif %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/library/books/' in request.path %}active{% endif %}" href="{% url 'library:books' %}">
+                <i class="fas fa-book mr-2"></i> Book Catalog
+              </a>
+            </li>
+            {% if user.is_superuser or user.requested_role in 'TEACHER,STUDENT,PARENT' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/library/my-library/' in request.path %}active{% endif %}" href="{% url 'library:my_library' %}">
+                <i class="fas fa-user-tag mr-2"></i> My Library Pass
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </li>
+        {% endif %}
+
+        <!-- 4. FACULTY & HR -->
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,ACCOUNTANT,TEACHER' %}
+        <li class="nav-label">HR & FACULTY</li>
+        <li class="nav-item {% if '/hr/' in request.path %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-users-cog"></i></span>
+            <span class="nav-title">HR & Payroll</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if '/hr/' in request.path %}style="display: block;"{% endif %}>
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,ACCOUNTANT' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/hr/' %}active{% endif %}" href="{% url 'hr:dashboard' %}">
+                <i class="fas fa-tachometer-alt mr-2"></i> HR Command Hub
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/hr/employees/' in request.path %}active{% endif %}" href="{% url 'hr:employees' %}">
+                <i class="fas fa-user-tie mr-2"></i> Employee Directory
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/hr/attendance/' in request.path %}active{% endif %}" href="{% url 'hr:attendance' %}">
+                <i class="fas fa-user-check mr-2"></i> Staff Attendance
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/hr/leaves/' in request.path %}active{% endif %}" href="{% url 'hr:leaves' %}">
+                <i class="fas fa-calendar-minus mr-2"></i> Leave Approvals
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/hr/salary-structures/' in request.path %}active{% endif %}" href="{% url 'hr:salary_structures' %}">
+                <i class="fas fa-coins mr-2"></i> Salary Structures
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/hr/payroll-periods/' in request.path %}active{% endif %}" href="{% url 'hr:payroll_periods' %}">
+                <i class="fas fa-money-check-alt mr-2"></i> Payroll Cycles
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/hr/departments/' in request.path %}active{% endif %}" href="{% url 'hr:departments' %}">
+                <i class="fas fa-sitemap mr-2"></i> Departments
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/hr/designations/' in request.path %}active{% endif %}" href="{% url 'hr:designations' %}">
+                <i class="fas fa-award mr-2"></i> Designations
+              </a>
+            </li>
+            {% endif %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/hr/my-hr/' in request.path %}active{% endif %}" href="{% url 'hr:my_hr' %}">
+                <i class="fas fa-id-card-alt mr-2"></i> My Staff Portal
+              </a>
+            </li>
+          </ul>
+        </li>
+        <li class="nav-item {% if '/teachers/' in request.path %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-chalkboard-teacher"></i></span>
+            <span class="nav-title">Faculty Roster</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if '/teachers/' in request.path %}style="display: block;"{% endif %}>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/teachers/' %}active{% endif %}" href="{% url 'teachers:all_teacher' %}">
+                <i class="fas fa-id-badge mr-2"></i> Teachers List
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/teachers/designations/' %}active{% endif %}" href="{% url 'teachers:designations' %}">
+                <i class="fas fa-award mr-2"></i> Academic Roles
+              </a>
+            </li>
+          </ul>
+        </li>
+        {% endif %}
+
+        <!-- 5. FINANCE -->
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,ACCOUNTANT,PRINCIPAL,RECEPTIONIST,PARENT,STUDENT' %}
+        <li class="nav-label">FINANCE</li>
+
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,ACCOUNTANT,PRINCIPAL,RECEPTIONIST' %}
+        <li class="nav-item {% if request.path == '/fees/dashboard/' or request.path == '/fees/' %}active{% endif %}">
+          <a class="nav-link-item {% if request.path == '/fees/dashboard/' or request.path == '/fees/' %}active{% endif %}" href="{% url 'fees:fee_dashboard' %}">
+            <span class="nav-icon"><i class="fas fa-wallet"></i></span>
+            <span class="nav-title">Fees Dashboard</span>
+          </a>
+        </li>
+        {% endif %}
+
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,ACCOUNTANT' %}
+        <li class="nav-item {% if request.path in '/fees/heads/,/fees/structures/,/fees/student-fees/,/fees/concessions/' %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-sliders-h"></i></span>
+            <span class="nav-title">Fee Configuration</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if request.path in '/fees/heads/,/fees/structures/,/fees/student-fees/,/fees/concessions/' %}style="display: block;"{% endif %}>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/fees/heads/' %}active{% endif %}" href="{% url 'fees:fee_heads' %}">
+                <i class="fas fa-tags mr-2"></i> Fee Heads
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/fees/structures/' %}active{% endif %}" href="{% url 'fees:fee_structures' %}">
+                <i class="fas fa-sitemap mr-2"></i> Fee Structures
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/fees/student-fees/' %}active{% endif %}" href="{% url 'fees:student_fees' %}">
+                <i class="fas fa-user-tag mr-2"></i> Student Fees
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/fees/concessions/' %}active{% endif %}" href="{% url 'fees:concessions' %}">
+                <i class="fas fa-percentage mr-2"></i> Concessions
+              </a>
+            </li>
+          </ul>
+        </li>
+        {% endif %}
+
+        <li class="nav-item {% if request.path in '/fees/installments/,/fees/invoices/,/fees/payments/,/fees/receipts/' %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-file-invoice-dollar"></i></span>
+            <span class="nav-title">Billing & Collections</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if request.path in '/fees/installments/,/fees/invoices/,/fees/payments/,/fees/receipts/' %}style="display: block;"{% endif %}>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/fees/installments/' %}active{% endif %}" href="{% url 'fees:installments' %}">
+                <i class="fas fa-calendar-check mr-2"></i> Installments
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/fees/invoices/' %}active{% endif %}" href="{% url 'fees:invoices' %}">
+                <i class="fas fa-file-invoice mr-2"></i> Invoices
+              </a>
+            </li>
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,ACCOUNTANT,RECEPTIONIST' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/fees/payments/' %}active{% endif %}" href="{% url 'fees:payments' %}">
+                <i class="fas fa-cash-register mr-2"></i> Payments Counter
+              </a>
+            </li>
+            {% endif %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/fees/receipts/' %}active{% endif %}" href="{% url 'fees:receipts' %}">
+                <i class="fas fa-receipt mr-2"></i> Receipts Register
+              </a>
+            </li>
+          </ul>
+        </li>
+        {% endif %}
+
+        <!-- ADMISSIONS MANAGEMENT -->
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,ACADEMIC_COORDINATOR,RECEPTIONIST' %}
+        <li class="nav-label">ADMISSIONS</li>
+        <li class="nav-item {% if '/admissions/' in request.path %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-user-plus"></i></span>
+            <span class="nav-title">Admissions & Intake</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if '/admissions/' in request.path %}style="display: block;"{% endif %}>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/admissions/' %}active{% endif %}" href="{% url 'admissions:dashboard' %}">
+                <i class="fas fa-chart-line mr-2"></i> Admissions Hub
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/admissions/applications/' in request.path %}active{% endif %}" href="{% url 'admissions:application_list' %}">
+                <i class="fas fa-file-invoice mr-2"></i> Applications Roster
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/admissions/enquiries/' in request.path %}active{% endif %}" href="{% url 'admissions:enquiry_list' %}">
+                <i class="fas fa-headset mr-2"></i> Enquiries & Leads
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/admissions/classes/' in request.path %}active{% endif %}" href="{% url 'admissions:class_config_list' %}">
+                <i class="fas fa-chair mr-2"></i> Class Seat Quotas
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/admissions/sessions/' in request.path %}active{% endif %}" href="{% url 'admissions:session_list' %}">
+                <i class="fas fa-calendar-alt mr-2"></i> Intake Sessions
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/admissions/reports/' in request.path %}active{% endif %}" href="{% url 'admissions:reports' %}">
+                <i class="fas fa-chart-pie mr-2"></i> Intake Reports
+              </a>
+            </li>
+          </ul>
+        </li>
+        {% endif %}
+
+        <!-- COMMUNICATION & NOTIFICATIONS -->
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,ACADEMIC_COORDINATOR,TEACHER,RECEPTIONIST,ACCOUNTANT,STUDENT,PARENT' %}
+        <li class="nav-label">COMMUNICATION</li>
+        <li class="nav-item {% if '/communication/' in request.path or '/notifications/' in request.path %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-bullhorn"></i></span>
+            <span class="nav-title">Communication</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if '/communication/' in request.path or '/notifications/' in request.path %}style="display: block;"{% endif %}>
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,ACADEMIC_COORDINATOR,TEACHER,RECEPTIONIST' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/communication/' %}active{% endif %}" href="{% url 'communication:dashboard' %}">
+                <i class="fas fa-tachometer-alt mr-2"></i> Command Center
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/communication/announcements/' in request.path %}active{% endif %}" href="{% url 'communication:announcement_list' %}">
+                <i class="fas fa-bullhorn mr-2"></i> Announcements
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/communication/templates/' in request.path %}active{% endif %}" href="{% url 'communication:template_list' %}">
+                <i class="fas fa-file-code mr-2"></i> Alert Templates
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/communication/delivery-logs/' in request.path %}active{% endif %}" href="{% url 'communication:delivery_logs' %}">
+                <i class="fas fa-history mr-2"></i> Delivery Audit Logs
+              </a>
+            </li>
+            {% endif %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/notifications/' in request.path and '/preferences/' not in request.path %}active{% endif %}" href="{% url 'communication:notification_center' %}">
+                <i class="fas fa-bell mr-2"></i> In-App Alerts
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/preferences/' in request.path %}active{% endif %}" href="{% url 'communication:notification_preferences' %}">
+                <i class="fas fa-sliders-h mr-2"></i> Preferences
+              </a>
+            </li>
+          </ul>
+        </li>
+        {% endif %}
+
+        <!-- INVENTORY & ASSET MANAGEMENT -->
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,ACCOUNTANT,TEACHER,LIBRARIAN,TRANSPORT_MANAGER,RECEPTIONIST' %}
+        <li class="nav-label">INVENTORY & ASSETS</li>
+        <li class="nav-item {% if '/inventory/' in request.path %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-boxes"></i></span>
+            <span class="nav-title">Inventory & Assets</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if '/inventory/' in request.path %}style="display: block;"{% endif %}>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/inventory/' %}active{% endif %}" href="{% url 'inventory:dashboard' %}">
+                <i class="fas fa-tachometer-alt mr-2"></i> Inventory Hub
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/inventory/items/' in request.path %}active{% endif %}" href="{% url 'inventory:item_list' %}">
+                <i class="fas fa-box-open mr-2"></i> Items Master
+              </a>
+            </li>
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,ACCOUNTANT' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/inventory/purchases/' in request.path %}active{% endif %}" href="{% url 'inventory:purchase_list' %}">
+                <i class="fas fa-truck-loading mr-2"></i> Goods Receipts (GRN)
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/inventory/issues/' in request.path %}active{% endif %}" href="{% url 'inventory:issue_list' %}">
+                <i class="fas fa-hand-holding mr-2"></i> Stock Issues
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/inventory/transfers/' in request.path %}active{% endif %}" href="{% url 'inventory:transfer_list' %}">
+                <i class="fas fa-exchange-alt mr-2"></i> Store Transfers
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/inventory/movements/' in request.path %}active{% endif %}" href="{% url 'inventory:movement_ledger' %}">
+                <i class="fas fa-history mr-2"></i> Movement Ledger
+              </a>
+            </li>
+            {% endif %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/inventory/assets/' in request.path %}active{% endif %}" href="{% url 'inventory:asset_list' %}">
+                <i class="fas fa-laptop-house mr-2"></i> Asset Register
+              </a>
+            </li>
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,ACCOUNTANT' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/inventory/maintenance/' in request.path %}active{% endif %}" href="{% url 'inventory:maintenance_list' %}">
+                <i class="fas fa-tools mr-2"></i> Maintenance
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </li>
+        {% endif %}
+
+        <!-- ADVANCED REPORTS & ANALYTICS -->
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,ACADEMIC_COORDINATOR,ACCOUNTANT,TEACHER,RECEPTIONIST,TRANSPORT_MANAGER,LIBRARIAN' %}
+        <li class="nav-label">REPORTS & ANALYTICS</li>
+        <li class="nav-item {% if '/reports/' in request.path %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-chart-pie"></i></span>
+            <span class="nav-title">Executive Reports</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if '/reports/' in request.path %}style="display: block;"{% endif %}>
+            <li class="submenu-item">
+              <a class="submenu-link {% if request.path == '/reports/' %}active{% endif %}" href="{% url 'reports:dashboard' %}">
+                <i class="fas fa-tachometer-alt mr-2"></i> Executive Dashboard
+              </a>
+            </li>
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,ACCOUNTANT' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/reports/finance/' in request.path %}active{% endif %}" href="{% url 'reports:finance_reports' %}">
+                <i class="fas fa-rupee-sign mr-2"></i> Finance Reports
+              </a>
+            </li>
+            {% endif %}
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,ACADEMIC_COORDINATOR,TEACHER' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/reports/academics/' in request.path %}active{% endif %}" href="{% url 'reports:academic_reports' %}">
+                <i class="fas fa-graduation-cap mr-2"></i> Academic Reports
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/reports/attendance/' in request.path %}active{% endif %}" href="{% url 'reports:attendance_reports' %}">
+                <i class="fas fa-calendar-check mr-2"></i> Attendance Reports
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/reports/examinations/' in request.path %}active{% endif %}" href="{% url 'reports:examination_reports' %}">
+                <i class="fas fa-award mr-2"></i> Examination Reports
+              </a>
+            </li>
+            {% endif %}
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,RECEPTIONIST' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/reports/admissions/' in request.path %}active{% endif %}" href="{% url 'reports:admissions_reports' %}">
+                <i class="fas fa-user-plus mr-2"></i> Admissions Funnel
+              </a>
+            </li>
+            {% endif %}
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,TRANSPORT_MANAGER' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/reports/transport/' in request.path %}active{% endif %}" href="{% url 'reports:transport_reports' %}">
+                <i class="fas fa-bus mr-2"></i> Transport Reports
+              </a>
+            </li>
+            {% endif %}
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,LIBRARIAN' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/reports/library/' in request.path %}active{% endif %}" href="{% url 'reports:library_reports' %}">
+                <i class="fas fa-book mr-2"></i> Library Reports
+              </a>
+            </li>
+            {% endif %}
+            {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN,PRINCIPAL,VICE_PRINCIPAL,ACCOUNTANT' %}
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/reports/hr/' in request.path %}active{% endif %}" href="{% url 'reports:hr_reports' %}">
+                <i class="fas fa-users-cog mr-2"></i> HR Reports
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/reports/inventory/' in request.path %}active{% endif %}" href="{% url 'reports:inventory_reports' %}">
+                <i class="fas fa-boxes mr-2"></i> Inventory Reports
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </li>
+        {% endif %}
+
+        <!-- 6. ADMINISTRATION -->
+        {% if user.is_superuser or user.requested_role in 'SCHOOL_ADMIN' %}
+        <li class="nav-label">ADMINISTRATION</li>
+        <li class="nav-item {% if '/account/' in request.path %}open{% endif %}">
+          <a class="nav-link-item sidebar-dropdown-toggle" href="javascript:void(0);">
+            <span class="nav-icon"><i class="fas fa-shield-alt"></i></span>
+            <span class="nav-title">Admin & Security</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+          <ul class="sidebar-submenu" {% if '/account/' in request.path %}style="display: block;"{% endif %}>
+            <li class="submenu-item">
+              <a class="submenu-link" href="{% url account_urls.all_accounts %}">
+                <i class="fas fa-users-cog mr-2"></i> Users
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link" href="{% url account_urls.user_requests %}">
+                <i class="fas fa-user-check mr-2"></i> Roles & Permissions
+              </a>
+            </li>
+            {% if request_institute %}
+            <li class="submenu-item">
+              <a class="submenu-link" href="{% url 'institute:institute_detail' institute_pk=request_institute.pk %}">
+                <i class="fas fa-cog mr-2"></i> School Settings
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </li>
+        {% endif %}
+
+      </ul>
+    </div>
+
+    <!-- SIDEBAR FOOTER -->
+    <div class="sidebar-footer">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2" style="gap: 8px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(99, 102, 241, 0.2); color: #a5b4fc; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem;">
+            {{ user.first_name|default:user.username|slice:":1"|upper }}
+          </div>
+          <div style="line-height: 1.2;">
+            <div style="font-size: 0.82rem; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;">
+              {{ user.get_full_name|default:user.username }}
+            </div>
+            <div style="font-size: 0.7rem; color: #94a3b8;">
+              {{ user.requested_role|default:"User" }}
+            </div>
+          </div>
+        </div>
+        <a href="{% url 'account_logout' %}" title="Log out" style="color: #94a3b8; font-size: 0.95rem; padding: 4px;">
+          <i class="fas fa-sign-out-alt"></i>
+        </a>
+      </div>
+    </div>
   </div>
-</div>
+</aside>

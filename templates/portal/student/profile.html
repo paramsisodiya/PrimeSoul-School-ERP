@@ -1,0 +1,67 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}My Profile - Student Portal{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <h4 class="font-weight-bold text-dark mb-1">My Student Profile</h4>
+      <p class="text-muted small mb-0">Academic placement, enrollment, and institutional credentials.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6 mb-4">
+      <div class="portal-card h-100 p-4">
+        <div class="d-flex align-items-center mb-4">
+          <div class="rounded-circle bg-info text-white font-weight-bold d-flex align-items-center justify-content-center mr-3" style="width: 64px; height: 64px; font-size: 1.75rem;">
+            {{ student.first_name|first|upper }}
+          </div>
+          <div>
+            <h4 class="font-weight-bold mb-1 text-dark">{{ student.name }}</h4>
+            <span class="badge badge-light border text-info font-weight-bold">{{ student.grade_level.name }} - {{ student.section.name }}</span>
+          </div>
+        </div>
+
+        <h6 class="font-weight-bold text-dark border-bottom pb-2 mb-3">Academic Placement</h6>
+        <div class="row small mb-4">
+          <div class="col-6 mb-2"><span class="text-muted">Admission No:</span><br><strong>{{ student.admission_number|default:"-" }}</strong></div>
+          <div class="col-6 mb-2"><span class="text-muted">Roll No:</span><br><strong>{{ student.roll_number|default:"-" }}</strong></div>
+          <div class="col-6 mb-2"><span class="text-muted">Academic Session:</span><br><strong>{{ student.academic_year.name|default:"-" }}</strong></div>
+          <div class="col-6 mb-2"><span class="text-muted">Class & Section:</span><br><strong>{{ student.grade_level.name }} - {{ student.section.name }}</strong></div>
+          <div class="col-6 mb-2"><span class="text-muted">Stream:</span><br><strong>{{ student.stream.name|default:"General" }}</strong></div>
+          <div class="col-6 mb-2"><span class="text-muted">Enrollment Status:</span><br><span class="badge badge-success">Active Enrolled</span></div>
+        </div>
+
+        <h6 class="font-weight-bold text-dark border-bottom pb-2 mb-3">Personal Information</h6>
+        <div class="row small">
+          <div class="col-6 mb-2"><span class="text-muted">Date of Birth:</span><br><strong>{{ student.date_of_birth|date:"d M Y"|default:"-" }}</strong></div>
+          <div class="col-6 mb-2"><span class="text-muted">Gender:</span><br><strong>{{ student.get_gender_display|default:"-" }}</strong></div>
+          <div class="col-6 mb-2"><span class="text-muted">Blood Group:</span><br><strong>{{ student.blood_group|default:"-" }}</strong></div>
+          <div class="col-6 mb-2"><span class="text-muted">Emergency Phone:</span><br><strong>{{ student.emergency_contact_number|default:"-" }}</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security & Institutional Info -->
+    <div class="col-md-6 mb-4">
+      <div class="portal-card h-100 p-4">
+        <h6 class="font-weight-bold text-dark border-bottom pb-2 mb-3">Account Security</h6>
+        <p class="small text-muted mb-3">Manage your student login credentials.</p>
+        <a href="{% url 'account_change_password' %}" class="btn btn-outline-primary btn-sm mb-4">
+          <i class="fas fa-key mr-1"></i> Change Password
+        </a>
+
+        <h6 class="font-weight-bold text-dark border-bottom pb-2 mb-3">School Information</h6>
+        <div class="row small">
+          <div class="col-12 mb-2"><span class="text-muted">Institution:</span><br><strong>{{ school.name }}</strong></div>
+          <div class="col-6 mb-2"><span class="text-muted">School Code:</span><br><strong>{{ school.code|default:"-" }}</strong></div>
+          <div class="col-6 mb-2"><span class="text-muted">Affiliation Board:</span><br><strong>{{ school.board|default:"CBSE" }}</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

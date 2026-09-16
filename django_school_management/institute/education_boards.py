@@ -6,10 +6,31 @@ Other countries can add boards via the database (EducationBoard model) or keep
 free-text board field for backward compatibility.
 """
 
-# Bangladesh ISO 3166-1 alpha-2
+# Country ISO 3166-1 alpha-2
+COUNTRY_IN = 'IN'
 COUNTRY_BD = 'BD'
 
-# Bangladesh education boards (name as shown in dropdown)
+# India education boards (for CBSE, ICSE, State Boards)
+IN_BOARDS = [
+    ('Central Board of Secondary Education (CBSE)', 'CBSE'),
+    ('Council for the Indian School Certificate Examinations (ICSE/ISC)', 'ICSE'),
+    ('State Board of Secondary Education', 'STATE'),
+    ('International Baccalaureate (IB)', 'IB'),
+    ('Cambridge Assessment International Education (IGCSE)', 'CAMBRIDGE'),
+]
+
+# India streams choices for Senior Secondary (Classes 11 & 12)
+IN_GROUP_SCIENCE = 'Science'
+IN_GROUP_COMMERCE = 'Commerce'
+IN_GROUP_HUMANITIES = 'Humanities'
+
+IN_GROUPS = [
+    (IN_GROUP_SCIENCE, IN_GROUP_SCIENCE),
+    (IN_GROUP_COMMERCE, IN_GROUP_COMMERCE),
+    (IN_GROUP_HUMANITIES, 'Humanities / Arts'),
+]
+
+# Bangladesh education boards (legacy compatibility)
 # Order matches common usage; code can be used for display or reporting.
 BD_BOARDS = [
     ('Dhaka Board (BISE, Dhaka)', 'Dhaka'),
@@ -35,7 +56,8 @@ BD_GROUPS = [
     (BD_GROUP_COMMERCE, BD_GROUP_COMMERCE),
 ]
 
-# Class levels for school/madrasah (e.g. 1-10); JSC/JDC exam section shown for 9-10 only
+# Class levels for Indian K-12 school (Classes 1-12)
 APPLYING_FOR_CLASS_MIN = 1
-APPLYING_FOR_CLASS_MAX = 10
-APPLYING_FOR_CLASS_JSC_START = 9  # Show JSC/JDC fields when applying_for_class >= this
+APPLYING_FOR_CLASS_MAX = 12
+APPLYING_FOR_CLASS_JSC_START = 9  # Legacy BD exam section shown for 9-10 only
+

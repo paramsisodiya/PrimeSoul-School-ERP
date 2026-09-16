@@ -1,0 +1,243 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Communication</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Communication & Notification Command Hub</h4>
+      </div>
+      <p class="text-muted small mb-0">Multi-channel messaging, school announcements, targeted audience dispatch, delivery tracking, and alert templates.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <a href="{% url 'communication:announcement_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-bullhorn mr-1"></i> New Announcement
+      </a>
+      <a href="{% url 'communication:announcement_list' %}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-list mr-1"></i> All Announcements
+      </a>
+      <a href="{% url 'communication:template_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-file-alt mr-1"></i> Templates
+      </a>
+      <a href="{% url 'communication:delivery_logs' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-history mr-1"></i> Delivery Logs
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- KPI Row -->
+  <div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #4F46E5 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Total Announcements</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ metrics.total_announcements|default:0 }}</div>
+              <small class="text-success font-weight-bold">{{ metrics.published_announcements|default:0 }} Published</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-primary">
+              <i class="fas fa-bullhorn fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #10B981 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Delivered Notifications</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ metrics.delivered_notifications|default:0 }}</div>
+              <small class="text-muted">{{ metrics.read_notifications|default:0 }} read by users</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-success">
+              <i class="fas fa-check-double fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #F59E0B !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Scheduled / Pending</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ metrics.scheduled_announcements|default:0 }}</div>
+              <small class="text-warning font-weight-bold">{{ metrics.draft_announcements|default:0 }} Drafts</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-warning">
+              <i class="fas fa-clock fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #EF4444 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Failed Deliveries</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ metrics.failed_notifications|default:0 }}</div>
+              <small class="text-danger font-weight-bold">{{ metrics.total_notifications|default:0 }} total dispatched</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-danger">
+              <i class="fas fa-exclamation-triangle fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Grid -->
+  <div class="row">
+    <!-- Left Column: Recent Announcements -->
+    <div class="col-lg-7 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <h6 class="font-weight-bold text-dark mb-0">Recent Announcements</h6>
+          <a href="{% url 'communication:announcement_list' %}" class="small text-primary font-weight-bold">View All</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="bg-light text-muted small">
+                <tr>
+                  <th>Title & Priority</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th class="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for a in recent_announcements %}
+                <tr>
+                  <td>
+                    <div class="font-weight-bold text-dark">{{ a.title }}</div>
+                    <small class="text-muted">
+                      {% if a.priority == 'URGENT' %}
+                        <span class="badge badge-danger">Urgent</span>
+                      {% elif a.priority == 'HIGH' %}
+                        <span class="badge badge-warning">High</span>
+                      {% else %}
+                        <span class="badge badge-light">Normal</span>
+                      {% endif %}
+                    </small>
+                  </td>
+                  <td>{{ a.category_name|default:a.category.name|default:"General" }}</td>
+                  <td>
+                    {% if a.status == 'PUBLISHED' %}
+                      <span class="badge badge-success">Published</span>
+                    {% elif a.status == 'SCHEDULED' %}
+                      <span class="badge badge-info">Scheduled</span>
+                    {% elif a.status == 'DRAFT' %}
+                      <span class="badge badge-secondary">Draft</span>
+                    {% else %}
+                      <span class="badge badge-dark">{{ a.get_status_display }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="small text-muted">{{ a.created|date:"d M Y" }}</td>
+                  <td class="text-right">
+                    <a href="{% url 'communication:announcement_detail' a.pk %}" class="btn btn-sm btn-outline-primary">
+                      <i class="fas fa-eye"></i>
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center py-4 text-muted">
+                    <i class="fas fa-bullhorn fa-2x mb-2 d-block text-muted opacity-50"></i>
+                    No announcements created yet.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Channel Metrics & Recent Dispatches -->
+    <div class="col-lg-5 mb-4">
+      <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="font-weight-bold text-dark mb-0">Delivery Channels Breakdown</h6>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span><i class="fas fa-bell text-primary mr-2"></i> In-App Notifications</span>
+            <span class="badge badge-primary badge-pill px-3 py-2 font-weight-bold">{{ metrics.channel_breakdown.IN_APP|default:0 }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span><i class="fas fa-envelope text-info mr-2"></i> Email Dispatches</span>
+            <span class="badge badge-info badge-pill px-3 py-2 font-weight-bold">{{ metrics.channel_breakdown.EMAIL|default:0 }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span><i class="fas fa-comment-dots text-warning mr-2"></i> SMS Messages</span>
+            <span class="badge badge-warning badge-pill px-3 py-2 font-weight-bold">{{ metrics.channel_breakdown.SMS|default:0 }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span><i class="fab fa-whatsapp text-success mr-2"></i> WhatsApp Alerts</span>
+            <span class="badge badge-success badge-pill px-3 py-2 font-weight-bold">{{ metrics.channel_breakdown.WHATSAPP|default:0 }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <h6 class="font-weight-bold text-dark mb-0">Live Delivery Activity</h6>
+          <a href="{% url 'communication:delivery_logs' %}" class="small text-primary font-weight-bold">Logs</a>
+        </div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush">
+            {% for log in recent_logs %}
+            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+              <div>
+                <div class="font-weight-bold small text-dark">{{ log.notification.title|truncatechars:35 }}</div>
+                <small class="text-muted">{{ log.channel }} via {{ log.provider }} • {{ log.attempted_at|timesince }} ago</small>
+              </div>
+              <span class="badge {% if log.status == 'DELIVERED' or log.status == 'SENT' %}badge-success{% else %}badge-danger{% endif %}">
+                {{ log.status }}
+              </span>
+            </li>
+            {% empty %}
+            <li class="list-group-item text-center py-4 text-muted">No delivery events logged yet.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

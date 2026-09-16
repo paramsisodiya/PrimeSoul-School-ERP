@@ -1,0 +1,157 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Breadcrumbs & Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'fees:fee_dashboard' %}" class="text-decoration-none">Fees</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Installments</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Fee Installments & Dues Tracker</h4>
+      <p class="text-muted small mb-0">Track due dates, concessions, collected amounts, and overdue balances per installment.</p>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-body p-3">
+      <form method="get" class="form-row align-items-center">
+        <div class="col-md-5 my-1">
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
+            </div>
+            <input type="text" name="q" value="{{ query }}" class="form-control border-left-0" placeholder="Search by student, admission #, or installment name...">
+          </div>
+        </div>
+        <div class="col-md-4 my-1">
+          <select name="status" class="form-control" onchange="this.form.submit()">
+            <option value="">All Statuses</option>
+            {% for s_val, s_lbl in statuses %}
+              <option value="{{ s_val }}" {% if status_filter == s_val %}selected{% endif %}>{{ s_lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 my-1 d-flex gap-2">
+          <button type="submit" class="btn btn-dark btn-block">Filter</button>
+          {% if query or status_filter %}
+            <a href="{% url 'fees:installments' %}" class="btn btn-light border ml-2">Reset</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-0 table-responsive">
+      <table class="table-modern">
+        <thead>
+          <tr>
+            <th class="pl-4">Installment</th>
+            <th>Student</th>
+            <th>Due Date</th>
+            <th>Base Amount</th>
+            <th>Concession</th>
+            <th>Net Payable</th>
+            <th>Paid Amount</th>
+            <th>Balance</th>
+            <th class="text-right pr-4">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inst in installments %}
+          <tr>
+            <td class="pl-4 font-weight-bold text-dark">
+              {{ inst.installment_name }}
+              <div class="small text-muted">{{ inst.academic_year.name }}</div>
+            </td>
+            <td>
+              <div class="font-weight-bold text-dark">{{ inst.student.get_full_name }}</div>
+              <div class="small text-muted">{{ inst.student.grade_level.name }} | Adm: {{ inst.student.admission_number|default:"-" }}</div>
+            </td>
+            <td class="font-weight-bold text-muted">{{ inst.due_date|date:"d M Y" }}</td>
+            <td>₹{{ inst.base_amount }}</td>
+            <td class="text-success font-weight-bold">
+              {% if inst.concession_amount > 0 %}
+                -₹{{ inst.concession_amount }}
+              {% else %}
+                ₹0.00
+              {% endif %}
+            </td>
+            <td class="font-weight-bold text-dark">₹{{ inst.payable_amount }}</td>
+            <td class="text-success font-weight-bold">₹{{ inst.paid_amount }}</td>
+            <td class="text-danger font-weight-bold">₹{{ inst.balance_amount }}</td>
+            <td class="text-right pr-4">
+              {% if inst.status == 'PAID' %}
+                <span class="badge badge-status-paid">PAID</span>
+              {% elif inst.status == 'PARTIAL' %}
+                <span class="badge badge-status-partial">PARTIAL</span>
+              {% elif inst.status == 'OVERDUE' %}
+                <span class="badge badge-status-overdue">OVERDUE</span>
+              {% else %}
+                <span class="badge badge-status-pending">PENDING</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="p-0">
+              <div class="empty-state">
+                <div class="empty-state__icon">
+                  <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="empty-state__title">No Fee Installments Found</div>
+                <div class="empty-state__desc">No installments match your filter. Assign fee structures to enrolled students to automatically generate installment schedules.</div>
+                <a href="{% url 'fees:student_fees' %}" class="btn btn-primary btn-sm">
+                  <i class="fas fa-user-tag mr-1"></i> Assign Student Fees
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if installments.has_other_pages %}
+    <div class="card-footer bg-white border-top py-3 d-flex justify-content-center">
+      <ul class="pagination pagination-sm mb-0">
+        {% if installments.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ installments.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Previous</a></li>
+        {% endif %}
+        {% for num in installments.paginator.page_range %}
+          <li class="page-item {% if installments.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+          </li>
+        {% endfor %}
+        {% if installments.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ installments.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Next</a></li>
+        {% endif %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

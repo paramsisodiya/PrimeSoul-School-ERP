@@ -47,4 +47,14 @@ urlpatterns = [
         views.teacher_my_portal,
         name=TeachersURLEnums.teacher_my_portal.name,
     ),
+    path(
+        "import/csv/",
+        views.import_teachers_csv_view,
+        name="import_teachers_csv",
+    ),
+    path(
+        "import/sample-csv/",
+        views.download_sample_teachers_csv_view,
+        name="download_sample_teachers_csv",
+    ),
 ]

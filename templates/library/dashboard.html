@@ -1,0 +1,213 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Library</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Library & Resource Command Hub</h4>
+      </div>
+      <p class="text-muted small mb-0">Manage catalog, book accession, circulation desk, member loan limits, overdue tracking, and fine collection.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <a href="{% url 'library:issue_book' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-hand-holding mr-1"></i> Issue Book
+      </a>
+      <a href="{% url 'library:book_create' %}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-plus mr-1"></i> Add Book
+      </a>
+      <a href="{% url 'library:books' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-book mr-1"></i> Catalog
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- KPI Row -->
+  <div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #4F46E5 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Total Titles</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ metrics.total_titles|default:0 }}</div>
+              <small class="text-muted">{{ metrics.total_copies|default:0 }} total physical copies</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-primary">
+              <i class="fas fa-book fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #10B981 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Available Copies</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ metrics.available_copies|default:0 }}</div>
+              <small class="text-success font-weight-semibold">Ready for issue</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-success">
+              <i class="fas fa-check-circle fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #F59E0B !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Currently Issued</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ metrics.issued_copies|default:0 }}</div>
+              <small class="text-warning font-weight-semibold">{{ metrics.total_active_members|default:0 }} active members</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-warning">
+              <i class="fas fa-book-reader fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #EF4444 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Overdue Loans</div>
+              <div class="h3 mb-0 font-weight-bold text-danger">{{ metrics.overdue_issues|default:0 }}</div>
+              <small class="text-danger">₹{{ metrics.unpaid_fines|default:"0.00" }} unpaid fines</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-danger">
+              <i class="fas fa-exclamation-triangle fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Recent Issues -->
+    <div class="col-lg-8 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+          <h6 class="font-weight-bold mb-0 text-dark">
+            <i class="fas fa-exchange-alt mr-2 text-primary"></i> Recent Circulation Activity
+          </h6>
+          <a href="{% url 'library:issues' %}" class="small text-primary font-weight-bold">View All</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+            <thead class="thead-light">
+              <tr>
+                <th>Accession</th>
+                <th>Book Title</th>
+                <th>Member</th>
+                <th>Issue Date</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for issue in recent_issues %}
+                <tr>
+                  <td><code>{{ issue.book_copy.accession_number }}</code></td>
+                  <td><strong>{{ issue.book_copy.book.title }}</strong></td>
+                  <td>{{ issue.member.get_name }} <span class="badge badge-light border">{{ issue.member.member_type }}</span></td>
+                  <td>{{ issue.issue_date|date:"d M Y" }}</td>
+                  <td>{{ issue.due_date|date:"d M Y" }}</td>
+                  <td>
+                    {% if issue.status == 'ISSUED' %}
+                      {% if issue.is_overdue %}
+                        <span class="badge badge-danger">Overdue</span>
+                      {% else %}
+                        <span class="badge badge-warning">Issued</span>
+                      {% endif %}
+                    {% elif issue.status == 'RETURNED' %}
+                      <span class="badge badge-success">Returned</span>
+                    {% else %}
+                      <span class="badge badge-secondary">{{ issue.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-right">
+                    {% if issue.status == 'ISSUED' %}
+                      <a href="{% url 'library:return_book' issue.pk %}" class="btn btn-outline-success btn-sm py-0 px-2" style="font-size: 0.78rem;">
+                        <i class="fas fa-undo mr-1"></i> Return
+                      </a>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center py-4 text-muted">No circulation records recorded yet.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overdue Alert List -->
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+          <h6 class="font-weight-bold mb-0 text-danger">
+            <i class="fas fa-clock mr-2 text-danger"></i> Urgent Overdues
+          </h6>
+          <a href="{% url 'library:overdue' %}" class="small text-danger font-weight-bold">View All</a>
+        </div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush" style="font-size: 0.85rem;">
+            {% for issue in overdue_issues %}
+              <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                <div>
+                  <div class="font-weight-bold text-dark">{{ issue.book_copy.book.title|truncatechars:28 }}</div>
+                  <small class="text-muted">{{ issue.member.get_name }} | Due: {{ issue.due_date|date:"d M Y" }}</small>
+                </div>
+                <a href="{% url 'library:return_book' issue.pk %}" class="btn btn-danger btn-sm py-0 px-2" style="font-size: 0.75rem;">
+                  Process
+                </a>
+              </li>
+            {% empty %}
+              <li class="list-group-item text-center py-4 text-muted">
+                <i class="fas fa-check-circle text-success mr-1"></i> No overdue books currently.
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

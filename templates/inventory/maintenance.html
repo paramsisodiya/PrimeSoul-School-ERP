@@ -1,0 +1,106 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Maintenance</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Asset Maintenance & Repair Management</h4>
+      <p class="text-muted small mb-0">Track preventive servicing, hardware repairs, breakdowns, service vendors, and repair costs.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'inventory:maintenance_create' %}" class="btn btn-warning btn-sm text-white">
+        <i class="fas fa-tools mr-1"></i> Log Maintenance Request
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Maintenance Records Table -->
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="bg-light">
+          <tr>
+            <th>Asset Tag</th>
+            <th>Asset Name</th>
+            <th>Type</th>
+            <th>Issue Description</th>
+            <th>Service Vendor</th>
+            <th>Start Date</th>
+            <th>Completion Date</th>
+            <th>Cost</th>
+            <th>Status</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rec in records %}
+            <tr>
+              <td>
+                <a href="{% url 'inventory:asset_detail' rec.asset.pk %}" class="font-weight-bold text-primary">
+                  {{ rec.asset.asset_tag }}
+                </a>
+              </td>
+              <td class="font-weight-bold text-dark">{{ rec.asset.name }}</td>
+              <td><span class="badge badge-light border">{{ rec.get_maintenance_type_display }}</span></td>
+              <td class="text-truncate" style="max-width: 180px;">{{ rec.issue_description }}</td>
+              <td>{{ rec.service_provider|default:"Internal / Lab" }}</td>
+              <td>{{ rec.start_date|date:"d M Y" }}</td>
+              <td>{{ rec.completion_date|date:"d M Y"|default:"-" }}</td>
+              <td class="font-weight-bold">₹{{ rec.cost }}</td>
+              <td>
+                {% if rec.status == 'COMPLETED' %}
+                  <span class="badge badge-success">Completed</span>
+                {% elif rec.status == 'IN_PROGRESS' %}
+                  <span class="badge badge-warning">In Progress</span>
+                {% elif rec.status == 'OPEN' %}
+                  <span class="badge badge-info">Open</span>
+                {% else %}
+                  <span class="badge badge-secondary">{{ rec.status }}</span>
+                {% endif %}
+              </td>
+              <td class="text-right">
+                {% if rec.status != 'COMPLETED' and rec.status != 'CANCELLED' %}
+                  <a href="{% url 'inventory:maintenance_complete' rec.pk %}" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size: 0.8rem;">
+                    Complete
+                  </a>
+                {% else %}
+                  <span class="text-muted small">&bull;</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="10" class="text-center py-5 text-muted">
+                <i class="fas fa-tools fa-3x mb-3 text-muted d-block"></i>
+                No maintenance or repair logs found.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

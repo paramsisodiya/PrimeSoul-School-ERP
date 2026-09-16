@@ -5,7 +5,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Create account</title>
+    <title>Create Account | PrimeSoul School ERP</title>
     <link
       href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css"
       rel="stylesheet"
@@ -18,12 +18,19 @@
       <div class="max-w-md w-full space-y-8">
         <!-- Topbar messages -->
         <div>
+          {% if request_institute and request_institute.logo %}
           <img
             class="mx-auto h-12 w-auto"
             src="{{ request_institute.logo.url }}"
             alt="{{ request_institute.name }}"
           />
-          <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          {% else %}
+          <div class="mx-auto h-12 w-12 bg-indigo-600 rounded-full flex items-center justify-center shadow">
+            <span class="text-white text-xl font-bold">P</span>
+          </div>
+          {% endif %}
+          <div class="text-center mt-2 text-xs uppercase tracking-wider font-semibold text-indigo-600">PrimeSoul School ERP</div>
+          <h2 class="mt-4 text-center text-3xl font-extrabold text-gray-900">
             Create a new account
           </h2>
           <p class="mt-2 text-center text-sm text-gray-600">

@@ -1,0 +1,224 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'transport:dashboard' %}" class="text-decoration-none">Transport</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Staff</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Transport Personnel Roster</h4>
+      <p class="text-muted small mb-0">Manage drivers, attendants, contact numbers, and commercial driving license validity.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      {% if can_manage %}
+        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addStaffModal">
+          <i class="fas fa-plus mr-1"></i> Add Transport Staff
+        </button>
+      {% endif %}
+      <a href="{% url 'transport:dashboard' %}" class="btn btn-light border btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Transport Hub
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Drivers Table -->
+  <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+    <div class="card-header bg-white border-bottom py-3">
+      <h6 class="font-weight-bold text-dark mb-0">
+        <i class="fas fa-id-card text-primary mr-2"></i> Heavy Vehicle Drivers ({{ drivers.count }})
+      </h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+          <thead class="bg-light text-muted">
+            <tr>
+              <th class="border-0 px-3">Driver Name</th>
+              <th class="border-0">Contact Phone</th>
+              <th class="border-0">License Number</th>
+              <th class="border-0">License Expiry Date</th>
+              <th class="border-0">Active Route</th>
+              <th class="border-0">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in drivers %}
+              <tr>
+                <td class="px-3 font-weight-bold text-dark">{{ d.name }}</td>
+                <td>
+                  <a href="tel:{{ d.phone }}" class="text-decoration-none">
+                    <i class="fas fa-phone-alt text-muted mr-1"></i> {{ d.phone }}
+                  </a>
+                </td>
+                <td><code>{{ d.license_number|default:"N/A" }}</code></td>
+                <td>
+                  {% if d.license_expiry %}
+                    {{ d.license_expiry|date:"d M Y" }}
+                    {% if d.is_license_expired %}
+                      <span class="badge badge-danger ml-1">EXPIRED</span>
+                    {% elif d.is_license_expiring_soon %}
+                      <span class="badge badge-warning ml-1">Expiring Soon</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="text-muted">Not Recorded</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% with a=d.driver_route_assignments.first %}
+                    {% if a and a.is_active %}
+                      <span class="badge badge-primary">{{ a.route.code }} ({{ a.vehicle.vehicle_number }})</span>
+                    {% else %}
+                      <span class="text-muted small">Standby / Unallocated</span>
+                    {% endif %}
+                  {% endwith %}
+                </td>
+                <td>
+                  {% if d.is_active %}
+                    <span class="badge badge-success px-2 py-1">Active</span>
+                  {% else %}
+                    <span class="badge badge-secondary px-2 py-1">Inactive</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">No drivers registered yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendants Table -->
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="card-header bg-white border-bottom py-3">
+      <h6 class="font-weight-bold text-dark mb-0">
+        <i class="fas fa-user-friends text-info mr-2"></i> Bus Helpers & Attendants ({{ attendants.count }})
+      </h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+          <thead class="bg-light text-muted">
+            <tr>
+              <th class="border-0 px-3">Attendant Name</th>
+              <th class="border-0">Contact Phone</th>
+              <th class="border-0">Active Route</th>
+              <th class="border-0">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in attendants %}
+              <tr>
+                <td class="px-3 font-weight-bold text-dark">{{ a.name }}</td>
+                <td>
+                  <a href="tel:{{ a.phone }}" class="text-decoration-none">
+                    <i class="fas fa-phone-alt text-muted mr-1"></i> {{ a.phone }}
+                  </a>
+                </td>
+                <td>
+                  {% with asgn=a.attendant_route_assignments.first %}
+                    {% if asgn and asgn.is_active %}
+                      <span class="badge badge-info">{{ asgn.route.code }}</span>
+                    {% else %}
+                      <span class="text-muted small">Unassigned</span>
+                    {% endif %}
+                  {% endwith %}
+                </td>
+                <td>
+                  {% if a.is_active %}
+                    <span class="badge badge-success px-2 py-1">Active</span>
+                  {% else %}
+                    <span class="badge badge-secondary px-2 py-1">Inactive</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" class="text-center py-4 text-muted">No attendants registered yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Add Staff Modal -->
+{% if can_manage and form %}
+<div class="modal fade" id="addStaffModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content border-0 shadow">
+      <form method="POST" action="{% url 'transport:staff_create' %}">
+        {% csrf_token %}
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title font-weight-bold">Register Transport Staff</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="font-weight-bold small">Full Name <span class="text-danger">*</span></label>
+            {{ form.name }}
+          </div>
+          <div class="row">
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">Role <span class="text-danger">*</span></label>
+              {{ form.role }}
+            </div>
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">10-Digit Mobile # <span class="text-danger">*</span></label>
+              {{ form.phone }}
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">Commercial License #</label>
+              {{ form.license_number }}
+            </div>
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">License Expiry</label>
+              {{ form.license_expiry }}
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small">Residential Address</label>
+            {{ form.address }}
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm font-weight-bold">Save Staff</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

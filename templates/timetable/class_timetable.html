@@ -1,0 +1,225 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'timetable:dashboard' %}" class="text-decoration-none">Timetable</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Class Schedule</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">{{ section.grade_level.name }} - Section {{ section.name }}</h4>
+        <span class="badge badge-primary px-2 py-1 ml-2 font-weight-normal">
+          {{ academic_year.name }}
+        </span>
+        {% if section.class_teacher %}
+          <span class="badge badge-light border px-2 py-1 ml-1 text-muted">
+            <i class="fas fa-user-tie mr-1"></i> CT: {{ section.class_teacher.name }}
+          </span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">Weekly class routine, subject allocations, faculty assignments and room allocations.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print();">
+        <i class="fas fa-print mr-1"></i> Print Timetable
+      </button>
+      {% if can_manage %}
+        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addEntryModal">
+          <i class="fas fa-plus mr-1"></i> Add Entry
+        </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Class Navigation Pill Bar if staff -->
+  {% if sections and not is_portal_view %}
+    <div class="mb-3 d-flex flex-wrap gap-2">
+      {% for s in sections %}
+        <a href="{% url 'timetable:class_timetable' section_id=s.id %}"
+           class="btn btn-sm {% if s.id == section.id %}btn-dark font-weight-bold{% else %}btn-light border text-dark{% endif %} mr-1 mb-1">
+          {{ s.grade_level.name }}-{{ s.name }}
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- 2D Timetable Table -->
+  {% if matrix and matrix.working_days %}
+    <div class="card shadow-sm border-0" style="border-radius: 10px;">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-bordered mb-0 text-center" style="font-size: 0.85rem; min-width: 800px;">
+            <thead class="bg-light">
+              <tr>
+                <th style="width: 140px;" class="align-middle text-uppercase font-weight-bold text-muted">Period / Slot</th>
+                {% for day in matrix.working_days %}
+                  <th class="align-middle text-uppercase font-weight-bold text-dark py-3">
+                    {{ day.day_name }}
+                  </th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in matrix.grid_rows %}
+                <tr {% if row.slot.is_break %}style="background-color: #FFFBEB;"{% endif %}>
+                  <!-- Slot Header -->
+                  <td class="bg-light text-left align-middle px-3">
+                    <div class="font-weight-bold text-dark">{{ row.slot.name }}</div>
+                    <div class="small text-muted font-weight-normal">
+                      {{ row.slot.start_time|time:"H:i" }} - {{ row.slot.end_time|time:"H:i" }}
+                    </div>
+                    {% if row.slot.is_break %}
+                      <span class="badge badge-warning small mt-1">Break</span>
+                    {% endif %}
+                  </td>
+
+                  <!-- Day Cells -->
+                  {% for cell in row.cells %}
+                    <td class="align-middle p-2 position-relative" style="height: 85px; min-width: 130px;">
+                      {% if cell.entry %}
+                        <div class="p-2 rounded border text-left shadow-sm h-100 d-flex flex-column justify-content-between"
+                             style="background: #F8FAFC; border-left: 3px solid #4F46E5 !important;">
+                          <div>
+                            <div class="font-weight-bold text-primary mb-1">
+                              {% if cell.entry.subject %}
+                                {{ cell.entry.subject.name }}
+                              {% else %}
+                                {{ cell.entry.get_entry_type_display }}
+                              {% endif %}
+                            </div>
+                            <div class="small text-dark font-weight-500">
+                              <i class="fas fa-chalkboard-teacher text-muted mr-1"></i> {{ cell.entry.teacher.name|default:"Unassigned" }}
+                            </div>
+                            {% if cell.entry.room %}
+                              <div class="small text-muted">
+                                <i class="fas fa-door-open text-muted mr-1"></i> {{ cell.entry.room.room_number }}
+                              </div>
+                            {% endif %}
+                          </div>
+                          {% if can_manage %}
+                            <div class="text-right mt-1">
+                              <form method="POST" action="{% url 'timetable:entry_delete' pk=cell.entry.id %}" style="display:inline;" onsubmit="return confirm('Remove this slot entry?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="btn btn-link text-danger p-0 m-0" style="font-size: 0.75rem;" title="Delete">
+                                  <i class="fas fa-times-circle"></i>
+                                </button>
+                              </form>
+                            </div>
+                          {% endif %}
+                        </div>
+                      {% elif cell.slot.is_break %}
+                        <div class="text-muted small font-italic py-3">
+                          <i class="fas fa-coffee text-warning mr-1"></i> Recess
+                        </div>
+                      {% else %}
+                        <div class="text-muted small font-italic py-3">
+                          -- Free --
+                        </div>
+                      {% endif %}
+                    </td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="card shadow-sm border-0 text-center py-5" style="border-radius: 10px;">
+      <div class="card-body">
+        <i class="fas fa-calendar-times text-muted mb-3" style="font-size: 3rem;"></i>
+        <h5 class="font-weight-bold text-dark">No Working Days Configured</h5>
+        <p class="text-muted small mb-4">Please configure working days and period time slots under Setup.</p>
+        {% if can_manage %}
+          <a href="{% url 'timetable:setup' %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-cog mr-1"></i> Go to Setup
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+
+<!-- Add Entry Modal -->
+{% if can_manage and entry_form %}
+<div class="modal fade" id="addEntryModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content border-0 shadow">
+      <form method="POST" action="{% url 'timetable:entry_create' %}">
+        {% csrf_token %}
+        <input type="hidden" name="section" value="{{ section.id }}">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title font-weight-bold">Add Timetable Entry for {{ section }}</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">Day <span class="text-danger">*</span></label>
+              {{ entry_form.working_day }}
+            </div>
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">Period / Slot <span class="text-danger">*</span></label>
+              {{ entry_form.time_slot }}
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small">Subject</label>
+            {{ entry_form.subject }}
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small">Faculty Teacher</label>
+            {{ entry_form.teacher }}
+          </div>
+          <div class="row">
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">Room / Lab</label>
+              {{ entry_form.room }}
+            </div>
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">Period Type</label>
+              {{ entry_form.entry_type }}
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small">Notes / Topic</label>
+            {{ entry_form.notes }}
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm font-weight-bold">Schedule Period</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

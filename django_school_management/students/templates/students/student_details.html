@@ -17,8 +17,9 @@
       </a>
       <div class="row py-5">
         <div class="col-3">
-          <img class="student-profile-img" src="{{ student.admission_student.photo.url }}" alt="" width="200"
-            height="200">
+          {% if student.admission_student.photo %}
+          <img class="student-profile-img" src="{{ student.admission_student.photo.url }}" alt="" width="200" height="200">
+          {% endif %}
         </div>
         <div class="col-8">
           <h2>{{ student.admission_student.name }}</h2>

@@ -1,0 +1,290 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Breadcrumbs & Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Attendance</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Attendance & Operations Hub</h4>
+        {% if metrics.current_year %}
+          <span class="badge badge-success px-2 py-1 ml-2 font-weight-normal" style="border-radius: 6px;">
+            <i class="fas fa-check-circle mr-1"></i> Session: {{ metrics.current_year.name }}
+          </span>
+        {% else %}
+          <span class="badge badge-warning px-2 py-1 ml-2 font-weight-normal" style="border-radius: 6px;">
+            <i class="fas fa-exclamation-triangle mr-1"></i> No Active Session
+          </span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">Daily classroom roll call, attendance analytics, low attendance alerts, and statutory reporting.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <!-- Date Filter -->
+      <form method="GET" class="form-inline mr-2">
+        <div class="input-group input-group-sm">
+          <div class="input-group-prepend">
+            <span class="input-group-text bg-white"><i class="fas fa-calendar-day text-primary"></i></span>
+          </div>
+          <input type="date" name="date" value="{{ target_date|date:'Y-m-d' }}" class="form-control form-control-sm" onchange="this.form.submit()">
+        </div>
+      </form>
+      <a href="{% url 'attendance:mark_daily' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-check-double mr-1"></i> Mark Today's Attendance
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Attention / Alert Banner -->
+  {% if metrics.pending_sections_count > 0 or metrics.low_attendance_count > 0 %}
+  <div class="alert alert-warning border-0 shadow-sm mb-4" style="border-radius: 12px; background-color: #fffbeb; border-left: 4px solid #f59e0b !important;">
+    <div class="d-flex align-items-center justify-content-between flex-wrap">
+      <div class="d-flex align-items-center">
+        <i class="fas fa-exclamation-circle text-warning fa-2x mr-3"></i>
+        <div>
+          <h6 class="font-weight-bold text-dark mb-1">Attendance Operations Notice</h6>
+          <div class="text-muted small">
+            {% if metrics.pending_sections_count > 0 %}
+              <span class="mr-3"><i class="fas fa-clock text-warning mr-1"></i> <strong>{{ metrics.pending_sections_count }}</strong> section(s) pending attendance for {{ target_date|date:"d M Y" }}.</span>
+            {% endif %}
+            {% if metrics.low_attendance_count > 0 %}
+              <span><i class="fas fa-user-clock text-danger mr-1"></i> <strong>{{ metrics.low_attendance_count }}</strong> student(s) below statutory 75% attendance threshold.</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="mt-2 mt-md-0">
+        {% if metrics.pending_sections_count > 0 %}
+          <a href="{% url 'attendance:pending' %}" class="btn btn-warning btn-sm mr-2 font-weight-bold">View Pending</a>
+        {% endif %}
+        {% if metrics.low_attendance_count > 0 %}
+          <a href="{% url 'attendance:low_attendance' %}" class="btn btn-outline-danger btn-sm font-weight-bold">View Low Attendance</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- 6 Modern KPI Metric Cards -->
+  <div class="row g-3 mb-4">
+    <!-- Today Attendance % -->
+    <div class="col-xl-4 col-md-6 mb-3">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #3b82f6 !important;">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted small font-weight-bold text-uppercase">Today's Attendance Rate</span>
+            <div class="icon-shape bg-primary text-white rounded-circle p-2" style="width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;">
+              <i class="fas fa-chart-pie"></i>
+            </div>
+          </div>
+          <div class="d-flex align-items-baseline">
+            <h3 class="font-weight-bold text-dark mb-0 mr-2">{{ metrics.today_percentage }}%</h3>
+            <span class="text-muted small font-weight-semibold">({{ metrics.total_today }} students tracked)</span>
+          </div>
+          <div class="progress mt-2" style="height: 6px; border-radius: 4px;">
+            <div class="progress-bar {% if metrics.today_percentage >= 85 %}bg-success{% elif metrics.today_percentage >= 75 %}bg-info{% else %}bg-warning{% endif %}" role="progressbar" style="width: {{ metrics.today_percentage }}%;" aria-valuenow="{{ metrics.today_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Present Today -->
+    <div class="col-xl-2 col-md-3 col-6 mb-3">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #10b981 !important;">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="text-muted small font-weight-bold text-uppercase">Present</span>
+            <span class="badge badge-success p-1"><i class="fas fa-check"></i></span>
+          </div>
+          <h3 class="font-weight-bold text-success mb-0">{{ metrics.present_today }}</h3>
+          <small class="text-muted">On time students</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Absent Today -->
+    <div class="col-xl-2 col-md-3 col-6 mb-3">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #ef4444 !important;">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="text-muted small font-weight-bold text-uppercase">Absent</span>
+            <span class="badge badge-danger p-1"><i class="fas fa-times"></i></span>
+          </div>
+          <h3 class="font-weight-bold text-danger mb-0">{{ metrics.absent_today }}</h3>
+          <small class="text-muted">Unexcused / Absent</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Late Today -->
+    <div class="col-xl-2 col-md-3 col-6 mb-3">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #f59e0b !important;">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="text-muted small font-weight-bold text-uppercase">Late</span>
+            <span class="badge badge-warning p-1"><i class="fas fa-user-clock"></i></span>
+          </div>
+          <h3 class="font-weight-bold text-warning mb-0">{{ metrics.late_today }}</h3>
+          <small class="text-muted">Late arrivals</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Half Day & Excused -->
+    <div class="col-xl-2 col-md-3 col-6 mb-3">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #6366f1 !important;">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="text-muted small font-weight-bold text-uppercase">Half / Excused</span>
+            <span class="badge badge-info p-1"><i class="fas fa-hourglass-half"></i></span>
+          </div>
+          <h3 class="font-weight-bold text-dark mb-0">{{ metrics.half_day_today }} <span class="text-muted small font-weight-normal">/ {{ metrics.excused_today }}</span></h3>
+          <small class="text-muted">Leaves & Half-days</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Action Navigation Hub -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+        <div class="card-header bg-white border-bottom-0 pt-3 pb-2">
+          <h6 class="font-weight-bold text-dark mb-0"><i class="fas fa-bolt text-warning mr-2"></i>Daily Operations & Quick Actions</h6>
+        </div>
+        <div class="card-body pt-1 pb-3">
+          <div class="row g-2">
+            <div class="col-lg-2 col-md-4 col-6 mb-2">
+              <a href="{% url 'attendance:mark_daily' %}" class="btn btn-outline-primary btn-block text-left p-3 d-flex flex-column" style="border-radius: 8px;">
+                <i class="fas fa-check-double fa-lg mb-2 text-primary"></i>
+                <span class="font-weight-bold" style="font-size: 0.9rem;">Mark Daily</span>
+                <span class="text-muted small">Record today's roll</span>
+              </a>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6 mb-2">
+              <a href="{% url 'attendance:pending' %}" class="btn btn-outline-warning btn-block text-left p-3 d-flex flex-column" style="border-radius: 8px;">
+                <i class="fas fa-clock fa-lg mb-2 text-warning"></i>
+                <span class="font-weight-bold" style="font-size: 0.9rem;">Pending Sections</span>
+                <span class="text-muted small">{{ metrics.pending_sections_count }} pending today</span>
+              </a>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6 mb-2">
+              <a href="{% url 'attendance:history' %}" class="btn btn-outline-secondary btn-block text-left p-3 d-flex flex-column" style="border-radius: 8px;">
+                <i class="fas fa-history fa-lg mb-2 text-secondary"></i>
+                <span class="font-weight-bold" style="font-size: 0.9rem;">Attendance Log</span>
+                <span class="text-muted small">Search historical days</span>
+              </a>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6 mb-2">
+              <a href="{% url 'attendance:monthly_summary' %}" class="btn btn-outline-info btn-block text-left p-3 d-flex flex-column" style="border-radius: 8px;">
+                <i class="fas fa-calendar-alt fa-lg mb-2 text-info"></i>
+                <span class="font-weight-bold" style="font-size: 0.9rem;">Monthly Matrix</span>
+                <span class="text-muted small">Aggregated sheet</span>
+              </a>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6 mb-2">
+              <a href="{% url 'attendance:low_attendance' %}" class="btn btn-outline-danger btn-block text-left p-3 d-flex flex-column" style="border-radius: 8px;">
+                <i class="fas fa-user-clock fa-lg mb-2 text-danger"></i>
+                <span class="font-weight-bold" style="font-size: 0.9rem;">Low Attendance</span>
+                <span class="text-muted small">{{ metrics.low_attendance_count }} under 75%</span>
+              </a>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6 mb-2">
+              <a href="{% url 'attendance:student_profile' %}" class="btn btn-outline-dark btn-block text-left p-3 d-flex flex-column" style="border-radius: 8px;">
+                <i class="fas fa-user-graduate fa-lg mb-2 text-dark"></i>
+                <span class="font-weight-bold" style="font-size: 0.9rem;">Student Profile</span>
+                <span class="text-muted small">Individual lookup</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Sections Section -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+          <div>
+            <h6 class="font-weight-bold text-dark mb-0">Classroom Roll Status — {{ target_date|date:"l, d F Y" }}</h6>
+            <span class="text-muted small">Real-time tracking of section attendance submission</span>
+          </div>
+          <a href="{% url 'attendance:pending' %}" class="btn btn-sm btn-outline-primary">View All ({{ pending_sections|length }})</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+            <thead class="bg-light">
+              <tr>
+                <th class="border-top-0">Class & Section</th>
+                <th class="border-top-0">Class Teacher</th>
+                <th class="border-top-0 text-center">Status</th>
+                <th class="border-top-0 text-center">Students Tracked</th>
+                <th class="border-top-0 text-right pr-4">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in pending_sections %}
+                <tr>
+                  <td class="font-weight-bold text-dark">
+                    {{ item.grade_level.name }} - Section {{ item.section.name }}
+                  </td>
+                  <td>
+                    <i class="fas fa-chalkboard-teacher text-muted mr-1"></i> {{ item.class_teacher }}
+                  </td>
+                  <td class="text-center">
+                    {% if item.is_marked %}
+                      <span class="badge badge-success px-2 py-1"><i class="fas fa-check mr-1"></i> Completed</span>
+                    {% else %}
+                      <span class="badge badge-warning px-2 py-1"><i class="fas fa-clock mr-1"></i> Not Marked</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-center font-weight-semibold">
+                    {{ item.records_count }}
+                  </td>
+                  <td class="text-right pr-4">
+                    {% if metrics.current_year %}
+                    <a href="{% url 'attendance:mark_daily' %}?academic_year={{ metrics.current_year.id }}&grade_level={{ item.grade_level.id }}&section={{ item.section.id }}&attendance_date={{ target_date|date:'Y-m-d' }}" class="btn btn-sm {% if item.is_marked %}btn-outline-secondary{% else %}btn-primary{% endif %}">
+                      {% if item.is_marked %}Review / Edit{% else %}Mark Now{% endif %}
+                    </a>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center py-4 text-muted">
+                    <i class="fas fa-check-circle text-success fa-2x mb-2 d-block"></i>
+                    All active sections have completed daily attendance for {{ target_date|date:"d M Y" }}.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

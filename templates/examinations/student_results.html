@@ -1,0 +1,90 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'examinations:results_list' %}">Results</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Student Profile</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">{{ student.name }}</h4>
+        <span class="badge badge-light border text-primary">Roll: {{ student.roll_number|default:"N/A" }}</span>
+        <span class="badge badge-light border text-muted">Adm: {{ student.admission_number|default:"N/A" }}</span>
+      </div>
+      <p class="text-muted small mb-0">Historical academic assessment performance, grade cards, and official report cards.</p>
+    </div>
+    <div>
+      <a href="{% url 'examinations:results_list' %}" class="btn btn-outline-secondary btn-sm">Back to Results</a>
+    </div>
+  </div>
+
+  <div class="row">
+    {% for r in results %}
+    <div class="col-lg-6 mb-4">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 12px; border-top: 4px solid #2563eb !important;">
+        <div class="card-header bg-white py-3 border-0 d-flex align-items-center justify-content-between">
+          <div>
+            <h6 class="font-weight-bold text-dark mb-0">{{ r.exam.name }}</h6>
+            <small class="text-muted">Session: {{ r.academic_year.name }}</small>
+          </div>
+          <div>
+            {% if r.result_status == 'PASSED' %}
+              <span class="badge badge-success px-2 py-1">Passed</span>
+            {% elif r.result_status == 'COMPARTMENT' %}
+              <span class="badge badge-warning px-2 py-1 text-dark">Compartment</span>
+            {% else %}
+              <span class="badge badge-danger px-2 py-1">Failed</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="card-body pt-0">
+          <div class="row text-center my-3">
+            <div class="col-4 border-right">
+              <span class="text-muted small">Score</span>
+              <div class="h5 font-weight-bold text-dark mb-0">{{ r.total_marks_obtained|floatformat:1 }} / {{ r.total_max_marks|floatformat:0 }}</div>
+            </div>
+            <div class="col-4 border-right">
+              <span class="text-muted small">Percentage</span>
+              <div class="h5 font-weight-bold text-primary mb-0">{{ r.percentage|floatformat:1 }}%</div>
+            </div>
+            <div class="col-4">
+              <span class="text-muted small">Grade</span>
+              <div class="h5 font-weight-bold text-dark mb-0">{{ r.overall_grade|default:"—" }}</div>
+            </div>
+          </div>
+          <div class="bg-light p-2 rounded small text-muted d-flex justify-content-between">
+            <span>Class Standing: <b>{% if r.class_rank %}Rank #{{ r.class_rank }}{% else %}—{% endif %}</b></span>
+            <span>Attendance: <b>{{ r.attendance_percentage|default:"N/A" }}%</b></span>
+          </div>
+        </div>
+        <div class="card-footer bg-white py-2 border-top d-flex justify-content-between align-items-center">
+          <span class="text-muted small">Ref: <code>{{ r.verification_code }}</code></span>
+          <div class="btn-group btn-group-sm">
+            <a href="{% url 'examinations:report_card' r.id %}" class="btn btn-outline-primary">
+              <i class="fas fa-eye mr-1"></i> View Card
+            </a>
+            <a href="{% url 'examinations:report_card_pdf' r.id %}" class="btn btn-outline-danger" target="_blank">
+              <i class="fas fa-file-pdf mr-1"></i> PDF
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+      <div class="card shadow-sm border-0 py-5 text-center text-muted" style="border-radius: 12px;">
+        <p class="mb-0">No examination results available for this student.</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

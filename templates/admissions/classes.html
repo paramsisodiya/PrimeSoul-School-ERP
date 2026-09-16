@@ -1,0 +1,125 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'admissions:dashboard' %}" class="text-decoration-none">Admissions</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Class Seat Quotas</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Class-Wise Seat Quotas & Fees</h4>
+      <p class="text-muted small mb-0">Define total seats, reserved quotas, and application fees per class level for each admission intake.</p>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row">
+    <!-- Config Form -->
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="font-weight-bold text-dark mb-0">Configure Seat Capacity</h6>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-dark">Admission Session <span class="text-danger">*</span></label>
+              {{ form.admission_session }}
+            </div>
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-dark">Grade / Class <span class="text-danger">*</span></label>
+              {{ form.grade_level }}
+            </div>
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-dark">Total Seat Capacity <span class="text-danger">*</span></label>
+              {{ form.total_seats }}
+            </div>
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-dark">Reserved Seats (RTE / Quota)</label>
+              {{ form.reserved_seats }}
+            </div>
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-dark">Application Fee (₹)</label>
+              {{ form.application_fee }}
+            </div>
+            <div class="form-group mb-3 form-check">
+              {{ form.active }}
+              <label class="form-check-label small font-weight-bold text-dark ml-2">Active Configuration</label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm btn-block font-weight-bold">
+              <i class="fas fa-save mr-1"></i> Save Class Capacity
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Config List -->
+    <div class="col-lg-8 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="font-weight-bold text-dark mb-0">Configured Class Quotas</h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="bg-light text-muted small">
+                <tr>
+                  <th>Class / Grade</th>
+                  <th>Session</th>
+                  <th>Total Seats</th>
+                  <th>Reserved Seats</th>
+                  <th>App Fee</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for cfg in configs %}
+                <tr>
+                  <td class="font-weight-bold text-dark">{{ cfg.grade_level.name }}</td>
+                  <td>{{ cfg.admission_session.name }}</td>
+                  <td><span class="badge badge-light border px-2 py-1">{{ cfg.total_seats }} seats</span></td>
+                  <td>{{ cfg.reserved_seats }}</td>
+                  <td>₹{{ cfg.application_fee }}</td>
+                  <td>
+                    {% if cfg.active %}
+                      <span class="badge badge-success">Active</span>
+                    {% else %}
+                      <span class="badge badge-secondary">Disabled</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">No class seat quotas configured yet.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

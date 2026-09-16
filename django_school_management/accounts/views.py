@@ -1,3 +1,6 @@
+import datetime
+from decimal import Decimal
+from django.utils import timezone
 from rolepermissions.roles import assign_role
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
@@ -88,29 +91,91 @@ def dashboard(request):
     skipped = request.session.get('skip_onboarding', False)
 
     if is_admin and not skipped:
-        if not institute:
-            return redirect('institute:onboarding_step1')
-        if not institute.onboarding_completed:
-            next_step = institute.onboarding_step
-            if next_step == 2:
-                return redirect('institute:onboarding_step2')
-            elif next_step == 3:
-                return redirect('institute:onboarding_step3')
+        school = getattr(request.user, 'school', None)
+        if not school:
+            if not institute:
+                return redirect('institute:onboarding_step1')
+            if not institute.onboarding_completed:
+                next_step = institute.onboarding_step
+                if next_step == 2:
+                    return redirect('institute:onboarding_step2')
+                elif next_step == 3:
+                    return redirect('institute:onboarding_step3')
 
-    if institute:
-        total_students = Student.objects.filter(
-            admission_student__choosen_department__institute=institute
-        ).count()
-        total_teachers = Teacher.objects.filter(institute=institute).count()
-        total_departments = Department.objects.filter(institute=institute).count()
+    from django_school_management.tenants.models import School
+    from django_school_management.academics.models import GradeLevel, AcademicYear
+    from django_school_management.teachers.models import TeacherProfile
+    from django_school_management.fees.models import PaymentTransaction, PaymentStatus, FeeInvoice
+    from django_school_management.fees.selectors.dashboard_selectors import get_fee_dashboard_summary
+    from django.db.models import Sum
+
+    school = getattr(request.user, 'school', None)
+    if not school:
+        school = School.objects.filter(is_active=True).first()
+        if school and request.user.is_authenticated:
+            request.user.school = school
+            request.user.save(update_fields=['school'])
+
+    if school:
+        total_students = Student.objects.filter(school=school, is_active=True).count()
+        total_teachers = TeacherProfile.objects.filter(school=school, is_active=True).count()
+        if total_teachers == 0:
+            total_teachers = Teacher.objects.filter(school=school).count()
+        total_grades = GradeLevel.objects.filter(school=school).count()
+        active_ay = AcademicYear.objects.filter(school=school, is_current=True).first()
+        fee_summary = get_fee_dashboard_summary(school=school, academic_year=active_ay)
+
+        now = timezone.now()
+        monthly_collected = (
+            PaymentTransaction.objects.filter(
+                school=school,
+                status=PaymentStatus.SUCCESS,
+                created_at__month=now.month,
+                created_at__year=now.year
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        )
+
+        recent_payments = (
+            PaymentTransaction.objects.filter(school=school)
+            .select_related('student', 'invoice')
+            .order_by('-created_at')[:5]
+        )
+
+        from django_school_management.attendance.models import AttendanceRecord
+        today_date = timezone.localdate()
+        today_records = AttendanceRecord.objects.filter(school=school, attendance_date=today_date)
+        total_att = today_records.count()
+        if total_att > 0:
+            present_att = today_records.filter(status__in=['PRESENT', 'LATE', 'HALF_DAY']).count()
+            today_attendance_rate = f"{(present_att / total_att) * 100:.1f}%"
+        else:
+            today_attendance_rate = "0.0%" if total_students > 0 else "N/A"
     else:
         total_students = Student.objects.count()
         total_teachers = Teacher.objects.count()
-        total_departments = Department.objects.count()
+        total_grades = Department.objects.count()
+        active_ay = None
+        fee_summary = {
+            'total_expected_amount': '0.00',
+            'total_collected_amount': '0.00',
+            'total_pending_balance': '0.00',
+            'total_overdue_balance': '0.00',
+        }
+        monthly_collected = Decimal('0.00')
+        recent_payments = []
+        today_attendance_rate = "N/A"
+
     context = {
+        'school': school,
+        'active_academic_year': active_ay,
         'total_students': total_students,
         'total_teachers': total_teachers,
-        'total_departments': total_departments,
+        'total_departments': total_grades or Department.objects.count(),
+        'total_grades': total_grades,
+        'fee_summary': fee_summary,
+        'monthly_collected': monthly_collected,
+        'recent_payments': recent_payments,
+        'today_attendance_rate': today_attendance_rate,
     }
     return render(request, 'dashboard.html', context)
 
@@ -223,29 +288,48 @@ class UserRequestsListView(UserPassesTestMixin, ListView):
 user_requests_list = UserRequestsListView.as_view()
 
 
+from django.views.decorators.http import require_POST
+from django.contrib.auth.mixins import LoginRequiredMixin
+
+
+@login_required
+@require_POST
 def profile_picture_upload(request):
     """
     Handles profile pic uploads coming through ajax.
+    Requires authenticated user.
     """
-    if request.method == 'POST':
-        image = request.FILES.get('profile-picture')
-        try:
-            request.user.profile.profile_picture = image
-            request.user.profile.save()
-            return JsonResponse({
-                'status': 'ok',
-                'imgUrl': request.user.profile.profile_picture.url,
-            })
-        except:
-            return JsonResponse({'status': 'error'})
+    image = request.FILES.get('profile-picture')
+    if not image:
+        return JsonResponse({'status': 'error', 'message': 'No image provided'}, status=400)
+    try:
+        if not hasattr(request.user, 'profile') or not request.user.profile:
+            from .models import CommonUserProfile
+            CommonUserProfile.objects.create(user=request.user)
+        request.user.profile.profile_picture = image
+        request.user.profile.save()
+        return JsonResponse({
+            'status': 'ok',
+            'imgUrl': request.user.profile.profile_picture.url,
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 
-class UserUpdateView(UpdateView):
+class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     form_class = UserChangeFormDashboard
     queryset = User.objects.all()
     template_name = 'account/dashboard/update_user.html'
 
+    def test_func(self):
+        user = self.request.user
+        target_user = self.get_object()
+        # Users can update themselves, or school admins can update users in their school
+        if user.pk == target_user.pk or user.is_superuser or user_is_admin_or_su(user):
+            return True
+        return False
+
     def get_success_url(self):
         return reverse(
             'articles:author_profile',
-            args=[self.object.username,])
+            args=[self.object.username,])

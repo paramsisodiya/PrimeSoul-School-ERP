@@ -1,0 +1,76 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Apply for Leave - Teacher Portal{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'portal:teacher_dashboard' %}">Teacher Portal</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'portal:teacher_leave' %}">Leaves</a></li>
+          <li class="breadcrumb-item active">Apply</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Apply for Leave</h4>
+    </div>
+    <div>
+      <a href="{% url 'portal:teacher_leave' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Leaves
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8 col-lg-6 mx-auto">
+      <div class="portal-card p-4">
+        <form method="post">
+          {% csrf_token %}
+          <div class="form-group mb-3">
+            <label class="font-weight-bold small text-muted">Leave Type <span class="text-danger">*</span></label>
+            {{ form.leave_type }}
+            {% if form.leave_type.errors %}
+              <div class="text-danger small">{{ form.leave_type.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 form-group mb-3">
+              <label class="font-weight-bold small text-muted">Start Date <span class="text-danger">*</span></label>
+              {{ form.start_date }}
+              {% if form.start_date.errors %}
+                <div class="text-danger small">{{ form.start_date.errors }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6 form-group mb-3">
+              <label class="font-weight-bold small text-muted">End Date <span class="text-danger">*</span></label>
+              {{ form.end_date }}
+              {% if form.end_date.errors %}
+                <div class="text-danger small">{{ form.end_date.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="form-group mb-4">
+            <label class="font-weight-bold small text-muted">Reason for Leave <span class="text-danger">*</span></label>
+            {{ form.reason }}
+            {% if form.reason.errors %}
+              <div class="text-danger small">{{ form.reason.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center">
+            <a href="{% url 'portal:teacher_leave' %}" class="btn btn-light border">Cancel</a>
+            <button type="submit" class="btn btn-primary font-weight-bold">
+              <i class="fas fa-paper-plane mr-1"></i> Submit Leave Request
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

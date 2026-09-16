@@ -10,7 +10,9 @@
         <div class="col-3">
           <a href="{% url 'students:student_sis' pk=student.id %}">
             <div class="card" style="width: 100%;">
+              {% if object.admission_student.photo %}
               <img class="card-img-top" src="{{ object.admission_student.photo.url }}">
+              {% endif %}
               <div class="card-body bg-primary text-light">
                 <h5 class="card-title">
                   {{ object.admission_student.name }}

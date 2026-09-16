@@ -14,12 +14,25 @@ from .utils import model_help_texts
 
 class User(ExportModelOperationsMixin('user'), AbstractUser):
     REQUESTED_ACCOUNT_TYPE_CHOICES = (
+        ('PLATFORM_SUPER_ADMIN', 'Platform Super Admin'),
+        ('SCHOOL_ADMIN', 'School Admin'),
+        ('PRINCIPAL', 'Principal'),
+        ('VICE_PRINCIPAL', 'Vice Principal'),
+        ('ACADEMIC_COORDINATOR', 'Academic Coordinator'),
+        ('TEACHER', 'Teacher'),
+        ('ACCOUNTANT', 'Accountant'),
+        ('RECEPTIONIST', 'Receptionist'),
+        ('TRANSPORT_MANAGER', 'Transport Manager'),
+        ('LIBRARIAN', 'Librarian'),
+        ('STUDENT', 'Student'),
+        ('PARENT', 'Parent'),
+        # Legacy choice backwards compatibility
         ('subscriber', 'Subscriber'),
-        ('student', 'Student'),
-        ('teacher', 'Teacher'),
-        ('editor', 'Editor'),
-        ('academic_officer', 'Academic Officer'),
-        ('admin', 'Admin'),
+        ('student', 'Student (Legacy)'),
+        ('teacher', 'Teacher (Legacy)'),
+        ('editor', 'Editor (Legacy)'),
+        ('academic_officer', 'Academic Officer (Legacy)'),
+        ('admin', 'Admin (Legacy)'),
     )
     APPROVAL_CHOICES = (
         ('n', 'Not Requested For Approval'),
@@ -33,28 +46,37 @@ class User(ExportModelOperationsMixin('user'), AbstractUser):
         default='n',
     )
     employee_or_student_id = models.CharField(
-        max_length=10,
+        max_length=50,
         blank=True, null=True
     )
     requested_role = models.CharField(
         choices=REQUESTED_ACCOUNT_TYPE_CHOICES,
         max_length=50,
-        default=REQUESTED_ACCOUNT_TYPE_CHOICES[0][0]
+        default='SCHOOL_ADMIN'
     )
     approval_extra_note = models.TextField(
         blank=True, null=True
     )
+    school = models.ForeignKey(
+        'tenants.School',
+        on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name='users',
+        help_text="Tenant school this user belongs to. Platform Super Admins may have this blank."
+    )
+    # Legacy field preserved for backwards compatibility during migration
     institute = models.ForeignKey(
         'institute.InstituteProfile',
         on_delete=models.SET_NULL,
         null=True, blank=True,
-        related_name='users',
+        related_name='legacy_users',
     )
 
     def get_author_url(self):
         return reverse(
             'articles:author_profile',
             args=[self.username,])
+
 
 
 class CustomGroup(ExportModelOperationsMixin('custom_group'), Group):

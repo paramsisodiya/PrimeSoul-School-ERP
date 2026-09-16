@@ -1,0 +1,156 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'timetable:dashboard' %}" class="text-decoration-none">Timetable</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Automatic Generator</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Automated Timetable Generation</h4>
+      <p class="text-muted small mb-0">Intelligently distributes subject curriculum requirements across active working days avoiding faculty and room collisions.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <a href="{% url 'timetable:dashboard' %}" class="btn btn-light border btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Timetable Hub
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row">
+    <!-- Generator Config Form -->
+    <div class="col-lg-5 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="font-weight-bold text-dark mb-0">
+            <i class="fas fa-cogs text-primary mr-2"></i> Generation Parameters
+          </h6>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{% url 'timetable:generate' %}">
+            {% csrf_token %}
+            <div class="form-group">
+              <label class="font-weight-bold small">Academic Session <span class="text-danger">*</span></label>
+              {{ form.academic_year }}
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold small">Target Class Sections</label>
+              {{ form.sections }}
+              <small class="text-muted">Leave empty to generate across all active classes in the school.</small>
+            </div>
+
+            <div class="alert alert-info small mb-3">
+              <i class="fas fa-info-circle mr-1"></i>
+              <strong>Conflict Guards:</strong> The engine automatically prevents teacher double-booking, section collision, and scheduling during break slots.
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block font-weight-bold">
+              <i class="fas fa-play mr-2"></i> Run Automated Generation
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generation Results / Unplaced Report -->
+    <div class="col-lg-7 mb-4">
+      {% if generation_completed and result %}
+        <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+          <div class="card-header bg-success text-white py-3">
+            <h6 class="font-weight-bold mb-0">
+              <i class="fas fa-check-circle mr-2"></i> Generation Summary
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row text-center mb-3">
+              <div class="col-6 border-right">
+                <div class="h3 font-weight-bold text-success mb-0">{{ result.placed_count }}</div>
+                <div class="small text-muted font-weight-bold text-uppercase">Periods Placed</div>
+              </div>
+              <div class="col-6">
+                <div class="h3 font-weight-bold {% if result.unplaced %}text-warning{% else %}text-muted{% endif %} mb-0">
+                  {{ result.unplaced|length }}
+                </div>
+                <div class="small text-muted font-weight-bold text-uppercase">Unplaced Assignments</div>
+              </div>
+            </div>
+
+            {% if result.unplaced %}
+              <div class="border-top pt-3">
+                <h6 class="font-weight-bold text-dark mb-2">Unplaced Curriculum Allocations:</h6>
+                <p class="small text-muted">The following subject assignments could not be placed due to faculty time conflicts or lack of open instructional periods. You can manually schedule them or configure additional periods.</p>
+                <div class="table-responsive">
+                  <table class="table table-sm table-bordered mb-0" style="font-size: 0.85rem;">
+                    <thead class="bg-light">
+                      <tr>
+                        <th>Class Section</th>
+                        <th>Subject</th>
+                        <th>Faculty</th>
+                        <th>Unplaced Periods</th>
+                        <th>Conflict Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for item in result.unplaced %}
+                        <tr>
+                          <td class="font-weight-bold">{{ item.section }}</td>
+                          <td class="text-primary font-weight-bold">{{ item.subject }}</td>
+                          <td>{{ item.teacher }}</td>
+                          <td class="text-center font-weight-bold text-danger">{{ item.unplaced_periods }}</td>
+                          <td class="small text-muted">{{ item.reason }}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            {% else %}
+              <div class="alert alert-success mb-0 small">
+                <i class="fas fa-check mr-1"></i> All requested subject periods were successfully placed into the timetable with zero collisions!
+              </div>
+            {% endif %}
+
+            <div class="mt-3 text-right">
+              <a href="{% url 'timetable:weekly' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-th mr-1"></i> View Generated Weekly Grid
+              </a>
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <div class="card shadow-sm border-0 h-100" style="border-radius: 10px;">
+          <div class="card-body d-flex flex-column justify-content-center align-items-center text-center py-5">
+            <div class="p-3 bg-light rounded-circle text-primary mb-3" style="font-size: 2.5rem;">
+              <i class="fas fa-magic"></i>
+            </div>
+            <h5 class="font-weight-bold text-dark">Ready to Generate</h5>
+            <p class="text-muted small" style="max-width: 420px;">
+              Select the academic session and click "Run Automated Generation". The scheduler will read all <code>SubjectAssignment</code> requirements and fill available working periods cleanly.
+            </p>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

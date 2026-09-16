@@ -1,0 +1,134 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'examinations:grade_scale_list' %}">Grade Scales</a></li>
+          <li class="breadcrumb-item active" aria-current="page">{{ scale.name }}</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">{{ scale.name }}</h4>
+        <span class="badge badge-light border font-weight-bold text-primary">{{ scale.code }}</span>
+      </div>
+      <p class="text-muted small mb-0">Configure percentage ranges, grade points, and qualitative evaluation remarks.</p>
+    </div>
+    <div>
+      <a href="{% url 'examinations:grade_scale_list' %}" class="btn btn-outline-secondary btn-sm">Back</a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row">
+    <!-- Add Band Form -->
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-header bg-white py-3 border-0">
+          <h6 class="font-weight-bold text-dark mb-0"><i class="fas fa-plus-circle text-primary mr-1"></i> Add Grade Band</h6>
+        </div>
+        <div class="card-body p-4 pt-0">
+          <form method="POST">
+            {% csrf_token %}
+            <div class="form-group mb-3">
+              <label class="form-label font-weight-bold small text-muted">Grade Name * (e.g. A1, A2, B1)</label>
+              {{ form.name }}
+              {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors }}</div>{% endif %}
+            </div>
+            <div class="row">
+              <div class="col-6 form-group mb-3">
+                <label class="form-label font-weight-bold small text-muted">Min % *</label>
+                {{ form.min_percentage }}
+              </div>
+              <div class="col-6 form-group mb-3">
+                <label class="form-label font-weight-bold small text-muted">Max % *</label>
+                {{ form.max_percentage }}
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-6 form-group mb-3">
+                <label class="form-label font-weight-bold small text-muted">Grade Point</label>
+                {{ form.grade_point }}
+              </div>
+              <div class="col-6 form-group mb-3">
+                <label class="form-label font-weight-bold small text-muted">Remarks</label>
+                {{ form.remarks }}
+              </div>
+            </div>
+            <div class="form-group mb-4">
+              <div class="custom-control custom-checkbox">
+                {{ form.is_passing }}
+                <label class="custom-control-label small" for="{{ form.is_passing.id_for_label }}">Considered Passing Grade</label>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+              <i class="fas fa-plus mr-1"></i> Add Grade Band
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bands Table -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-header bg-white py-3 border-0">
+          <h6 class="font-weight-bold text-dark mb-0">Configured Bands ({{ bands.count }})</h6>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+            <thead class="bg-light text-muted small text-uppercase">
+              <tr>
+                <th class="pl-4">Grade</th>
+                <th>Percentage Range</th>
+                <th>Grade Point</th>
+                <th>Remarks</th>
+                <th>Passing</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for b in bands %}
+              <tr>
+                <td class="pl-4 font-weight-bold">
+                  <span class="badge {% if b.is_passing %}badge-light border text-primary{% else %}badge-danger{% endif %} px-2 py-1">
+                    {{ b.name }}
+                  </span>
+                </td>
+                <td>{{ b.min_percentage|floatformat:0 }}% &ndash; {{ b.max_percentage|floatformat:0 }}%</td>
+                <td>{{ b.grade_point|default:"—" }}</td>
+                <td>{{ b.remarks|default:"—" }}</td>
+                <td>
+                  {% if b.is_passing %}
+                    <span class="badge badge-success px-2 py-1">Pass</span>
+                  {% else %}
+                    <span class="badge badge-danger px-2 py-1">Fail</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-4 text-muted">No bands configured yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

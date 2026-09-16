@@ -47,9 +47,13 @@
        id="mainNav">
         <div class="container">
           <a class="navbar-brand p-0" href="{% url 'articles:home' %}">
+            {% if request_institute and request_institute.logo %}
             <img src="{{ request_institute.logo.url }}" 
               alt="{{ request_institute.site_title }}"
               width="" height="50">
+            {% else %}
+            <span class="text-white font-weight-bold">{{ request_institute.site_title|default:"PrimeSoul ERP" }}</span>
+            {% endif %}
           </a>
           <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
             topics

@@ -1,0 +1,129 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'examinations:marks_entry' %}">Marks Entry</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Correct Mark</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Authorized Marks Correction</h4>
+        <span class="badge badge-warning px-2 py-1"><i class="fas fa-shield-alt mr-1"></i> Audit Tracked</span>
+      </div>
+      <p class="text-muted small mb-0">Modify student examination scores with mandatory statutory justification and audit history.</p>
+    </div>
+    <div>
+      <a href="{% url 'examinations:marks_entry' %}?exam={{ mark_record.exam.id }}" class="btn btn-outline-secondary btn-sm">Back</a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row">
+    <!-- Correction Form -->
+    <div class="col-lg-5 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-header bg-white py-3 border-0">
+          <h6 class="font-weight-bold text-dark mb-0">Correction Details</h6>
+        </div>
+        <div class="card-body p-4 pt-0">
+          <div class="bg-light p-3 rounded mb-3">
+            <div class="small text-muted">Student:</div>
+            <div class="font-weight-bold text-dark">{{ mark_record.student.name }} (Roll: {{ mark_record.student.roll_number|default:"N/A" }})</div>
+            <div class="small text-muted mt-2">Exam & Subject:</div>
+            <div class="font-weight-bold text-primary">{{ mark_record.exam.name }} &ndash; {{ mark_record.exam_subject.subject.name }}</div>
+            <div class="small text-muted mt-2">Current Status & Marks:</div>
+            <div class="font-weight-bold text-dark">
+              {{ mark_record.get_status_display }}
+              {% if mark_record.status == 'PRESENT' %} &bull; {{ mark_record.marks_obtained|floatformat:1 }} / {{ mark_record.exam_subject.max_marks|floatformat:0 }} ({{ mark_record.grade }}){% endif %}
+            </div>
+          </div>
+
+          <form method="POST">
+            {% csrf_token %}
+            <div class="form-group mb-3">
+              <label class="form-label font-weight-bold small text-muted">New Status *</label>
+              {{ form.new_status }}
+            </div>
+            <div class="form-group mb-3">
+              <label class="form-label font-weight-bold small text-muted">New Marks Obtained (if Present)</label>
+              {{ form.new_marks }}
+              <small class="text-muted">Maximum allowed: {{ mark_record.exam_subject.max_marks|floatformat:0 }}</small>
+            </div>
+            <div class="form-group mb-4">
+              <label class="form-label font-weight-bold small text-muted">Mandatory Justification Reason *</label>
+              {{ form.reason }}
+              {% if form.reason.errors %}<div class="text-danger small mt-1">{{ form.reason.errors }}</div>{% endif %}
+            </div>
+            <button type="submit" class="btn btn-warning btn-block font-weight-bold text-dark">
+              <i class="fas fa-save mr-1"></i> Commit Authorized Correction
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Correction Audit Log -->
+    <div class="col-lg-7">
+      <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-header bg-white py-3 border-0">
+          <h6 class="font-weight-bold text-dark mb-0"><i class="fas fa-history text-muted mr-1"></i> Correction Audit History</h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size: 0.85rem;">
+              <thead class="bg-light text-muted small text-uppercase">
+                <tr>
+                  <th class="pl-3">Timestamp</th>
+                  <th>Changed By</th>
+                  <th>Previous</th>
+                  <th>New</th>
+                  <th>Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in corrections %}
+                <tr>
+                  <td class="pl-3 text-muted">{{ c.corrected_at|date:"d M Y, H:i" }}</td>
+                  <td>{{ c.corrected_by.username|default:"System" }}</td>
+                  <td>
+                    <span class="badge badge-light border">
+                      {{ c.previous_status }}: {{ c.previous_marks|default:"—" }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge badge-light border text-primary">
+                      {{ c.new_status }}: {{ c.new_marks|default:"—" }}
+                    </span>
+                  </td>
+                  <td class="font-italic text-dark">{{ c.reason }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center py-4 text-muted">No corrections recorded yet for this student.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

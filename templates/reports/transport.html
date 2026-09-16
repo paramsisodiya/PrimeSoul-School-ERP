@@ -1,0 +1,103 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'reports:dashboard' %}" class="text-decoration-none">Reports</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Transport</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Transport Route & Vehicle Utilization Reports</h4>
+      <p class="text-muted small mb-0">Fleet occupancy, bus seating capacity, and route allocation status.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <a href="?export=csv" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-file-csv mr-1"></i> Export CSV
+      </a>
+      <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Hub
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary Row -->
+  <div class="row mb-4">
+    <div class="col-md-4 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #4F46E5 !important;">
+        <div class="card-body">
+          <div class="text-muted small font-weight-bold text-uppercase">Total Fleet Seating Capacity</div>
+          <div class="h3 font-weight-bold text-dark mb-0">{{ data.total_capacity }} Seats</div>
+          <small class="text-muted">Across all registered buses</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #10B981 !important;">
+        <div class="card-body">
+          <div class="text-muted small font-weight-bold text-uppercase">Allocated Students</div>
+          <div class="h3 font-weight-bold text-success mb-0">{{ data.total_allocated }} Students</div>
+          <small class="text-success font-weight-bold">Active Commuters</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #F59E0B !important;">
+        <div class="card-body">
+          <div class="text-muted small font-weight-bold text-uppercase">Available Empty Capacity</div>
+          <div class="h3 font-weight-bold text-warning mb-0">{{ data.total_capacity|add:"-data.total_allocated" }} Seats</div>
+          <small class="text-muted">Spare seating balance</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Route Utilization Table -->
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="card-header bg-white py-3">
+      <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-bus mr-2 text-primary"></i> Route Capacity & Student Allocations</h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="bg-light">
+          <tr>
+            <th>Route Name</th>
+            <th>Assigned Vehicle</th>
+            <th>Total Capacity</th>
+            <th>Allocated Students</th>
+            <th>Utilization %</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in data.routes_summary %}
+            <tr>
+              <td class="font-weight-bold text-dark">{{ r.name }}</td>
+              <td><span class="badge badge-light border">{{ r.vehicle }}</span></td>
+              <td>{{ r.capacity }} seats</td>
+              <td class="font-weight-bold text-primary">{{ r.allocated }}</td>
+              <td>
+                <div class="d-flex align-items-center">
+                  <span class="mr-2 font-weight-bold">{{ r.utilization }}%</span>
+                  <div class="progress flex-grow-1" style="height: 6px;">
+                    <div class="progress-bar {% if r.utilization > 90 %}bg-danger{% elif r.utilization > 70 %}bg-warning{% else %}bg-success{% endif %}" style="width: {{ r.utilization }}%;"></div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-4 text-muted">No transport routes configured.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

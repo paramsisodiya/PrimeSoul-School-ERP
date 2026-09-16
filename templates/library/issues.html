@@ -1,0 +1,97 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'library:dashboard' %}">Library</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Circulation Desk</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Book Circulation Register</h4>
+    </div>
+    <div>
+      <a href="{% url 'library:issue_book' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-hand-holding mr-1"></i> Issue Book
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="mb-3">
+    <div class="btn-group btn-group-sm">
+      <a href="{% url 'library:issues' %}" class="btn {% if not selected_status %}btn-primary{% else %}btn-outline-secondary{% endif %}">All Loans</a>
+      <a href="{% url 'library:issues' %}?status=ISSUED" class="btn {% if selected_status == 'ISSUED' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Currently Issued</a>
+      <a href="{% url 'library:issues' %}?status=RETURNED" class="btn {% if selected_status == 'RETURNED' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Returned</a>
+      <a href="{% url 'library:issues' %}?status=LOST" class="btn {% if selected_status == 'LOST' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Lost</a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="thead-light">
+          <tr>
+            <th>ID</th>
+            <th>Book Title & Accession</th>
+            <th>Member</th>
+            <th>Issued On</th>
+            <th>Due Date</th>
+            <th>Returned On</th>
+            <th>Status</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for issue in issues %}
+            <tr>
+              <td>#{{ issue.pk }}</td>
+              <td>
+                <div class="font-weight-bold text-dark">{{ issue.book_copy.book.title }}</div>
+                <small class="text-muted"><code>{{ issue.book_copy.accession_number }}</code></small>
+              </td>
+              <td>
+                {{ issue.member.get_name }}
+                <div class="small text-muted">{{ issue.member.member_code }} ({{ issue.member.member_type }})</div>
+              </td>
+              <td>{{ issue.issue_date|date:"d M Y" }}</td>
+              <td>{{ issue.due_date|date:"d M Y" }}</td>
+              <td>{{ issue.returned_date|date:"d M Y"|default:"-" }}</td>
+              <td>
+                {% if issue.status == 'ISSUED' %}
+                  {% if issue.is_overdue %}
+                    <span class="badge badge-danger">Overdue</span>
+                  {% else %}
+                    <span class="badge badge-warning">Issued</span>
+                  {% endif %}
+                {% elif issue.status == 'RETURNED' %}
+                  <span class="badge badge-success">Returned</span>
+                {% else %}
+                  <span class="badge badge-secondary">{{ issue.status }}</span>
+                {% endif %}
+              </td>
+              <td class="text-right">
+                {% if issue.status == 'ISSUED' %}
+                  <a href="{% url 'library:return_book' issue.pk %}" class="btn btn-outline-success btn-sm py-0 px-2" style="font-size: 0.8rem;">
+                    <i class="fas fa-undo mr-1"></i> Return
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">No circulation records found.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,157 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'examinations:dashboard' %}">Examinations</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'examinations:results_list' %}">Results</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Analytics</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Class Result Analytics</h4>
+        {% if selected_exam %}
+          <span class="badge badge-primary px-2 py-1">{{ selected_exam.name }}</span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">Class-wide performance indicators, grade distribution breakdown, and subject-wise score analytics.</p>
+    </div>
+    <div>
+      <a href="{% url 'examinations:results_list' %}?exam={{ selected_exam.id }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-list mr-1"></i> Student Results
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 12px; border-left: 4px solid #10b981 !important;">
+        <div class="card-body">
+          <span class="text-muted small text-uppercase font-weight-bold">Pass Percentage</span>
+          <h3 class="font-weight-bold text-success my-1">{{ summary.pass_percentage }}%</h3>
+          <span class="small text-muted">Passed: {{ summary.passed_count }} / {{ summary.appeared_count }} appeared</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 12px; border-left: 4px solid #2563eb !important;">
+        <div class="card-body">
+          <span class="text-muted small text-uppercase font-weight-bold">Average Percentage</span>
+          <h3 class="font-weight-bold text-primary my-1">{{ summary.average_percentage }}%</h3>
+          <span class="small text-muted">Class aggregate score</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 12px; border-left: 4px solid #f59e0b !important;">
+        <div class="card-body">
+          <span class="text-muted small text-uppercase font-weight-bold">Highest Score</span>
+          <h3 class="font-weight-bold text-warning my-1">{{ summary.highest_percentage }}%</h3>
+          <span class="small text-muted">Lowest: {{ summary.lowest_percentage }}%</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 12px; border-left: 4px solid #dc2626 !important;">
+        <div class="card-body">
+          <span class="text-muted small text-uppercase font-weight-bold">Compartment / Failed</span>
+          <h3 class="font-weight-bold text-danger my-1">{{ summary.failed_count }}</h3>
+          <span class="small text-muted">Compartment: {{ summary.compartment_count }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Grade Distribution -->
+    <div class="col-lg-5 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-header bg-white py-3 border-0">
+          <h6 class="font-weight-bold text-dark mb-0">Grade Distribution</h6>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-hover mb-0" style="font-size: 0.9rem;">
+            <thead class="bg-light text-muted small text-uppercase">
+              <tr>
+                <th class="pl-4">Grade Band</th>
+                <th>Count</th>
+                <th>Share</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for grade, count in summary.grade_distribution.items %}
+              <tr>
+                <td class="pl-4 font-weight-bold">
+                  <span class="badge badge-light border text-primary px-2 py-1">{{ grade }}</span>
+                </td>
+                <td class="font-weight-bold">{{ count }} students</td>
+                <td>
+                  <div class="progress" style="height: 8px; border-radius: 4px;">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: 50%;"></div>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="3" class="text-center py-3 text-muted">No grade data available.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subject-wise Performance -->
+    <div class="col-lg-7 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-header bg-white py-3 border-0">
+          <h6 class="font-weight-bold text-dark mb-0">Subject Performance Summary</h6>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+            <thead class="bg-light text-muted small text-uppercase">
+              <tr>
+                <th class="pl-3">Subject</th>
+                <th>Appeared</th>
+                <th>Avg Marks</th>
+                <th>Highest</th>
+                <th>Lowest</th>
+                <th>Pass Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ss in summary.subject_stats %}
+              <tr>
+                <td class="pl-3 font-weight-bold text-dark">{{ ss.subject_name }}</td>
+                <td>{{ ss.present_count }}</td>
+                <td class="font-weight-bold text-primary">{{ ss.avg_marks|floatformat:1 }} / {{ ss.max_marks|floatformat:0 }}</td>
+                <td class="text-success">{{ ss.max_marks_obtained|floatformat:0 }}</td>
+                <td class="text-danger">{{ ss.min_marks_obtained|floatformat:0 }}</td>
+                <td>
+                  <span class="badge {% if ss.pass_percentage >= 75 %}badge-success{% else %}badge-warning{% endif %} px-2 py-1">
+                    {{ ss.pass_percentage }}%
+                  </span>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-3 text-muted">No subject stats available.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

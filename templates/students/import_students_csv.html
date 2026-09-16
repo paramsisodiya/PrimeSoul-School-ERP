@@ -1,0 +1,157 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block title %}Bulk Import Students | PrimeSoul School ERP{% endblock %}
+
+{% block dashboard-body %}
+<div class="container-fluid py-3">
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-4 border-bottom">
+    <div>
+      <h3 class="font-weight-bold text-dark mb-1">
+        <i class="fas fa-file-csv text-primary mr-2"></i> Bulk Student Import (CSV)
+      </h3>
+      <p class="text-muted mb-0">
+        Safely import student admissions with validation for {{ school.name|default:"your school" }}.
+      </p>
+    </div>
+    <div>
+      <a href="{% url 'students:download_sample_students_csv' %}" class="btn btn-outline-primary font-weight-bold shadow-sm mr-2">
+        <i class="fas fa-download mr-1"></i> Download Sample CSV
+      </a>
+      <a href="{% url 'students:all_student' %}" class="btn btn-light border font-weight-bold">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Student List
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 8px;">
+        <i class="fas fa-info-circle mr-2"></i> {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Validation / Import Results if present -->
+  {% if result %}
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+      <div class="card-header bg-white font-weight-bold py-3">
+        <i class="fas fa-tasks mr-2 text-primary"></i> Import Summary
+      </div>
+      <div class="card-body">
+        <div class="row text-center mb-3">
+          <div class="col-md-3">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small">Total Rows</div>
+              <div class="h4 font-weight-bold text-dark">{{ result.total_rows }}</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small">Valid Rows</div>
+              <div class="h4 font-weight-bold text-success">{{ result.valid_rows }}</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small">Imported</div>
+              <div class="h4 font-weight-bold text-primary">{{ result.imported_rows }}</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small">Errors / Blockers</div>
+              <div class="h4 font-weight-bold {% if result.errors %}text-danger{% else %}text-muted{% endif %}">
+                {{ result.errors|length }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {% if result.errors %}
+          <h5 class="text-danger font-weight-bold mt-4 mb-2"><i class="fas fa-times-circle mr-1"></i> Row Errors</h5>
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+              <thead class="thead-light">
+                <tr>
+                  <th style="width: 80px;">Row #</th>
+                  <th style="width: 140px;">Field</th>
+                  <th>Error Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for err in result.errors %}
+                  <tr>
+                    <td><span class="badge badge-danger">Row {{ err.row }}</span></td>
+                    <td><code>{{ err.field }}</code></td>
+                    <td class="text-danger">{{ err.error }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+
+        {% if result.duplicates %}
+          <h5 class="text-warning font-weight-bold mt-4 mb-2"><i class="fas fa-exclamation-triangle mr-1"></i> Duplicate Warnings</h5>
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+              <thead class="thead-light">
+                <tr>
+                  <th style="width: 80px;">Row #</th>
+                  <th style="width: 140px;">Identifier</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for dup in result.duplicates %}
+                  <tr>
+                    <td><span class="badge badge-warning">Row {{ dup.row }}</span></td>
+                    <td><code>{{ dup.identifier }}</code></td>
+                    <td>{{ dup.message }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Upload Form -->
+  <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-header bg-white font-weight-bold py-3">
+      <i class="fas fa-upload mr-2 text-primary"></i> Upload Student CSV File
+    </div>
+    <div class="card-body p-4">
+      <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group mb-4">
+          <label for="csv_file" class="font-weight-bold text-dark">Select CSV File</label>
+          <input type="file" name="csv_file" id="csv_file" class="form-control-file border p-2 rounded" accept=".csv" required>
+          <small class="form-text text-muted mt-2">
+            File must be UTF-8 encoded with columns: <code>admission_number, first_name, last_name, grade_code, section_name, roll_number, gender, date_of_birth, mobile_number, father_name, mother_name, address</code>.
+          </small>
+        </div>
+
+        <div class="custom-control custom-checkbox mb-4">
+          <input type="checkbox" class="custom-control-input" id="dry_run" name="dry_run" value="1">
+          <label class="custom-control-label text-dark font-weight-bold" for="dry_run">
+            Dry Run / Preview Mode (Validate file without modifying database records)
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary font-weight-bold px-4 py-2 shadow-sm">
+          <i class="fas fa-cloud-upload-alt mr-1"></i> Upload & Process CSV
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

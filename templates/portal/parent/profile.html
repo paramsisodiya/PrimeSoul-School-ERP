@@ -1,0 +1,78 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}Parent Profile - PrimeSoul Portal{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <h4 class="font-weight-bold text-dark mb-1">Parent & Guardian Profile</h4>
+      <p class="text-muted small mb-0">Your registered account details and linked student wards.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Account Info Card -->
+    <div class="col-md-6 mb-4">
+      <div class="portal-card h-100 p-4">
+        <div class="d-flex align-items-center mb-4">
+          <div class="rounded-circle bg-primary text-white font-weight-bold d-flex align-items-center justify-content-center mr-3" style="width: 64px; height: 64px; font-size: 1.75rem;">
+            {{ request.user.first_name|first|default:request.user.username|first|upper }}
+          </div>
+          <div>
+            <h4 class="font-weight-bold mb-1 text-dark">{{ request.user.get_full_name|default:request.user.username }}</h4>
+            <span class="badge badge-light border text-primary font-weight-bold">Parent Account</span>
+          </div>
+        </div>
+
+        <h6 class="font-weight-bold text-dark border-bottom pb-2 mb-3">User & Contact Info</h6>
+        <div class="row small mb-4">
+          <div class="col-6 mb-2"><span class="text-muted">Username:</span><br><strong>{{ request.user.username }}</strong></div>
+          <div class="col-6 mb-2"><span class="text-muted">Email:</span><br><strong>{{ request.user.email|default:"-" }}</strong></div>
+          <div class="col-6 mb-2"><span class="text-muted">Mobile Phone:</span><br><strong>{{ guardian.mobile_number|default:"-" }}</strong></div>
+          <div class="col-6 mb-2"><span class="text-muted">Relationship Type:</span><br><strong>{{ guardian.relationship_type|default:"Parent" }}</strong></div>
+          <div class="col-6 mb-2"><span class="text-muted">School:</span><br><strong>{{ school.name }}</strong></div>
+        </div>
+
+        <h6 class="font-weight-bold text-dark border-bottom pb-2 mb-3">Account Security</h6>
+        <p class="small text-muted mb-3">Manage your account password and security credentials.</p>
+        <a href="{% url 'account_change_password' %}" class="btn btn-outline-primary btn-sm">
+          <i class="fas fa-key mr-1"></i> Change Account Password
+        </a>
+      </div>
+    </div>
+
+    <!-- Linked Children Card -->
+    <div class="col-md-6 mb-4">
+      <div class="portal-card h-100 p-4">
+        <h6 class="font-weight-bold text-dark border-bottom pb-2 mb-3">Linked Children ({{ children|length }})</h6>
+        {% if children %}
+          <div class="list-group list-group-flush">
+            {% for child in children %}
+              <div class="list-group-item px-0 py-3 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                  <div class="rounded-circle bg-light border font-weight-bold d-flex align-items-center justify-content-center mr-3 text-primary" style="width: 40px; height: 40px;">
+                    {{ child.first_name|first|upper }}
+                  </div>
+                  <div>
+                    <h6 class="font-weight-bold text-dark mb-0">{{ child.name }}</h6>
+                    <span class="small text-muted">{{ child.grade_level.name }} - {{ child.section.name }} • Adm: {{ child.admission_number|default:"-" }}</span>
+                  </div>
+                </div>
+                <div>
+                  <a href="{% url 'portal:parent_child_detail' child.id %}" class="btn btn-sm btn-light border">
+                    <i class="fas fa-id-card"></i>
+                  </a>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted small">No children currently mapped to this account.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

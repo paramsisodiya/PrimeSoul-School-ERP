@@ -1,0 +1,317 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Inventory & Assets</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Inventory & Fixed Asset Management</h4>
+        <span class="badge badge-primary ml-2">Phase 16</span>
+      </div>
+      <p class="text-muted small mb-0">Unified stock ledger, goods receipt, consumable issue/returns, store transfers, and fixed asset register.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      {% if is_admin %}
+        <a href="{% url 'inventory:purchase_create' %}" class="btn btn-primary btn-sm">
+          <i class="fas fa-truck-loading mr-1"></i> Stock Receipt (GRN)
+        </a>
+        <a href="{% url 'inventory:issue_create' %}" class="btn btn-info btn-sm text-white">
+          <i class="fas fa-hand-holding mr-1"></i> Issue Stock
+        </a>
+        <a href="{% url 'inventory:asset_create' %}" class="btn btn-success btn-sm">
+          <i class="fas fa-plus mr-1"></i> Register Asset
+        </a>
+      {% endif %}
+      <a href="{% url 'inventory:reports' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-chart-bar mr-1"></i> Inventory Reports
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Quick Navigation Pills -->
+  <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+    <div class="card-body py-2">
+      <div class="d-flex align-items-center flex-wrap gap-2" style="font-size: 0.88rem;">
+        <span class="text-muted font-weight-bold mr-2"><i class="fas fa-compass mr-1"></i> Quick Links:</span>
+        <a href="{% url 'inventory:item_list' %}" class="badge badge-light p-2 text-dark border mr-1"><i class="fas fa-boxes mr-1"></i> Item Master</a>
+        <a href="{% url 'inventory:purchase_list' %}" class="badge badge-light p-2 text-dark border mr-1"><i class="fas fa-file-invoice mr-1"></i> Goods Receipts</a>
+        <a href="{% url 'inventory:issue_list' %}" class="badge badge-light p-2 text-dark border mr-1"><i class="fas fa-share-square mr-1"></i> Stock Issues</a>
+        <a href="{% url 'inventory:return_list' %}" class="badge badge-light p-2 text-dark border mr-1"><i class="fas fa-undo mr-1"></i> Returns</a>
+        <a href="{% url 'inventory:transfer_list' %}" class="badge badge-light p-2 text-dark border mr-1"><i class="fas fa-exchange-alt mr-1"></i> Store Transfers</a>
+        <a href="{% url 'inventory:adjustment_list' %}" class="badge badge-light p-2 text-dark border mr-1"><i class="fas fa-sliders-h mr-1"></i> Adjustments</a>
+        <a href="{% url 'inventory:movement_ledger' %}" class="badge badge-light p-2 text-dark border mr-1"><i class="fas fa-history mr-1"></i> Movement Ledger</a>
+        <a href="{% url 'inventory:asset_list' %}" class="badge badge-light p-2 text-dark border mr-1"><i class="fas fa-laptop mr-1"></i> Asset Register</a>
+        <a href="{% url 'inventory:asset_assignment_list' %}" class="badge badge-light p-2 text-dark border mr-1"><i class="fas fa-user-tag mr-1"></i> Asset Assignments</a>
+        <a href="{% url 'inventory:maintenance_list' %}" class="badge badge-light p-2 text-dark border"><i class="fas fa-tools mr-1"></i> Maintenance</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Row 1: Consumables & Stock Levels -->
+  <div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #4F46E5 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Stock Items Master</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ metrics.total_items|default:0 }}</div>
+              <small class="text-muted">{{ metrics.total_stores|default:0 }} Stores | {{ metrics.total_suppliers|default:0 }} Vendors</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-primary">
+              <i class="fas fa-boxes fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #10B981 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Total Stock Quantity</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ metrics.total_stock_qty|default:0 }}</div>
+              <small class="text-success font-weight-bold">{{ metrics.healthy_stock_count|default:0 }} Items Healthy</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-success">
+              <i class="fas fa-cubes fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #F59E0B !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Low Stock Alerts</div>
+              <div class="h3 mb-0 font-weight-bold text-warning">{{ metrics.low_stock_count|default:0 }}</div>
+              <small class="text-danger font-weight-bold">{{ metrics.out_of_stock_count|default:0 }} Out of Stock</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-warning">
+              <i class="fas fa-exclamation-triangle fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #3B82F6 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Fixed Assets</div>
+              <div class="h3 mb-0 font-weight-bold text-dark">{{ metrics.total_assets|default:0 }}</div>
+              <small class="text-primary font-weight-bold">Valuation: ₹{{ metrics.total_valuation|default:"0.00" }}</small>
+            </div>
+            <div class="bg-light p-3 rounded-circle text-info">
+              <i class="fas fa-laptop-house fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Row 2: Asset Status Breakdown -->
+  <div class="row mb-4">
+    <div class="col-md-3 mb-2">
+      <div class="card shadow-sm border-0 text-center py-2" style="border-radius: 8px; background: #EEF2FF;">
+        <div class="small font-weight-bold text-primary text-uppercase">Available in Storage</div>
+        <div class="h4 mb-0 font-weight-bold text-primary">{{ metrics.available_assets|default:0 }}</div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-2">
+      <div class="card shadow-sm border-0 text-center py-2" style="border-radius: 8px; background: #ECFDF5;">
+        <div class="small font-weight-bold text-success text-uppercase">Assigned / In Use</div>
+        <div class="h4 mb-0 font-weight-bold text-success">{{ metrics.assigned_assets|default:0 }}</div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-2">
+      <div class="card shadow-sm border-0 text-center py-2" style="border-radius: 8px; background: #FEF3C7;">
+        <div class="small font-weight-bold text-warning text-uppercase">Under Maintenance</div>
+        <div class="h4 mb-0 font-weight-bold text-warning">{{ metrics.in_repair_assets|default:0 }}</div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-2">
+      <div class="card shadow-sm border-0 text-center py-2" style="border-radius: 8px; background: #FEE2E2;">
+        <div class="small font-weight-bold text-danger text-uppercase">Lost / Damaged / Retired</div>
+        <div class="h4 mb-0 font-weight-bold text-danger">{{ metrics.lost_damaged_count|add:metrics.retired_disposed_count|default:0 }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Movements & Activity -->
+  <div class="row">
+    <!-- Stock Movements Table -->
+    <div class="col-xl-7 mb-4">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-exchange-alt mr-2 text-primary"></i> Recent Stock Ledger Movements</h6>
+          <a href="{% url 'inventory:movement_ledger' %}" class="btn btn-outline-primary btn-sm">Full Ledger</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+            <thead class="bg-light">
+              <tr>
+                <th>Type</th>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Store / Route</th>
+                <th>Ref / Performed By</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for mov in metrics.recent_movements %}
+                <tr>
+                  <td>
+                    {% if mov.movement_type == 'IN' %}
+                      <span class="badge badge-success">IN</span>
+                    {% elif mov.movement_type == 'OUT' %}
+                      <span class="badge badge-danger">OUT</span>
+                    {% elif mov.movement_type == 'TRANSFER' %}
+                      <span class="badge badge-info">TRANSFER</span>
+                    {% elif mov.movement_type == 'RETURN' %}
+                      <span class="badge badge-primary">RETURN</span>
+                    {% else %}
+                      <span class="badge badge-secondary">{{ mov.movement_type }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="font-weight-bold text-dark">{{ mov.item.name }}</td>
+                  <td>{{ mov.quantity }} {{ mov.item.unit.short_code }}</td>
+                  <td>
+                    {% if mov.movement_type == 'TRANSFER' %}
+                      {{ mov.source_store.code }} &rarr; {{ mov.destination_store.code }}
+                    {% elif mov.movement_type == 'IN' or mov.movement_type == 'RETURN' %}
+                      &rarr; {{ mov.destination_store.name }}
+                    {% else %}
+                      {{ mov.source_store.name }} &rarr;
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="text-muted">{{ mov.reference_number|default:"-" }}</div>
+                    <small class="text-muted">{{ mov.performed_by.get_full_name|default:"System" }}</small>
+                  </td>
+                  <td>{{ mov.timestamp|date:"d M Y, H:i" }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">No stock movements recorded yet.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Asset Assignments & Pending Maintenance -->
+    <div class="col-xl-5 mb-4">
+      <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-tools mr-2 text-warning"></i> Assets in Maintenance</h6>
+          <a href="{% url 'inventory:maintenance_list' %}" class="btn btn-outline-secondary btn-sm">View All</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+            <thead class="bg-light">
+              <tr>
+                <th>Asset Tag</th>
+                <th>Issue</th>
+                <th>Type</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for maint in metrics.pending_maintenance %}
+                <tr>
+                  <td class="font-weight-bold text-primary">{{ maint.asset.asset_tag }}</td>
+                  <td class="text-truncate" style="max-width: 150px;">{{ maint.issue_description }}</td>
+                  <td><span class="badge badge-warning">{{ maint.get_maintenance_type_display }}</span></td>
+                  <td>
+                    <a href="{% url 'inventory:maintenance_complete' maint.pk %}" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size: 0.75rem;">Complete</a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center py-3 text-muted">No assets currently under repair.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-user-tag mr-2 text-info"></i> Recent Asset Assignments</h6>
+          <a href="{% url 'inventory:asset_assignment_list' %}" class="btn btn-outline-secondary btn-sm">Assignments</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+            <thead class="bg-light">
+              <tr>
+                <th>Asset</th>
+                <th>Assigned To</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for assn in metrics.recent_assignments %}
+                <tr>
+                  <td>
+                    <span class="font-weight-bold text-dark">{{ assn.asset.asset_tag }}</span><br>
+                    <small class="text-muted">{{ assn.asset.name }}</small>
+                  </td>
+                  <td>
+                    {% if assn.assigned_to_employee %}
+                      {{ assn.assigned_to_employee.full_name }} (Staff)
+                    {% elif assn.assigned_to_department %}
+                      {{ assn.assigned_to_department.name }} (Dept)
+                    {% else %}
+                      {{ assn.location|default:"General" }}
+                    {% endif %}
+                  </td>
+                  <td>{{ assn.assigned_date|date:"d M Y" }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center py-3 text-muted">No asset assignments found.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

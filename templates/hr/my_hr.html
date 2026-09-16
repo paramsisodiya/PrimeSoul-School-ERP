@@ -1,0 +1,178 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">My Staff Portal</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">My Employee & Payroll Portal</h4>
+    </div>
+    <div>
+      <a href="{% url 'hr:leave_apply' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus mr-1"></i> Apply for Leave
+      </a>
+    </div>
+  </div>
+
+  {% if employee %}
+    <!-- Employee Banner Card -->
+    <div class="row mb-4">
+      <div class="col-md-6 mb-3">
+        <div class="card shadow-sm border-0" style="border-radius: 10px; background: linear-gradient(135deg, #10B981 0%, #047857 100%); color: white;">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span class="badge badge-light text-success px-3 py-1 font-weight-bold">{{ employee.designation.name }}</span>
+              <i class="fas fa-id-card-alt fa-2x text-white-50"></i>
+            </div>
+            <h4 class="font-weight-bold mb-1">{{ employee.full_name }}</h4>
+            <p class="text-white-50 small mb-2">Employee ID: <code>{{ employee.employee_code }}</code> | Dept: {{ employee.department.name|default:"General" }}</p>
+            <div class="d-flex justify-content-between pt-2 border-top border-white-50 small">
+              <span>Status: <strong>{{ employee.status }}</strong></span>
+              <span>Joined: <strong>{{ employee.joining_date|date:"d M Y"|default:"-" }}</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leave Balances -->
+    <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+      <div class="card-header bg-white font-weight-bold">
+        <i class="fas fa-calendar-check mr-1 text-primary"></i> My Leave Balances
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+          <thead class="thead-light">
+            <tr>
+              <th>Leave Type</th>
+              <th>Opening Balance</th>
+              <th>Accrued</th>
+              <th>Used</th>
+              <th>Available Remaining</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for lb in leave_balances %}
+              <tr>
+                <td><strong>{{ lb.leave_type.name }}</strong></td>
+                <td>{{ lb.opening }}</td>
+                <td>{{ lb.accrued }}</td>
+                <td>{{ lb.used }}</td>
+                <td><span class="badge badge-info">{{ lb.closing }}</span></td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-3 text-muted">No leave balance records available.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- My Recent Payslips -->
+    <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+      <div class="card-header bg-white font-weight-bold">
+        <i class="fas fa-file-invoice-dollar mr-1 text-success"></i> My Released Payslips
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+          <thead class="thead-light">
+            <tr>
+              <th>Month & Year</th>
+              <th>Payable Days</th>
+              <th>Gross Salary</th>
+              <th>Total Deductions</th>
+              <th>Net Credited</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ps in payslips %}
+              <tr>
+                <td><strong>{{ ps.payroll_period.get_month_display }} {{ ps.payroll_period.year }}</strong></td>
+                <td>{{ ps.payable_days }} / {{ ps.working_days }}</td>
+                <td>₹{{ ps.gross_earnings }}</td>
+                <td>₹{{ ps.total_deductions }}</td>
+                <td><strong class="text-success">₹{{ ps.net_salary }}</strong></td>
+                <td class="text-right">
+                  <a href="{% url 'hr:payslip_detail' ps.pk %}" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.8rem;">
+                    <i class="fas fa-receipt mr-1"></i> View Statement
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">No payslips released yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- My Leave History -->
+    <div class="card shadow-sm border-0" style="border-radius: 10px;">
+      <div class="card-header bg-white font-weight-bold">
+        <i class="fas fa-history mr-1 text-secondary"></i> My Leave Applications
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+          <thead class="thead-light">
+            <tr>
+              <th>Type</th>
+              <th>From</th>
+              <th>To</th>
+              <th>Days</th>
+              <th>Reason</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for lr in my_leaves %}
+              <tr>
+                <td>{{ lr.leave_type.name }}</td>
+                <td>{{ lr.start_date|date:"d M Y" }}</td>
+                <td>{{ lr.end_date|date:"d M Y" }}</td>
+                <td>{{ lr.days_count }}</td>
+                <td>{{ lr.reason|truncatechars:30 }}</td>
+                <td>
+                  {% if lr.status == 'PENDING' %}
+                    <span class="badge badge-warning">Pending</span>
+                  {% elif lr.status == 'APPROVED' %}
+                    <span class="badge badge-success">Approved</span>
+                  {% elif lr.status == 'REJECTED' %}
+                    <span class="badge badge-danger">Rejected</span>
+                  {% else %}
+                    <span class="badge badge-secondary">{{ lr.status }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-3 text-muted">No leave applications submitted.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <div class="card shadow-sm border-0 text-center py-5" style="border-radius: 10px;">
+      <div class="card-body">
+        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+        <h5 class="font-weight-bold">No Linked Employee Record</h5>
+        <p class="text-muted">Your user account is not associated with an active employee profile. Please contact the administrator.</p>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

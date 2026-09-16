@@ -1,0 +1,89 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'admissions:dashboard' %}" class="text-decoration-none">Admissions</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'admissions:enquiry_list' %}" class="text-decoration-none">Enquiries</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Enquiry #{{ enquiry.enquiry_number }}</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Enquiry Lead #{{ enquiry.enquiry_number }}</h4>
+      <p class="text-muted small mb-0">Follow up and update lead details for prospective candidate {{ enquiry.student_name }}.</p>
+    </div>
+    <div>
+      <a href="{% url 'admissions:enquiry_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Enquiries
+      </a>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-dark">Admission Session <span class="text-danger">*</span></label>
+              {{ form.admission_session }}
+            </div>
+            <div class="row">
+              <div class="col-md-6 form-group mb-3">
+                <label class="small font-weight-bold text-dark">Student Name <span class="text-danger">*</span></label>
+                {{ form.student_name }}
+              </div>
+              <div class="col-md-6 form-group mb-3">
+                <label class="small font-weight-bold text-dark">Parent / Guardian Name <span class="text-danger">*</span></label>
+                {{ form.parent_name }}
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 form-group mb-3">
+                <label class="small font-weight-bold text-dark">Mobile Number <span class="text-danger">*</span></label>
+                {{ form.mobile }}
+                {% if form.mobile.errors %}<div class="text-danger small">{{ form.mobile.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-6 form-group mb-3">
+                <label class="small font-weight-bold text-dark">Email (Optional)</label>
+                {{ form.email }}
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 form-group mb-3">
+                <label class="small font-weight-bold text-dark">Interested Grade</label>
+                {{ form.interested_grade }}
+              </div>
+              <div class="col-md-6 form-group mb-3">
+                <label class="small font-weight-bold text-dark">Lead Source</label>
+                {{ form.source }}
+              </div>
+            </div>
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-dark">Status</label>
+              {{ form.status }}
+            </div>
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-dark">Notes / Follow-up History</label>
+              {{ form.notes }}
+            </div>
+            <div class="border-top pt-3 text-right">
+              <button type="submit" class="btn btn-primary btn-sm px-4 font-weight-bold">
+                <i class="fas fa-save mr-1"></i> Update Enquiry Lead
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

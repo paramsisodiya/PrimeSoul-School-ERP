@@ -1,0 +1,143 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'communication:dashboard' %}" class="text-decoration-none">Communication</a></li>
+          <li class="breadcrumb-item active" aria-current="page">{% if is_edit %}Edit Announcement{% else %}New Announcement{% endif %}</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">{% if is_edit %}Edit Announcement{% else %}Compose New Announcement{% endif %}</h4>
+      <p class="text-muted small mb-0">Configure announcement content, priority, targeted audiences, and scheduling parameters.</p>
+    </div>
+    <div>
+      <a href="{% url 'communication:announcement_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to List
+      </a>
+    </div>
+  </div>
+
+  <!-- Form Card -->
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-body p-4">
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="row">
+              <div class="col-md-8">
+                <div class="form-group mb-3">
+                  <label class="font-weight-bold small text-dark">Announcement Title <span class="text-danger">*</span></label>
+                  {{ form.title }}
+                  {% if form.title.errors %}<div class="text-danger small mt-1">{{ form.title.errors }}</div>{% endif %}
+                </div>
+
+                <div class="form-group mb-3">
+                  <label class="font-weight-bold small text-dark">Message Content <span class="text-danger">*</span></label>
+                  {{ form.content }}
+                  {% if form.content.errors %}<div class="text-danger small mt-1">{{ form.content.errors }}</div>{% endif %}
+                </div>
+
+                <div class="form-group mb-3">
+                  <label class="font-weight-bold small text-dark">Attachment (Optional Document / Image)</label>
+                  {{ form.attachment }}
+                  {% if form.attachment.errors %}<div class="text-danger small mt-1">{{ form.attachment.errors }}</div>{% endif %}
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="p-3 bg-light rounded mb-3">
+                  <h6 class="font-weight-bold text-dark mb-3">Target Audience</h6>
+                  
+                  <div class="form-group mb-2">
+                    <label class="small font-weight-bold text-muted">Audience Scope</label>
+                    {{ form.target_type }}
+                  </div>
+
+                  <div class="form-group mb-2" id="div_grade_level" style="display: none;">
+                    <label class="small font-weight-bold text-muted">Class / Grade</label>
+                    {{ form.grade_level }}
+                  </div>
+
+                  <div class="form-group mb-2" id="div_section" style="display: none;">
+                    <label class="small font-weight-bold text-muted">Section</label>
+                    {{ form.section }}
+                  </div>
+                </div>
+
+                <div class="p-3 bg-light rounded mb-3">
+                  <h6 class="font-weight-bold text-dark mb-3">Classification & Priority</h6>
+
+                  <div class="form-group mb-2">
+                    <label class="small font-weight-bold text-muted">Category</label>
+                    {{ form.category }}
+                  </div>
+
+                  <div class="form-group mb-2">
+                    <label class="small font-weight-bold text-muted">Priority</label>
+                    {{ form.priority }}
+                  </div>
+
+                  <div class="form-group mb-2">
+                    <label class="small font-weight-bold text-muted">Status</label>
+                    {{ form.status }}
+                  </div>
+                </div>
+
+                <div class="p-3 bg-light rounded mb-3">
+                  <h6 class="font-weight-bold text-dark mb-3">Scheduling</h6>
+
+                  <div class="form-group mb-2">
+                    <label class="small font-weight-bold text-muted">Schedule Date & Time</label>
+                    {{ form.scheduled_at }}
+                  </div>
+
+                  <div class="form-group mb-2">
+                    <label class="small font-weight-bold text-muted">Expiry Date & Time</label>
+                    {{ form.expires_at }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="border-top pt-3 mt-3 d-flex justify-content-end gap-2">
+              <a href="{% url 'communication:announcement_list' %}" class="btn btn-secondary btn-sm mr-2">Cancel</a>
+              <button type="submit" class="btn btn-primary btn-sm px-4 font-weight-bold">
+                <i class="fas fa-save mr-1"></i> Save Announcement
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var targetSelect = document.getElementById('id_target_type');
+    var gradeDiv = document.getElementById('div_grade_level');
+    var secDiv = document.getElementById('div_section');
+
+    function updateTargetVisibility() {
+      var val = targetSelect ? targetSelect.value : '';
+      if (gradeDiv) gradeDiv.style.display = (val === 'SPECIFIC_CLASS' || val === 'SPECIFIC_SECTION') ? 'block' : 'none';
+      if (secDiv) secDiv.style.display = (val === 'SPECIFIC_SECTION') ? 'block' : 'none';
+    }
+
+    if (targetSelect) {
+      targetSelect.addEventListener('change', updateTargetVisibility);
+      updateTargetVisibility();
+    }
+  });
+</script>
+{% endblock %}

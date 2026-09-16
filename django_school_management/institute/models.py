@@ -9,7 +9,7 @@ from django.utils.safestring import mark_safe
 from django.urls import reverse
 
 from .utils import model_help_texts
-from .education_boards import BD_BOARDS, COUNTRY_BD
+from .education_boards import BD_BOARDS, COUNTRY_BD, IN_BOARDS, COUNTRY_IN
 
 
 # Institute type determines terminology and flows (Department vs Group, counselling, etc.)
@@ -18,7 +18,7 @@ INSTITUTE_TYPE_SCHOOL = 'school'
 INSTITUTE_TYPE_MADRASAH = 'madrasah'
 
 INSTITUTE_TYPE_CHOICES = [
-    (INSTITUTE_TYPE_SCHOOL, 'School (e.g. SSC/HSC)'),
+    (INSTITUTE_TYPE_SCHOOL, 'School (CBSE / ICSE / State Board)'),
     (INSTITUTE_TYPE_MADRASAH, 'Madrasah (e.g. Dakhil, Alim, Fazil)'),
     (INSTITUTE_TYPE_POLYTECHNIC, 'Polytechnic Institute'),
 ]
@@ -32,7 +32,7 @@ INSTITUTE_TYPE_ONBOARDING_ORDER = [
 
 
 class EducationBoard(ExportModelOperationsMixin('education_board'), models.Model):
-	"""Education boards per country for admission forms (e.g. BISE Dhaka)."""
+	"""Education boards per country for admission forms (e.g. CBSE, ICSE, BISE)."""
 	country = CountryField(db_index=True)
 	name = models.CharField(max_length=120)
 	code = models.CharField(max_length=30, blank=True, help_text='Short code for display')
@@ -46,7 +46,7 @@ class EducationBoard(ExportModelOperationsMixin('education_board'), models.Model
 
 	@classmethod
 	def get_boards_for_country(cls, country_code):
-		"""Return boards for a country. For BD ensures fixture data exists if empty."""
+		"""Return boards for a country. For IN and BD ensures fixture data exists if empty."""
 		if country_code is None:
 			return cls.objects.none()
 		# Normalize: CountryField may return Country object with .code
@@ -54,11 +54,16 @@ class EducationBoard(ExportModelOperationsMixin('education_board'), models.Model
 		if not code:
 			return cls.objects.none()
 		qs = cls.objects.filter(country=code)
-		if code == COUNTRY_BD and not qs.exists():
+		if code == COUNTRY_IN and not qs.exists():
+			for name, c in IN_BOARDS:
+				cls.objects.get_or_create(country=code, name=name, defaults={'code': c})
+			qs = cls.objects.filter(country=code)
+		elif code == COUNTRY_BD and not qs.exists():
 			for name, c in BD_BOARDS:
 				cls.objects.get_or_create(country=code, name=name, defaults={'code': c})
 			qs = cls.objects.filter(country=code)
 		return qs
+
 
 
 class InstituteProfile(ExportModelOperationsMixin('institute_profile'), models.Model):

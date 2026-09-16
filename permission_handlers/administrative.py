@@ -11,14 +11,17 @@ from .editor import (
 from .basic import user_is_verified, user_is_teacher, user_is_student
 
 def user_is_admin(user):
-    return user_is_verified(user) and user.requested_role == 'admin' \
-        if user.is_authenticated else False
+    if not user.is_authenticated:
+        return False
+    return user.is_superuser or (
+        user_is_verified(user) and user.requested_role in ['admin', 'SCHOOL_ADMIN', 'PLATFORM_SUPER_ADMIN']
+    )
 
 def user_is_superuser(user):
-    return user_is_admin(user) and user.is_superuser if user.is_authenticated else False
+    return user.is_superuser if user.is_authenticated else False
 
 def user_is_admin_or_su(user):
-    return user_is_admin(user) or user_is_superuser(user)
+    return user.is_superuser or user_is_admin(user)
 
 def user_is_admin_su_or_ac_officer(user):
     return user_is_admin_or_su(user) or user_is_academic_officer(user) \

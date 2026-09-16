@@ -465,3 +465,608 @@ class UpdateSemesterView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return user_editor_admin_or_su(self.request.user)
 
 update_semester = UpdateSemesterView.as_view()
+
+
+# ─────────────────────────────────────────────────────────────
+# Phase 5 — Modern PrimeSoul K-12 Academic Views
+# ─────────────────────────────────────────────────────────────
+
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.core.exceptions import PermissionDenied
+from django_school_management.tenants.models import School
+from django_school_management.students.models import Student
+from django_school_management.teachers.models import Teacher
+from .models import (
+    AcademicYear, GradeLevel, Section, Subject,
+    SubjectAssignment, StudentEnrollment, ClassTeacherAssignment
+)
+from .services import academic_service, promotion_service
+from .selectors import academic_selectors
+from .forms import (
+    AcademicYearForm, GradeLevelForm, SectionForm,
+    SubjectModernForm, SubjectAssignmentForm, StudentEnrollmentForm
+)
+
+
+def get_user_school(user):
+    """Safely extracts tenant school for the current user."""
+    if user.is_authenticated and hasattr(user, 'school') and user.school:
+        return user.school
+    if user.is_superuser:
+        return School.objects.filter(is_active=True).first()
+    return None
+
+
+def user_has_academic_permission(user, allowed_roles):
+    """Checks whether user has required role or is superuser."""
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    user_role = getattr(user, 'requested_role', '') or getattr(user, 'role', '')
+    if user_role in ['PLATFORM_SUPER_ADMIN', 'SCHOOL_ADMIN', 'admin']:
+        return True
+    return user_role in allowed_roles
+
+
+@login_required
+def academic_dashboard_view(request):
+    """
+    Command Center Dashboard for PrimeSoul Academic Management.
+    """
+    if not user_has_academic_permission(request.user, ['SCHOOL_ADMIN', 'PRINCIPAL', 'VICE_PRINCIPAL', 'ACADEMIC_COORDINATOR', 'TEACHER']):
+        raise PermissionDenied("You do not have permission to view the Academic Dashboard.")
+
+    school = get_user_school(request.user)
+    if not school:
+        messages.error(request, "No active school tenant context found.")
+        return redirect('index_view')
+
+    metrics = academic_selectors.get_academic_dashboard_metrics(school)
+    context = {
+        'school': school,
+        **metrics,
+    }
+    return render(request, 'academics/dashboard.html', context)
+
+
+@login_required
+def academic_years_view(request):
+    """
+    List, filter, create, edit, and set current academic session.
+    """
+    if not user_has_academic_permission(request.user, ['SCHOOL_ADMIN', 'PRINCIPAL']):
+        raise PermissionDenied("You do not have permission to manage academic years.")
+
+    school = get_user_school(request.user)
+    if not school:
+        return redirect('index_view')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        try:
+            if action == 'set_current':
+                year_id = int(request.POST.get('year_id'))
+                academic_service.set_current_academic_year(school, year_id, actor=request.user)
+                messages.success(request, "Active academic year updated successfully.")
+            elif action == 'create':
+                form = AcademicYearForm(request.POST)
+                if form.is_valid():
+                    year = form.save(commit=False)
+                    year.school = school
+                    year.created_by = request.user
+                    year.save()
+                    messages.success(request, f"Academic Year {year.name} created successfully.")
+                else:
+                    for field, errs in form.errors.items():
+                        messages.error(request, f"{field}: {errs[0]}")
+            elif action == 'edit':
+                year_id = int(request.POST.get('year_id'))
+                year = get_object_or_404(AcademicYear, pk=year_id, school=school)
+                form = AcademicYearForm(request.POST, instance=year)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, f"Academic Year {year.name} updated successfully.")
+                else:
+                    for field, errs in form.errors.items():
+                        messages.error(request, f"{field}: {errs[0]}")
+        except Exception as e:
+            messages.error(request, f"Error processing academic year: {str(e)}")
+        return redirect('academics:academic_years')
+
+    query = request.GET.get('q', '')
+    status_filter = request.GET.get('status', '')
+    years_qs = academic_selectors.get_academic_years_list(school, query=query, status_filter=status_filter)
+
+    paginator = Paginator(years_qs, 15)
+    page_number = request.GET.get('page')
+    years_page = paginator.get_page(page_number)
+
+    form = AcademicYearForm()
+    context = {
+        'school': school,
+        'years': years_page,
+        'form': form,
+        'query': query,
+        'status_filter': status_filter,
+        'statuses': AcademicYear.STATUS_CHOICES,
+    }
+    return render(request, 'academics/years.html', context)
+
+
+@login_required
+def classes_view(request):
+    """
+    List, create, update, and activate/deactivate Grade Levels.
+    """
+    if not user_has_academic_permission(request.user, ['SCHOOL_ADMIN', 'PRINCIPAL', 'ACADEMIC_COORDINATOR']):
+        raise PermissionDenied("You do not have permission to manage classes.")
+
+    school = get_user_school(request.user)
+    if not school:
+        return redirect('index_view')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        try:
+            if action == 'create':
+                form = GradeLevelForm(request.POST)
+                if form.is_valid():
+                    grade = form.save(commit=False)
+                    grade.school = school
+                    grade.created_by = request.user
+                    grade.save()
+                    messages.success(request, f"Class {grade.name} created successfully.")
+                else:
+                    for field, errs in form.errors.items():
+                        messages.error(request, f"{field}: {errs[0]}")
+            elif action == 'edit':
+                grade_id = int(request.POST.get('grade_id'))
+                grade = get_object_or_404(GradeLevel, pk=grade_id, school=school)
+                form = GradeLevelForm(request.POST, instance=grade)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, f"Class {grade.name} updated successfully.")
+                else:
+                    for field, errs in form.errors.items():
+                        messages.error(request, f"{field}: {errs[0]}")
+            elif action == 'toggle_active':
+                grade_id = int(request.POST.get('grade_id'))
+                grade = get_object_or_404(GradeLevel, pk=grade_id, school=school)
+                grade.is_active = not grade.is_active
+                grade.save(update_fields=['is_active'])
+                status_str = "activated" if grade.is_active else "deactivated"
+                messages.success(request, f"Class {grade.name} has been {status_str}.")
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+        return redirect('academics:classes')
+
+    query = request.GET.get('q', '')
+    board_filter = request.GET.get('board', '')
+    classes_qs = academic_selectors.get_classes_list(school, query=query, board_filter=board_filter)
+
+    paginator = Paginator(classes_qs, 20)
+    classes_page = paginator.get_page(request.GET.get('page'))
+
+    form = GradeLevelForm()
+    context = {
+        'school': school,
+        'classes': classes_page,
+        'form': form,
+        'query': query,
+        'board_filter': board_filter,
+    }
+    return render(request, 'academics/classes.html', context)
+
+
+@login_required
+def sections_view(request):
+    """
+    List, create, update, and assign class teacher to Sections.
+    """
+    if not user_has_academic_permission(request.user, ['SCHOOL_ADMIN', 'PRINCIPAL', 'ACADEMIC_COORDINATOR']):
+        raise PermissionDenied("You do not have permission to manage sections.")
+
+    school = get_user_school(request.user)
+    if not school:
+        return redirect('index_view')
+
+    current_year = AcademicYear.objects.filter(school=school, is_current=True).first()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        try:
+            if action == 'create':
+                form = SectionForm(request.POST, school=school)
+                if form.is_valid():
+                    sec = form.save(commit=False)
+                    sec.school = school
+                    sec.created_by = request.user
+                    if not sec.academic_year and current_year:
+                        sec.academic_year = current_year
+                    sec.save()
+                    if sec.class_teacher and sec.academic_year:
+                        ClassTeacherAssignment.objects.create(
+                            school=school,
+                            academic_year=sec.academic_year,
+                            section=sec,
+                            teacher=sec.class_teacher,
+                            is_active=True,
+                            created_by=request.user
+                        )
+                    messages.success(request, f"Section {sec.grade_level.name} - {sec.name} created successfully.")
+                else:
+                    for field, errs in form.errors.items():
+                        messages.error(request, f"{field}: {errs[0]}")
+            elif action == 'edit':
+                section_id = int(request.POST.get('section_id'))
+                sec = get_object_or_404(Section, pk=section_id, school=school)
+                old_teacher = sec.class_teacher
+                form = SectionForm(request.POST, instance=sec, school=school)
+                if form.is_valid():
+                    form.save()
+                    if sec.class_teacher and sec.class_teacher != old_teacher:
+                        academic_service.assign_class_teacher(sec, sec.class_teacher, sec.academic_year, actor=request.user)
+                    messages.success(request, f"Section {sec.grade_level.name} - {sec.name} updated successfully.")
+                else:
+                    for field, errs in form.errors.items():
+                        messages.error(request, f"{field}: {errs[0]}")
+            elif action == 'toggle_active':
+                section_id = int(request.POST.get('section_id'))
+                sec = get_object_or_404(Section, pk=section_id, school=school)
+                sec.is_active = not sec.is_active
+                sec.save(update_fields=['is_active'])
+                status_str = "activated" if sec.is_active else "deactivated"
+                messages.success(request, f"Section {sec.name} has been {status_str}.")
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+        return redirect('academics:sections')
+
+    grade_filter = request.GET.get('grade')
+    grade_id = int(grade_filter) if grade_filter and grade_filter.isdigit() else None
+    sections_qs = academic_selectors.get_sections_list(school, year=current_year, grade_id=grade_id)
+
+    paginator = Paginator(sections_qs, 20)
+    sections_page = paginator.get_page(request.GET.get('page'))
+
+    form = SectionForm(school=school)
+    grades = GradeLevel.objects.filter(school=school, is_active=True)
+    teachers = Teacher.objects.filter(school=school)
+    years = AcademicYear.objects.filter(school=school)
+
+    context = {
+        'school': school,
+        'sections': sections_page,
+        'form': form,
+        'grades': grades,
+        'teachers': teachers,
+        'years': years,
+        'current_year': current_year,
+        'grade_filter': grade_id,
+    }
+    return render(request, 'academics/sections.html', context)
+
+
+@login_required
+def subjects_view(request):
+    """
+    List, search, filter, and manage Subjects.
+    """
+    if not user_has_academic_permission(request.user, ['SCHOOL_ADMIN', 'PRINCIPAL', 'ACADEMIC_COORDINATOR', 'TEACHER']):
+        raise PermissionDenied("You do not have permission to view subjects.")
+
+    school = get_user_school(request.user)
+    if not school:
+        return redirect('index_view')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        try:
+            if action == 'create':
+                form = SubjectModernForm(request.POST, school=school)
+                if form.is_valid():
+                    sub = form.save(commit=False)
+                    sub.school = school
+                    sub.created_by = request.user
+                    sub.save()
+                    messages.success(request, f"Subject '{sub.name}' created successfully.")
+                else:
+                    for field, errs in form.errors.items():
+                        messages.error(request, f"{field}: {errs[0]}")
+            elif action == 'edit':
+                sub_id = int(request.POST.get('subject_id'))
+                sub = get_object_or_404(Subject, pk=sub_id, school=school)
+                form = SubjectModernForm(request.POST, instance=sub, school=school)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, f"Subject '{sub.name}' updated successfully.")
+                else:
+                    for field, errs in form.errors.items():
+                        messages.error(request, f"{field}: {errs[0]}")
+            elif action == 'toggle_active':
+                sub_id = int(request.POST.get('subject_id'))
+                sub = get_object_or_404(Subject, pk=sub_id, school=school)
+                sub.is_active = not sub.is_active
+                sub.save(update_fields=['is_active'])
+                status_str = "activated" if sub.is_active else "deactivated"
+                messages.success(request, f"Subject {sub.name} has been {status_str}.")
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+        return redirect('academics:subjects_directory')
+
+    query = request.GET.get('q', '')
+    type_filter = request.GET.get('type', '')
+    subjects_qs = academic_selectors.get_subjects_list(school, query=query, type_filter=type_filter)
+
+    paginator = Paginator(subjects_qs, 20)
+    subjects_page = paginator.get_page(request.GET.get('page'))
+
+    form = SubjectModernForm(school=school)
+    teachers = Teacher.objects.filter(school=school)
+
+    context = {
+        'school': school,
+        'subjects': subjects_page,
+        'form': form,
+        'teachers': teachers,
+        'query': query,
+        'type_filter': type_filter,
+        'types': Subject.SUBJECT_TYPE_CHOICES,
+    }
+    return render(request, 'academics/subjects.html', context)
+
+
+@login_required
+def assignments_view(request):
+    """
+    List and assign Subjects to Classes/Sections and Teachers.
+    """
+    if not user_has_academic_permission(request.user, ['SCHOOL_ADMIN', 'PRINCIPAL', 'ACADEMIC_COORDINATOR', 'TEACHER']):
+        raise PermissionDenied("You do not have permission to view subject assignments.")
+
+    school = get_user_school(request.user)
+    if not school:
+        return redirect('index_view')
+
+    current_year = AcademicYear.objects.filter(school=school, is_current=True).first()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        try:
+            if action == 'create':
+                form = SubjectAssignmentForm(request.POST, school=school)
+                if form.is_valid():
+                    academic_year = form.cleaned_data['academic_year']
+                    grade_level = form.cleaned_data['grade_level']
+                    section = form.cleaned_data.get('section')
+                    subject = form.cleaned_data['subject']
+                    teacher = form.cleaned_data.get('teacher')
+                    periods = form.cleaned_data.get('periods_per_week', 5)
+
+                    academic_service.assign_subject_to_teacher(
+                        school=school,
+                        academic_year=academic_year,
+                        grade_level=grade_level,
+                        subject=subject,
+                        section=section,
+                        teacher=teacher,
+                        periods_per_week=periods,
+                        actor=request.user
+                    )
+                    messages.success(request, f"Subject '{subject.name}' successfully assigned.")
+                else:
+                    for field, errs in form.errors.items():
+                        messages.error(request, f"{field}: {errs[0]}")
+            elif action == 'delete':
+                assignment_id = int(request.POST.get('assignment_id'))
+                assign = get_object_or_404(SubjectAssignment, pk=assignment_id, school=school)
+                assign.delete()
+                messages.success(request, "Subject assignment removed.")
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+        return redirect('academics:assignments')
+
+    year_filter = request.GET.get('year')
+    year_obj = AcademicYear.objects.filter(pk=year_filter, school=school).first() if year_filter else current_year
+    grade_filter = request.GET.get('grade')
+    grade_id = int(grade_filter) if grade_filter and grade_filter.isdigit() else None
+
+    assignments_qs = academic_selectors.get_subject_assignments_list(school, year=year_obj, grade_id=grade_id)
+    paginator = Paginator(assignments_qs, 25)
+    assignments_page = paginator.get_page(request.GET.get('page'))
+
+    form = SubjectAssignmentForm(school=school)
+    years = AcademicYear.objects.filter(school=school)
+    grades = GradeLevel.objects.filter(school=school, is_active=True)
+    subjects = Subject.objects.filter(school=school, is_active=True)
+    teachers = Teacher.objects.filter(school=school)
+
+    context = {
+        'school': school,
+        'assignments': assignments_page,
+        'form': form,
+        'years': years,
+        'grades': grades,
+        'subjects': subjects,
+        'teachers': teachers,
+        'current_year': current_year,
+        'selected_year': year_obj,
+        'grade_filter': grade_id,
+    }
+    return render(request, 'academics/assignments.html', context)
+
+
+@login_required
+def enrollments_view(request):
+    """
+    Student Enrollment Registry: List, enroll, change section, and view history.
+    """
+    if not user_has_academic_permission(request.user, ['SCHOOL_ADMIN', 'PRINCIPAL', 'ACADEMIC_COORDINATOR', 'RECEPTIONIST']):
+        raise PermissionDenied("You do not have permission to manage enrollments.")
+
+    school = get_user_school(request.user)
+    if not school:
+        return redirect('index_view')
+
+    current_year = AcademicYear.objects.filter(school=school, is_current=True).first()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        try:
+            if action == 'enroll':
+                form = StudentEnrollmentForm(request.POST, school=school)
+                if form.is_valid():
+                    enrollment = form.save(commit=False)
+                    enrollment.school = school
+                    enrollment.created_by = request.user
+                    enrollment.save()
+                    messages.success(request, f"Student '{enrollment.student.name}' enrolled in {enrollment.grade_level.name}.")
+                else:
+                    for field, errs in form.errors.items():
+                        messages.error(request, f"{field}: {errs[0]}")
+            elif action == 'change_section':
+                enrollment_id = int(request.POST.get('enrollment_id'))
+                section_id = request.POST.get('section_id')
+                enrollment = get_object_or_404(StudentEnrollment, pk=enrollment_id, school=school)
+                sec_obj = Section.objects.filter(pk=section_id, school=school).first() if section_id else None
+                enrollment.section = sec_obj
+                enrollment.save(update_fields=['section'])
+                # Sync student pointer
+                if enrollment.academic_year and enrollment.academic_year.is_current:
+                    enrollment.student.section = sec_obj
+                    enrollment.student.save(update_fields=['section'])
+                messages.success(request, f"Section updated for {enrollment.student.name}.")
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+        return redirect('academics:enrollments')
+
+    year_filter = request.GET.get('year')
+    year_obj = AcademicYear.objects.filter(pk=year_filter, school=school).first() if year_filter else current_year
+    grade_filter = request.GET.get('grade')
+    grade_id = int(grade_filter) if grade_filter and grade_filter.isdigit() else None
+    section_filter = request.GET.get('section')
+    section_id = int(section_filter) if section_filter and section_filter.isdigit() else None
+    status_filter = request.GET.get('status')
+    query = request.GET.get('q', '')
+
+    enrollments_qs = academic_selectors.get_student_enrollments_list(
+        school, year=year_obj, grade_id=grade_id, section_id=section_id,
+        status_filter=status_filter, query=query
+    )
+    paginator = Paginator(enrollments_qs, 25)
+    enrollments_page = paginator.get_page(request.GET.get('page'))
+
+    form = StudentEnrollmentForm(school=school)
+    years = AcademicYear.objects.filter(school=school)
+    grades = GradeLevel.objects.filter(school=school, is_active=True)
+    sections = Section.objects.filter(school=school, is_active=True)
+    students = Student.objects.filter(school=school, is_active=True)
+
+    context = {
+        'school': school,
+        'enrollments': enrollments_page,
+        'form': form,
+        'years': years,
+        'grades': grades,
+        'sections': sections,
+        'students': students,
+        'current_year': current_year,
+        'selected_year': year_obj,
+        'grade_filter': grade_id,
+        'section_filter': section_id,
+        'status_filter': status_filter,
+        'query': query,
+        'statuses': StudentEnrollment.ENROLLMENT_STATUS_CHOICES,
+    }
+    return render(request, 'academics/enrollments.html', context)
+
+
+@login_required
+def promotions_view(request):
+    """
+    Controlled student promotion desk across academic years and classes.
+    """
+    if not user_has_academic_permission(request.user, ['SCHOOL_ADMIN', 'PRINCIPAL']):
+        raise PermissionDenied("You do not have permission to execute student promotions.")
+
+    school = get_user_school(request.user)
+    if not school:
+        return redirect('index_view')
+
+    current_year = AcademicYear.objects.filter(school=school, is_current=True).first()
+
+    if request.method == 'POST':
+        try:
+            source_year_id = int(request.POST.get('source_year'))
+            target_year_id = int(request.POST.get('target_year'))
+            source_grade_id = int(request.POST.get('source_grade'))
+            target_grade_id = int(request.POST.get('target_grade'))
+            source_section_id = request.POST.get('source_section')
+            target_section_id = request.POST.get('target_section')
+            student_ids = request.POST.getlist('student_ids')
+
+            source_year = get_object_or_404(AcademicYear, pk=source_year_id, school=school)
+            target_year = get_object_or_404(AcademicYear, pk=target_year_id, school=school)
+            source_grade = get_object_or_404(GradeLevel, pk=source_grade_id, school=school)
+            target_grade = get_object_or_404(GradeLevel, pk=target_grade_id, school=school)
+
+            source_section = Section.objects.filter(pk=source_section_id, school=school).first() if source_section_id else None
+            target_section = Section.objects.filter(pk=target_section_id, school=school).first() if target_section_id else None
+            st_ids = [int(sid) for sid in student_ids if sid.isdigit()] if student_ids else None
+
+            result = promotion_service.execute_promotion(
+                school=school,
+                source_year=source_year,
+                target_year=target_year,
+                source_grade=source_grade,
+                target_grade=target_grade,
+                source_section=source_section,
+                target_section=target_section,
+                student_ids=st_ids,
+                actor=request.user
+            )
+
+            messages.success(
+                request,
+                f"Successfully promoted {result['promoted_count']} student(s) to {target_grade.name} ({target_year.name})."
+            )
+            if result['skipped_count'] > 0:
+                messages.warning(request, f"{result['skipped_count']} student(s) were skipped because they were already enrolled.")
+        except Exception as e:
+            messages.error(request, f"Promotion execution failed: {str(e)}")
+        return redirect('academics:promotions')
+
+    source_year_id = request.GET.get('source_year')
+    source_grade_id = request.GET.get('source_grade')
+    source_section_id = request.GET.get('source_section')
+
+    candidate_students = []
+    if source_year_id and source_grade_id:
+        c_qs = StudentEnrollment.objects.filter(
+            school=school,
+            academic_year_id=source_year_id,
+            grade_level_id=source_grade_id,
+            status=StudentEnrollment.STATUS_ACTIVE
+        ).select_related('student', 'section')
+        if source_section_id:
+            c_qs = c_qs.filter(section_id=source_section_id)
+        candidate_students = list(c_qs)
+
+    years = AcademicYear.objects.filter(school=school).order_by('-start_date')
+    grades = GradeLevel.objects.filter(school=school, is_active=True)
+    sections = Section.objects.filter(school=school, is_active=True)
+
+    context = {
+        'school': school,
+        'years': years,
+        'grades': grades,
+        'sections': sections,
+        'current_year': current_year,
+        'source_year_id': int(source_year_id) if source_year_id and source_year_id.isdigit() else (current_year.pk if current_year else None),
+        'source_grade_id': int(source_grade_id) if source_grade_id and source_grade_id.isdigit() else None,
+        'source_section_id': int(source_section_id) if source_section_id and source_section_id.isdigit() else None,
+        'candidate_students': candidate_students,
+    }
+    return render(request, 'academics/promotions.html', context)
+

@@ -1,0 +1,132 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Notifications</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Notifications Center</h4>
+        {% if unread_count > 0 %}
+          <span class="badge badge-danger ml-2">{{ unread_count }} unread</span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">Stay updated on attendance alerts, fee dues, exam results, timetable changes, and school circulars.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      {% if unread_count > 0 %}
+      <form method="post" action="{% url 'communication:notification_mark_all_read' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-primary btn-sm">
+          <i class="fas fa-check-double mr-1"></i> Mark All Read
+        </button>
+      </form>
+      {% endif %}
+      <a href="{% url 'communication:notification_preferences' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-sliders-h mr-1"></i> Preferences
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filter Bar -->
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <a href="{% url 'communication:notification_center' %}" class="btn btn-sm {% if not unread_only and not category_filter %}btn-primary{% else %}btn-light border{% endif %}">
+      All
+    </a>
+    <a href="{% url 'communication:notification_center' %}?unread=1" class="btn btn-sm {% if unread_only %}btn-primary{% else %}btn-light border{% endif %}">
+      Unread Only
+    </a>
+    <a href="{% url 'communication:notification_center' %}?type=ATTENDANCE_ALERT" class="btn btn-sm {% if category_filter == 'ATTENDANCE_ALERT' %}btn-primary{% else %}btn-light border{% endif %}">
+      Attendance
+    </a>
+    <a href="{% url 'communication:notification_center' %}?type=FEE_ALERT" class="btn btn-sm {% if category_filter == 'FEE_ALERT' %}btn-primary{% else %}btn-light border{% endif %}">
+      Fees
+    </a>
+    <a href="{% url 'communication:notification_center' %}?type=EXAM_RESULT" class="btn btn-sm {% if category_filter == 'EXAM_RESULT' %}btn-primary{% else %}btn-light border{% endif %}">
+      Results
+    </a>
+    <a href="{% url 'communication:notification_center' %}?type=ANNOUNCEMENT" class="btn btn-sm {% if category_filter == 'ANNOUNCEMENT' %}btn-primary{% else %}btn-light border{% endif %}">
+      Announcements
+    </a>
+  </div>
+
+  <!-- Notifications List Card -->
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="card-body p-0">
+      <ul class="list-group list-group-flush">
+        {% for n in notifications %}
+        <li class="list-group-item p-3 {% if not n.is_read %}bg-light border-left-primary{% endif %}" style="{% if not n.is_read %}border-left: 4px solid #4F46E5 !important;{% endif %}">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="d-flex align-items-start gap-3">
+              <div class="p-2 rounded-circle mt-1 {% if n.notification_type == 'ATTENDANCE_ALERT' %}bg-warning-light text-warning{% elif n.notification_type == 'FEE_ALERT' %}bg-info-light text-info{% elif n.notification_type == 'EXAM_RESULT' %}bg-success-light text-success{% else %}bg-primary-light text-primary{% endif %}" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #EEF2FF;">
+                {% if n.notification_type == 'ATTENDANCE_ALERT' %}
+                  <i class="fas fa-user-clock text-warning"></i>
+                {% elif n.notification_type == 'FEE_ALERT' %}
+                  <i class="fas fa-receipt text-info"></i>
+                {% elif n.notification_type == 'EXAM_RESULT' %}
+                  <i class="fas fa-award text-success"></i>
+                {% elif n.notification_type == 'TRANSPORT_ALERT' %}
+                  <i class="fas fa-bus text-primary"></i>
+                {% elif n.notification_type == 'LIBRARY_ALERT' %}
+                  <i class="fas fa-book text-secondary"></i>
+                {% else %}
+                  <i class="fas fa-bullhorn text-primary"></i>
+                {% endif %}
+              </div>
+              <div>
+                <div class="d-flex align-items-center gap-2">
+                  <h6 class="font-weight-bold text-dark mb-1">{{ n.title }}</h6>
+                  {% if not n.is_read %}
+                    <span class="badge badge-primary" style="font-size: 0.65rem;">NEW</span>
+                  {% endif %}
+                  {% if n.priority == 'URGENT' %}
+                    <span class="badge badge-danger" style="font-size: 0.65rem;">URGENT</span>
+                  {% endif %}
+                </div>
+                <p class="text-dark small mb-1" style="line-height: 1.5;">{{ n.message }}</p>
+                <small class="text-muted">{{ n.created|timesince }} ago • Channel: {{ n.get_channel_display }}</small>
+              </div>
+            </div>
+            <div class="text-right">
+              {% if not n.is_read %}
+              <a href="{% url 'communication:notification_read' n.pk %}" class="btn btn-sm btn-outline-primary py-1 px-2 font-weight-bold" style="font-size: 0.75rem;">
+                Mark Read
+              </a>
+              {% else %}
+              <small class="text-muted"><i class="fas fa-check-double text-success mr-1"></i> Read</small>
+              {% endif %}
+            </div>
+          </div>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-center py-5 text-muted">
+          <i class="fas fa-bell-slash fa-3x mb-3 d-block text-muted opacity-50"></i>
+          You have no notifications in this view.
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

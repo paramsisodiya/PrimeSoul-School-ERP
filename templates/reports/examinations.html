@@ -1,0 +1,157 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'reports:dashboard' %}" class="text-decoration-none">Reports</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Examinations</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Examination Performance & Merit Analytics</h4>
+      <p class="text-muted small mb-0">Class performance statements, subject score distributions, pass/fail percentages, and merit ranks.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      {% if data.selected_exam %}
+        <a href="?export=csv&exam={{ data.selected_exam.id }}" class="btn btn-outline-success btn-sm">
+          <i class="fas fa-file-csv mr-1"></i> Export CSV
+        </a>
+        <a href="?export=pdf&exam={{ data.selected_exam.id }}" class="btn btn-outline-danger btn-sm">
+          <i class="fas fa-file-pdf mr-1"></i> Export PDF
+        </a>
+      {% endif %}
+      <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Hub
+      </a>
+    </div>
+  </div>
+
+  <!-- Exam Selector Filter -->
+  <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+    <div class="card-body py-3">
+      <form method="get" class="row align-items-center">
+        <div class="col-md-6 mb-2 mb-md-0">
+          <label class="small text-muted font-weight-bold mb-1">Select Examination</label>
+          <select name="exam" class="form-control form-control-sm" onchange="this.form.submit()">
+            {% for ex in data.exams %}
+              <option value="{{ ex.id }}" {% if data.selected_exam.id == ex.id %}selected{% endif %}>{{ ex.name }} ({{ ex.academic_year.name }})</option>
+            {% empty %}
+              <option value="">No published exams found</option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if data.selected_exam %}
+    <!-- Summary Metrics -->
+    <div class="row mb-4">
+      <div class="col-md-3 mb-3">
+        <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #4F46E5 !important;">
+          <div class="card-body">
+            <div class="text-muted small font-weight-bold text-uppercase">Candidates Evaluated</div>
+            <div class="h3 font-weight-bold text-dark mb-0">{{ data.metrics.total_students|default:0 }}</div>
+            <small class="text-muted">Students Appeared</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #10B981 !important;">
+          <div class="card-body">
+            <div class="text-muted small font-weight-bold text-uppercase">Overall Pass Rate</div>
+            <div class="h3 font-weight-bold text-success mb-0">{{ data.pass_percentage }}%</div>
+            <small class="text-success font-weight-bold">{{ data.metrics.passed_count }} Passed / {{ data.metrics.failed_count }} Failed</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #8B5CF6 !important;">
+          <div class="card-body">
+            <div class="text-muted small font-weight-bold text-uppercase">Batch Average Score</div>
+            <div class="h3 font-weight-bold text-purple mb-0" style="color: #8B5CF6;">{{ data.metrics.avg_percentage|floatformat:1 }}%</div>
+            <small class="text-muted">Mean Percentage</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #F59E0B !important;">
+          <div class="card-body">
+            <div class="text-muted small font-weight-bold text-uppercase">Highest Score</div>
+            <div class="h3 font-weight-bold text-warning mb-0">{{ data.metrics.highest_percentage|default:"0.0" }}%</div>
+            <small class="text-muted">Top Candidate</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="card shadow-sm border-0" style="border-radius: 10px;">
+      <div class="card-header bg-white py-3">
+        <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-medal mr-2 text-warning"></i> Examination Merit & Results Statement: {{ data.selected_exam.name }}</h6>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+          <thead class="bg-light">
+            <tr>
+              <th>Rank</th>
+              <th>Student Name</th>
+              <th>Roll No</th>
+              <th>Class / Section</th>
+              <th>Marks Obtained</th>
+              <th>Percentage</th>
+              <th>Grade</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in data.results_list %}
+              <tr>
+                <td>
+                  {% if r.class_rank == 1 %}
+                    <span class="badge badge-warning"><i class="fas fa-trophy mr-1"></i>1st</span>
+                  {% elif r.class_rank == 2 %}
+                    <span class="badge badge-secondary">2nd</span>
+                  {% elif r.class_rank == 3 %}
+                    <span class="badge badge-light border">3rd</span>
+                  {% else %}
+                    <span class="font-weight-bold text-muted">{{ r.class_rank|default:"-" }}</span>
+                  {% endif %}
+                </td>
+                <td class="font-weight-bold text-dark">{{ r.student.get_full_name }}</td>
+                <td>{{ r.student.roll_number|default:"-" }}</td>
+                <td>{{ r.exam.grade_level.name }} {% if r.exam.section %}({{ r.exam.section.name }}){% endif %}</td>
+                <td class="font-weight-bold">{{ r.total_marks_obtained }}</td>
+                <td class="font-weight-bold text-primary">{{ r.percentage }}%</td>
+                <td><span class="badge badge-light border">{{ r.overall_grade|default:"-" }}</span></td>
+                <td>
+                  {% if r.result_status == 'PASSED' %}
+                    <span class="badge badge-success">Passed</span>
+                  {% else %}
+                    <span class="badge badge-danger">{{ r.get_result_status_display }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="8" class="text-center py-4 text-muted">No published results found for this exam.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <div class="card shadow-sm border-0 text-center py-5" style="border-radius: 10px;">
+      <i class="fas fa-award fa-3x text-muted mb-3 d-block"></i>
+      <h6 class="text-muted">No examination data available.</h6>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'admissions:dashboard' %}" class="text-decoration-none">Admissions</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Applications</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Admission Applications Roster</h4>
+      <p class="text-muted small mb-0">Filter and process candidate applications across review stages, verification, and admission conversion.</p>
+    </div>
+    <div>
+      <a href="{% url 'admissions:application_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus mr-1"></i> New Application
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filter Card -->
+  <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+    <div class="card-body py-3">
+      <form method="get" class="row align-items-center">
+        <div class="col-md-3 mb-2 mb-md-0">
+          <div class="input-group input-group-sm">
+            <input type="text" name="q" value="{{ search_q|default:'' }}" class="form-control" placeholder="Search applicant, app #...">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i></button>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-2 mb-md-0">
+          <select name="status" class="form-control form-control-sm" onchange="this.form.submit()">
+            <option value="">-- All Statuses --</option>
+            <option value="DRAFT" {% if selected_status == 'DRAFT' %}selected{% endif %}>Draft</option>
+            <option value="SUBMITTED" {% if selected_status == 'SUBMITTED' %}selected{% endif %}>Submitted</option>
+            <option value="UNDER_REVIEW" {% if selected_status == 'UNDER_REVIEW' %}selected{% endif %}>Under Review</option>
+            <option value="SHORTLISTED" {% if selected_status == 'SHORTLISTED' %}selected{% endif %}>Shortlisted</option>
+            <option value="INTERVIEW" {% if selected_status == 'INTERVIEW' %}selected{% endif %}>Interview / Assessment</option>
+            <option value="APPROVED" {% if selected_status == 'APPROVED' %}selected{% endif %}>Approved</option>
+            <option value="ADMITTED" {% if selected_status == 'ADMITTED' %}selected{% endif %}>Admitted / Enrolled</option>
+            <option value="REJECTED" {% if selected_status == 'REJECTED' %}selected{% endif %}>Rejected</option>
+            <option value="WAITLISTED" {% if selected_status == 'WAITLISTED' %}selected{% endif %}>Waitlisted</option>
+          </select>
+        </div>
+        <div class="col-md-3 mb-2 mb-md-0">
+          <select name="grade" class="form-control form-control-sm" onchange="this.form.submit()">
+            <option value="">-- All Classes / Grades --</option>
+            {% for g in grades %}
+              <option value="{{ g.id }}" {% if selected_grade == g.id|stringformat:"i" %}selected{% endif %}>{{ g.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 text-right">
+          <a href="{% url 'admissions:application_list' %}" class="btn btn-sm btn-outline-secondary w-100">Reset Filters</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Applications Table -->
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light text-muted small">
+            <tr>
+              <th>App # & Applicant</th>
+              <th>Class</th>
+              <th>Parent / Contact</th>
+              <th>Documents</th>
+              <th>Status</th>
+              <th>Submitted</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in applications %}
+            <tr>
+              <td>
+                <a href="{% url 'admissions:application_detail' a.pk %}" class="font-weight-bold text-dark text-decoration-none">
+                  {{ a.get_full_name }}
+                </a>
+                <code class="small d-block text-muted">{{ a.application_number }}</code>
+              </td>
+              <td>{{ a.requested_grade.name }}</td>
+              <td>
+                <div class="small font-weight-bold text-dark">{{ a.father_name|default:a.mother_name|default:a.guardian_name }}</div>
+                <small class="text-muted">{{ a.father_mobile|default:a.mother_mobile|default:a.guardian_mobile }}</small>
+              </td>
+              <td>
+                <span class="badge badge-light border">{{ a.documents.count }} uploaded</span>
+              </td>
+              <td>
+                {% if a.status == 'ADMITTED' %}
+                  <span class="badge badge-success">Admitted</span>
+                {% elif a.status == 'APPROVED' %}
+                  <span class="badge badge-primary">Approved</span>
+                {% elif a.status == 'SUBMITTED' %}
+                  <span class="badge badge-info">Submitted</span>
+                {% elif a.status == 'UNDER_REVIEW' %}
+                  <span class="badge badge-warning">Under Review</span>
+                {% elif a.status == 'REJECTED' %}
+                  <span class="badge badge-danger">Rejected</span>
+                {% else %}
+                  <span class="badge badge-secondary">{{ a.get_status_display }}</span>
+                {% endif %}
+              </td>
+              <td class="small text-muted">{{ a.created|date:"d M Y" }}</td>
+              <td class="text-right">
+                <a href="{% url 'admissions:application_detail' a.pk %}" class="btn btn-sm btn-outline-primary" title="Review Application">
+                  <i class="fas fa-search-plus"></i> Review
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">
+                <i class="fas fa-file-invoice fa-3x mb-3 d-block text-muted opacity-50"></i>
+                No applications found matching criteria.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

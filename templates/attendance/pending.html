@@ -1,0 +1,133 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Breadcrumbs & Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'attendance:dashboard' %}" class="text-decoration-none">Attendance</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Pending Sections</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Daily Classroom Roll Submission Status</h4>
+      </div>
+      <p class="text-muted small mb-0">
+        Monitor section-wise roll call submission status for <strong>{{ target_date|date:"l, d F Y" }}</strong>.
+        {% if is_teacher %}<span class="badge badge-info ml-1">Scoped to Assigned Classes</span>{% endif %}
+      </p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <!-- Date Selector -->
+      <form method="GET" class="form-inline mr-2">
+        <div class="input-group input-group-sm">
+          <div class="input-group-prepend">
+            <span class="input-group-text bg-white"><i class="fas fa-calendar-day text-primary"></i></span>
+          </div>
+          <input type="date" name="date" value="{{ target_date|date:'Y-m-d' }}" class="form-control form-control-sm" onchange="this.form.submit()">
+        </div>
+      </form>
+      <a href="{% url 'attendance:mark_daily' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-check-double mr-1"></i> Mark Daily Roll
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Sections Table -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+      <h6 class="font-weight-bold text-dark mb-0">
+        <i class="fas fa-tasks mr-2 text-primary"></i> Classroom Roster Tracking ({{ target_date|date:"d M Y" }})
+      </h6>
+      <span class="badge badge-secondary">{{ sections|length }} Total Sections</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+        <thead class="bg-light">
+          <tr>
+            <th>Class & Section</th>
+            <th>Class Teacher</th>
+            <th class="text-center">Submission Status</th>
+            <th class="text-center">Students Tracked</th>
+            <th class="text-right pr-4">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in sections %}
+            <tr class="{% if not item.is_marked %}table-warning-tint{% endif %}">
+              <!-- Class & Section -->
+              <td class="font-weight-bold text-dark">
+                {{ item.grade_level.name }} - Section {{ item.section.name }}
+              </td>
+
+              <!-- Class Teacher -->
+              <td>
+                <i class="fas fa-chalkboard-teacher text-muted mr-1"></i> {{ item.class_teacher }}
+              </td>
+
+              <!-- Status -->
+              <td class="text-center">
+                {% if item.is_marked %}
+                  <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Completed</span>
+                {% else %}
+                  <span class="badge badge-warning px-2 py-1 font-weight-bold"><i class="fas fa-clock mr-1"></i> Not Marked (Pending)</span>
+                {% endif %}
+              </td>
+
+              <!-- Count -->
+              <td class="text-center font-weight-semibold">
+                {{ item.records_count }}
+              </td>
+
+              <!-- Action Button -->
+              <td class="text-right pr-4">
+                {% if current_year %}
+                <a href="{% url 'attendance:mark_daily' %}?academic_year={{ current_year.id }}&grade_level={{ item.grade_level.id }}&section={{ item.section.id }}&attendance_date={{ target_date|date:'Y-m-d' }}" class="btn btn-sm {% if item.is_marked %}btn-outline-secondary{% else %}btn-primary font-weight-bold{% endif %}">
+                  {% if item.is_marked %}
+                    <i class="fas fa-edit mr-1"></i> Review / Edit
+                  {% else %}
+                    <i class="fas fa-plus-circle mr-1"></i> Mark Attendance
+                  {% endif %}
+                </a>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-5 text-muted">
+                <i class="fas fa-chalkboard fa-3x text-muted mb-3 d-block"></i>
+                <h5>No active sections found</h5>
+                <p class="small">Ensure classes and sections are properly configured for the current session.</p>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<style>
+.table-warning-tint {
+  background-color: #fffdf5;
+}
+</style>
+{% endblock %}

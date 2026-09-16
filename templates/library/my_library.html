@@ -1,0 +1,142 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">My Library</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">My Library Pass & Borrowing Record</h4>
+    </div>
+    <div>
+      <a href="{% url 'library:books' %}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-search mr-1"></i> Browse Catalog
+      </a>
+    </div>
+  </div>
+
+  {% if member %}
+    <div class="row mb-4">
+      <div class="col-md-6 mb-3">
+        <div class="card shadow-sm border-0" style="border-radius: 10px; background: linear-gradient(135deg, #4F46E5 0%, #3730A3 100%); color: white;">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span class="badge badge-light text-primary px-3 py-1 font-weight-bold">{{ member.member_type }} PASS</span>
+              <i class="fas fa-book-reader fa-2x text-white-50"></i>
+            </div>
+            <h4 class="font-weight-bold mb-1">{{ member.get_name }}</h4>
+            <p class="text-white-50 small mb-3">Member ID: <code>{{ member.member_code }}</code></p>
+            <div class="d-flex justify-content-between pt-2 border-top border-white-50 small">
+              <span>Current Loans: <strong>{{ member.current_issued_count }}</strong></span>
+              <span>Max Allowed: <strong>{{ member.max_books_allowed }}</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Issues -->
+    <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+      <div class="card-header bg-white font-weight-bold">
+        <i class="fas fa-book mr-1 text-primary"></i> Currently Borrowed Books
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+          <thead class="thead-light">
+            <tr>
+              <th>Title</th>
+              <th>Accession</th>
+              <th>Issue Date</th>
+              <th>Due Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for issue in active_issues %}
+              <tr>
+                <td><strong>{{ issue.book_copy.book.title }}</strong></td>
+                <td><code>{{ issue.book_copy.accession_number }}</code></td>
+                <td>{{ issue.issue_date|date:"d M Y" }}</td>
+                <td>
+                  {% if issue.is_overdue %}
+                    <span class="text-danger font-weight-bold">{{ issue.due_date|date:"d M Y" }} (Overdue)</span>
+                  {% else %}
+                    {{ issue.due_date|date:"d M Y" }}
+                  {% endif %}
+                </td>
+                <td>
+                  {% if issue.is_overdue %}
+                    <span class="badge badge-danger">Overdue</span>
+                  {% else %}
+                    <span class="badge badge-warning">Active Loan</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-4 text-muted">You have no books currently issued.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Borrowing History -->
+    <div class="card shadow-sm border-0" style="border-radius: 10px;">
+      <div class="card-header bg-white font-weight-bold">
+        <i class="fas fa-history mr-1 text-secondary"></i> Loan History
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+          <thead class="thead-light">
+            <tr>
+              <th>Title</th>
+              <th>Accession</th>
+              <th>Issue Date</th>
+              <th>Return Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for issue in my_issues %}
+              <tr>
+                <td>{{ issue.book_copy.book.title }}</td>
+                <td><code>{{ issue.book_copy.accession_number }}</code></td>
+                <td>{{ issue.issue_date|date:"d M Y" }}</td>
+                <td>{{ issue.returned_date|date:"d M Y"|default:"-" }}</td>
+                <td>
+                  {% if issue.status == 'RETURNED' %}
+                    <span class="badge badge-success">Returned</span>
+                  {% else %}
+                    <span class="badge badge-secondary">{{ issue.status }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-3 text-muted">No borrowing history available.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <div class="card shadow-sm border-0 text-center py-5" style="border-radius: 10px;">
+      <div class="card-body">
+        <i class="fas fa-id-card fa-3x text-muted mb-3"></i>
+        <h5 class="font-weight-bold">No Library Membership Found</h5>
+        <p class="text-muted">Please contact the school librarian to activate your library pass.</p>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

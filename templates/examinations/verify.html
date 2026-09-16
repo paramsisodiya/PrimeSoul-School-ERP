@@ -1,0 +1,89 @@
+{% extends 'layout.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+
+      <div class="card shadow border-0" style="border-radius: 16px; overflow: hidden;">
+        <div class="card-header bg-white py-4 text-center border-bottom">
+          <i class="fas fa-shield-alt text-primary fa-3x mb-2"></i>
+          <h4 class="font-weight-bold text-dark mb-1">Result Verification Portal</h4>
+          <p class="text-muted small mb-0">PrimeSoul ERP Digital Academic Credential Verification</p>
+        </div>
+
+        <div class="card-body p-4 text-center">
+          {% if is_verified %}
+            <div class="mb-4">
+              <div class="d-inline-flex align-items-center justify-content-center p-3 bg-success rounded-circle text-white mb-2" style="width: 70px; height: 70px;">
+                <i class="fas fa-check fa-2x"></i>
+              </div>
+              <h5 class="font-weight-bold text-success mb-1">Authentic Academic Credential</h5>
+              <p class="text-muted small mb-0">This examination report card has been officially issued and verified by the institution.</p>
+            </div>
+
+            <div class="table-responsive text-left mb-4">
+              <table class="table table-bordered mb-0" style="font-size: 0.9rem;">
+                <tbody>
+                  <tr>
+                    <th class="bg-light text-muted" style="width: 40%;">School Tenant</th>
+                    <td class="font-weight-bold text-dark">{{ result.school.name }}</td>
+                  </tr>
+                  <tr>
+                    <th class="bg-light text-muted">Student Name</th>
+                    <td class="font-weight-bold text-dark">{{ result.student.name }}</td>
+                  </tr>
+                  <tr>
+                    <th class="bg-light text-muted">Class & Section</th>
+                    <td>{{ result.exam.grade_level.name }}{% if result.enrollment.section %} - Section {{ result.enrollment.section.name }}{% endif %}</td>
+                  </tr>
+                  <tr>
+                    <th class="bg-light text-muted">Examination</th>
+                    <td>{{ result.exam.name }} ({{ result.academic_year.name }})</td>
+                  </tr>
+                  <tr>
+                    <th class="bg-light text-muted">Overall Result</th>
+                    <td>
+                      <span class="badge {% if result.result_status == 'PASSED' %}badge-success{% else %}badge-danger{% endif %} px-2 py-1">
+                        {{ result.get_result_status_display }}
+                      </span>
+                      <span class="ml-2 font-weight-bold">Grade: {{ result.overall_grade }}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th class="bg-light text-muted">Verification Ref</th>
+                    <td><code>{{ result.verification_code }}</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="alert alert-light border small text-muted text-left mb-0">
+              <i class="fas fa-info-circle text-primary mr-1"></i>
+              To protect student privacy, personal contact numbers, residential addresses, and financial account details are redacted from public verification portals.
+            </div>
+
+          {% else %}
+            <div class="py-4">
+              <div class="d-inline-flex align-items-center justify-content-center p-3 bg-danger rounded-circle text-white mb-2" style="width: 70px; height: 70px;">
+                <i class="fas fa-times fa-2x"></i>
+              </div>
+              <h5 class="font-weight-bold text-danger mb-1">Credential Not Found or Unpublished</h5>
+              <p class="text-muted small mb-3">The verification reference code provided does not match any published institutional examination records.</p>
+              <div class="p-2 bg-light rounded text-muted font-italic small mb-0">
+                Ref Code: <code>{{ verification_code }}</code>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="card-footer bg-light py-3 text-center border-top">
+          <small class="text-muted">Powered by PrimeSoul School ERP &bull; Secured Institutional Records</small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'inventory:maintenance_list' %}" class="text-decoration-none">Maintenance</a></li>
+          <li class="breadcrumb-item active" aria-current="page">New Service Request</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Log Maintenance or Repair Request</h4>
+      <p class="text-muted small mb-0">Sets asset status to Under Maintenance (IN_REPAIR) and tracks repair progress.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'inventory:maintenance_list' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Maintenance
+      </a>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Fixed Asset *</label>
+                {{ form.asset }}
+                {% if form.asset.errors %}<small class="text-danger">{{ form.asset.errors }}</small>{% endif %}
+              </div>
+              <div class="form-group col-md-6">
+                <label class="font-weight-bold small">Maintenance / Service Type *</label>
+                {{ form.maintenance_type }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="font-weight-bold small">Issue Description / Fault Details *</label>
+              {{ form.issue_description }}
+              {% if form.issue_description.errors %}<small class="text-danger">{{ form.issue_description.errors }}</small>{% endif %}
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Service Provider / Technician</label>
+                {{ form.service_provider }}
+              </div>
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Service Start Date *</label>
+                {{ form.start_date }}
+              </div>
+              <div class="form-group col-md-4">
+                <label class="font-weight-bold small">Estimated Cost (₹)</label>
+                {{ form.cost }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="font-weight-bold small">Additional Notes</label>
+              {{ form.notes }}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <a href="{% url 'inventory:maintenance_list' %}" class="btn btn-light btn-sm px-4">Cancel</a>
+              <button type="submit" class="btn btn-warning btn-sm px-4 text-white">Log Maintenance</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

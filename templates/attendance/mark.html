@@ -1,0 +1,293 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0 pb-5">
+
+  <!-- Header & Breadcrumb -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'attendance:dashboard' %}" class="text-decoration-none">Attendance</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Daily Roll Call</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Daily Classroom Attendance</h4>
+        {% if section %}
+          <span class="badge badge-primary px-2 py-1 ml-2" style="border-radius: 6px;">
+            {{ grade_level.name }} - Section {{ section.name }}
+          </span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">Mark or correct classroom roll call in real-time. Atomic submission prevents duplicate entries.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex gap-2">
+      <a href="{% url 'attendance:pending' %}" class="btn btn-outline-secondary btn-sm mr-2">
+        <i class="fas fa-clock mr-1"></i> Pending Sections
+      </a>
+      <a href="{% url 'attendance:history' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-history mr-1"></i> Attendance Log
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Section & Date Selection Card -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-body p-3">
+      <form method="GET" class="row align-items-end g-2">
+        <div class="col-md-3 col-sm-6 mb-2">
+          <label class="small font-weight-bold text-dark mb-1">Academic Session</label>
+          {{ filter_form.academic_year }}
+        </div>
+        <div class="col-md-3 col-sm-6 mb-2">
+          <label class="small font-weight-bold text-dark mb-1">Class / Grade</label>
+          {{ filter_form.grade_level }}
+        </div>
+        <div class="col-md-3 col-sm-6 mb-2">
+          <label class="small font-weight-bold text-dark mb-1">Section</label>
+          {{ filter_form.section }}
+        </div>
+        <div class="col-md-2 col-sm-6 mb-2">
+          <label class="small font-weight-bold text-dark mb-1">Attendance Date</label>
+          {{ filter_form.attendance_date }}
+        </div>
+        <div class="col-md-1 col-sm-6 mb-2">
+          <button type="submit" class="btn btn-primary btn-sm btn-block">
+            <i class="fas fa-search mr-1"></i> Load
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Sheet Form -->
+  {% if section and academic_year %}
+    {% if not can_mark %}
+      <div class="alert alert-danger border-0 shadow-sm" style="border-radius: 12px;">
+        <i class="fas fa-lock mr-2"></i> <strong>Access Restricted:</strong> You are not assigned to Class {{ grade_level.name }} - Section {{ section.name }}. Only the assigned Class Teacher, Subject Teachers, or School Administrators can mark attendance for this section.
+      </div>
+    {% else %}
+      <form method="POST" id="attendanceForm">
+        {% csrf_token %}
+        <input type="hidden" name="academic_year" value="{{ academic_year.id }}">
+        <input type="hidden" name="grade_level" value="{{ grade_level.id }}">
+        <input type="hidden" name="section" value="{{ section.id }}">
+        <input type="hidden" name="attendance_date" value="{{ attendance_date|date:'Y-m-d' }}">
+        <input type="hidden" name="action" id="formAction" value="save_attendance">
+
+        <!-- Controls Toolbar -->
+        <div class="card border-0 shadow-sm mb-3" style="border-radius: 12px; background-color: #f8fafc;">
+          <div class="card-body p-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+              <span class="font-weight-bold text-dark mr-2" style="font-size: 0.95rem;">
+                <i class="fas fa-users text-primary mr-1"></i> Enrolled Students: <span class="badge badge-secondary">{{ sheet|length }}</span>
+              </span>
+              <span class="text-muted small">| Date: <strong>{{ attendance_date|date:"l, d M Y" }}</strong></span>
+            </div>
+            <div class="d-flex align-items-center gap-2 mt-2 mt-sm-0">
+              <button type="button" class="btn btn-sm btn-outline-success font-weight-bold mr-2" onclick="setAllStatus('PRESENT')">
+                <i class="fas fa-check-double mr-1"></i> Mark All Present
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger font-weight-bold mr-2" onclick="setAllStatus('ABSENT')">
+                <i class="fas fa-times mr-1"></i> Mark All Absent
+              </button>
+              {% if sheet %}
+              <a href="{% url 'attendance:export_daily_csv' %}?academic_year={{ academic_year.id }}&grade_level={{ grade_level.id }}&section={{ section.id }}&attendance_date={{ attendance_date|date:'Y-m-d' }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download mr-1"></i> Export CSV
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Student Attendance Table -->
+        <div class="card border-0 shadow-sm mb-5" style="border-radius: 12px;">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;" id="attendanceTable">
+              <thead class="bg-light">
+                <tr>
+                  <th style="width: 80px;">Roll No</th>
+                  <th>Student Info</th>
+                  <th class="text-center" style="min-width: 380px;">Attendance Status</th>
+                  <th style="min-width: 200px;">Remarks / Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in sheet %}
+                  <tr class="{% if row.is_existing %}table-light-tint{% endif %}">
+                    <!-- Roll Number -->
+                    <td class="font-weight-bold text-dark text-center align-middle" style="font-size: 1rem;">
+                      {{ row.roll_number }}
+                    </td>
+
+                    <!-- Student Details -->
+                    <td class="align-middle">
+                      <div class="d-flex align-items-center">
+                        <div class="avatar-circle bg-primary-light text-primary font-weight-bold mr-2" style="width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: #e0e7ff;">
+                          {{ row.student_name|slice:":1" }}
+                        </div>
+                        <div>
+                          <div class="font-weight-bold text-dark mb-0">{{ row.student_name }}</div>
+                          <span class="text-muted small">Adm: {{ row.admission_number }}</span>
+                          {% if row.is_existing %}
+                            <span class="badge badge-info ml-1" style="font-size: 0.7rem;">Previously Recorded</span>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- Status Radio Buttons / Pills -->
+                    <td class="align-middle text-center">
+                      <div class="btn-group btn-group-toggle d-inline-flex gap-1" data-toggle="buttons">
+                        <!-- Present -->
+                        <label class="btn btn-sm btn-outline-success font-weight-bold status-pill {% if row.status == 'PRESENT' %}active{% endif %}" style="border-radius: 6px; min-width: 70px;">
+                          <input type="radio" name="status_{{ row.student_id }}" value="PRESENT" autocomplete="off" {% if row.status == 'PRESENT' %}checked{% endif %}>
+                          <i class="fas fa-check mr-1"></i> Present
+                        </label>
+                        <!-- Absent -->
+                        <label class="btn btn-sm btn-outline-danger font-weight-bold status-pill {% if row.status == 'ABSENT' %}active{% endif %}" style="border-radius: 6px; min-width: 70px;">
+                          <input type="radio" name="status_{{ row.student_id }}" value="ABSENT" autocomplete="off" {% if row.status == 'ABSENT' %}checked{% endif %}>
+                          <i class="fas fa-times mr-1"></i> Absent
+                        </label>
+                        <!-- Late -->
+                        <label class="btn btn-sm btn-outline-warning font-weight-bold status-pill {% if row.status == 'LATE' %}active{% endif %}" style="border-radius: 6px; min-width: 65px;">
+                          <input type="radio" name="status_{{ row.student_id }}" value="LATE" autocomplete="off" {% if row.status == 'LATE' %}checked{% endif %}>
+                          <i class="fas fa-user-clock mr-1"></i> Late
+                        </label>
+                        <!-- Half Day -->
+                        <label class="btn btn-sm btn-outline-info font-weight-bold status-pill {% if row.status == 'HALF_DAY' %}active{% endif %}" style="border-radius: 6px; min-width: 75px;">
+                          <input type="radio" name="status_{{ row.student_id }}" value="HALF_DAY" autocomplete="off" {% if row.status == 'HALF_DAY' %}checked{% endif %}>
+                          <i class="fas fa-adjust mr-1"></i> Half Day
+                        </label>
+                        <!-- Excused -->
+                        <label class="btn btn-sm btn-outline-secondary font-weight-bold status-pill {% if row.status == 'EXCUSED' %}active{% endif %}" style="border-radius: 6px; min-width: 75px;">
+                          <input type="radio" name="status_{{ row.student_id }}" value="EXCUSED" autocomplete="off" {% if row.status == 'EXCUSED' %}checked{% endif %}>
+                          <i class="fas fa-notes-medical mr-1"></i> Excused
+                        </label>
+                      </div>
+                    </td>
+
+                    <!-- Remarks & Correction Reason -->
+                    <td class="align-middle">
+                      <input type="text" name="remarks_{{ row.student_id }}" value="{{ row.remarks }}" class="form-control form-control-sm" placeholder="Optional remark...">
+                      {% if row.is_existing %}
+                        <input type="hidden" name="corr_reason_{{ row.student_id }}" value="Daily attendance update">
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="text-center py-5 text-muted">
+                      <i class="fas fa-user-slash fa-3x text-muted mb-3 d-block"></i>
+                      <h5>No active student enrollments found</h5>
+                      <p class="small">No active students are currently enrolled in Class {{ grade_level.name }} - Section {{ section.name }} for this academic session.</p>
+                      <a href="{% url 'academics:enrollments' %}" class="btn btn-sm btn-outline-primary mt-2">
+                        <i class="fas fa-user-plus mr-1"></i> Manage Enrollments
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Sticky Bottom Save Bar -->
+        {% if sheet %}
+        <div class="fixed-bottom bg-white border-top shadow-lg py-3 px-4 d-flex justify-content-between align-items-center" style="z-index: 1030; margin-left: 260px;" id="stickySaveBar">
+          <div>
+            <span class="font-weight-bold text-dark"><i class="fas fa-clipboard-check text-success mr-2"></i> Ready to Save Attendance</span>
+            <span class="text-muted small ml-2">Class {{ grade_level.name }} - Section {{ section.name }} ({{ attendance_date|date:"d M Y" }})</span>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{% url 'attendance:dashboard' %}" class="btn btn-outline-secondary mr-2">Cancel</a>
+            <button type="submit" class="btn btn-primary px-4 font-weight-bold">
+              <i class="fas fa-save mr-1"></i> Save Daily Attendance
+            </button>
+          </div>
+        </div>
+        {% endif %}
+
+      </form>
+    {% endif %}
+  {% else %}
+    <!-- Instruction Empty State -->
+    <div class="card border-0 shadow-sm py-5 text-center" style="border-radius: 12px;">
+      <div class="card-body">
+        <i class="fas fa-calendar-check fa-4x text-primary mb-3" style="opacity: 0.8;"></i>
+        <h5 class="font-weight-bold text-dark">Select Class and Section to Begin</h5>
+        <p class="text-muted small max-w-md mx-auto" style="max-width: 480px;">
+          Choose the Academic Session, Class, Section, and Date above, then click <strong>Load</strong> to retrieve the student roster and record daily attendance.
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+
+<script>
+function setAllStatus(statusValue) {
+  var radios = document.querySelectorAll('#attendanceTable input[type="radio"]');
+  radios.forEach(function(radio) {
+    if (radio.value === statusValue) {
+      radio.checked = true;
+      var label = radio.closest('label');
+      var group = radio.closest('.btn-group-toggle');
+      group.querySelectorAll('.status-pill').forEach(function(l) {
+        l.classList.remove('active');
+      });
+      label.classList.add('active');
+    }
+  });
+}
+</script>
+
+<style>
+@media (max-width: 991px) {
+  #stickySaveBar {
+    margin-left: 0 !important;
+  }
+}
+.table-light-tint {
+  background-color: #fafbfc;
+}
+.status-pill.active {
+  color: #fff !important;
+}
+.status-pill.btn-outline-success.active {
+  background-color: #10b981 !important;
+  border-color: #10b981 !important;
+}
+.status-pill.btn-outline-danger.active {
+  background-color: #ef4444 !important;
+  border-color: #ef4444 !important;
+}
+.status-pill.btn-outline-warning.active {
+  background-color: #f59e0b !important;
+  border-color: #f59e0b !important;
+}
+.status-pill.btn-outline-info.active {
+  background-color: #6366f1 !important;
+  border-color: #6366f1 !important;
+}
+.status-pill.btn-outline-secondary.active {
+  background-color: #64748b !important;
+  border-color: #64748b !important;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}Mark Attendance - Teacher Portal{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <h4 class="font-weight-bold text-dark mb-1">Daily Section Attendance Registers</h4>
+      <p class="text-muted small mb-0">Sections assigned to you for daily roll call and attendance marking.</p>
+    </div>
+    <div>
+      <span class="badge badge-light border p-2 font-weight-bold">
+        <i class="far fa-calendar-alt text-primary mr-1"></i> Today: {{ today|date:"l, d M Y" }}
+      </span>
+    </div>
+  </div>
+
+  <div class="portal-card">
+    <div class="card-header bg-white font-weight-bold py-3">
+      <i class="fas fa-calendar-check mr-2 text-primary"></i> Assigned Sections for Today
+    </div>
+    <div class="card-body p-0">
+      {% if pending_sections %}
+        <div class="table-responsive">
+          <table class="table portal-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Class & Section</th>
+                <th>Class Teacher</th>
+                <th>Today's Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in pending_sections %}
+                <tr>
+                  <td class="font-weight-bold text-dark">{{ p.grade_level.name }} - {{ p.section.name }}</td>
+                  <td>{{ p.class_teacher }}</td>
+                  <td>
+                    {% if p.is_marked %}
+                      <span class="portal-badge badge-paid"><i class="fas fa-check-circle mr-1"></i> Marked ({{ p.records_count }} students)</span>
+                    {% else %}
+                      <span class="portal-badge badge-overdue"><i class="fas fa-clock mr-1"></i> Pending Today</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a href="{% url 'portal:teacher_attendance_mark' p.section.id %}" class="btn {% if p.is_marked %}btn-outline-primary{% else %}btn-primary{% endif %} btn-sm font-weight-500">
+                      {% if p.is_marked %}<i class="fas fa-edit mr-1"></i> Edit Attendance{% else %}<i class="fas fa-clipboard-check mr-1"></i> Mark Attendance{% endif %}
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-5 text-center text-muted">
+          <i class="fas fa-clipboard-check fa-3x mb-3 text-muted"></i>
+          <h5>No Attendance Tasks</h5>
+          <p class="small mb-0">You are not currently assigned as a Class Teacher or Subject Teacher for attendance marking.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

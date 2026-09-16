@@ -1,0 +1,76 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}Assigned Students - Teacher Portal{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <h4 class="font-weight-bold text-dark mb-1">Assigned Student Roster</h4>
+      <p class="text-muted small mb-0">Students currently enrolled in your assigned classes and subject sections.</p>
+    </div>
+
+    <!-- Section Filter Dropdown -->
+    {% if classes %}
+      <div class="dropdown mt-2 mt-sm-0">
+        <button class="btn btn-outline-secondary dropdown-toggle btn-sm font-weight-500" type="button" id="secDropdown" data-toggle="dropdown">
+          <i class="fas fa-filter mr-1"></i>
+          Filter Class: {% if selected_section_id %}Section #{{ selected_section_id }}{% else %}All Assigned Sections{% endif %}
+        </button>
+        <div class="dropdown-menu dropdown-menu-right shadow border-0" aria-labelledby="secDropdown">
+          <a class="dropdown-item {% if not selected_section_id %}font-weight-bold text-primary{% endif %}" href="{% url 'portal:teacher_students' %}">
+            All Assigned Sections
+          </a>
+          <div class="dropdown-divider"></div>
+          {% for c in classes %}
+            <a class="dropdown-item {% if selected_section_id == c.section.id %}font-weight-bold text-primary{% endif %}" href="{% url 'portal:teacher_students' %}?section_id={{ c.section.id }}">
+              {{ c.grade_level.name }} - {{ c.section.name }} ({{ c.subject.name }})
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="portal-card">
+    <div class="card-header bg-white font-weight-bold py-3 d-flex justify-content-between align-items-center">
+      <span><i class="fas fa-user-graduate mr-2 text-primary"></i> Enrolled Students ({{ roster|length }})</span>
+    </div>
+    <div class="card-body p-0">
+      {% if roster %}
+        <div class="table-responsive">
+          <table class="table portal-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Roll No</th>
+                <th>Admission No</th>
+                <th>Student Name</th>
+                <th>Class & Section</th>
+                <th>Gender</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in roster %}
+                <tr>
+                  <td class="font-weight-bold text-dark">{{ s.roll_number|default:"-" }}</td>
+                  <td><code>{{ s.admission_number|default:"-" }}</code></td>
+                  <td class="font-weight-bold">{{ s.name }}</td>
+                  <td><span class="badge badge-light border">{{ s.grade_level }} - {{ s.section }}</span></td>
+                  <td>{{ s.gender|default:"-" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-5 text-center text-muted">
+          <i class="fas fa-users fa-3x mb-3 text-muted"></i>
+          <h5>No students found</h5>
+          <p class="small mb-0">No active student enrollments found for the selected section scope.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

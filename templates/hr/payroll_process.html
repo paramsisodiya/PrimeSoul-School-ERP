@@ -1,0 +1,132 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'hr:dashboard' %}">HR</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'hr:payroll_periods' %}">Payroll Periods</a></li>
+          <li class="breadcrumb-item active" aria-current="page">{{ period.get_month_display }} {{ period.year }}</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Payroll: {{ period.get_month_display }} {{ period.year }}</h4>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'hr:payroll_periods' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back
+      </a>
+      {% if period.status != 'LOCKED' %}
+        <form method="post" class="d-inline ml-1">
+          {% csrf_token %}
+          <input type="hidden" name="process_payroll" value="1">
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fas fa-play mr-1"></i> Calculate / Re-Calculate Payroll
+          </button>
+        </form>
+        {% if period.status == 'PROCESSED' %}
+          <form method="post" action="{% url 'hr:payroll_lock' period.pk %}" class="d-inline ml-1">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to LOCK this payroll period? Once locked, salary amounts and payslips cannot be edited.');">
+              <i class="fas fa-lock mr-1"></i> Lock & Finalize Payroll
+            </button>
+          </form>
+        {% endif %}
+      {% else %}
+        <span class="badge badge-dark px-3 py-2 font-weight-bold"><i class="fas fa-lock mr-1"></i> Period Locked</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row mb-4">
+    <div class="col-md-4 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 8px; border-left: 4px solid #4F46E5 !important;">
+        <div class="card-body py-3">
+          <small class="text-muted font-weight-bold">TOTAL GROSS EARNINGS</small>
+          <div class="h4 font-weight-bold mb-0">₹{{ summary.total_gross|default:"0.00" }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 8px; border-left: 4px solid #EF4444 !important;">
+        <div class="card-body py-3">
+          <small class="text-muted font-weight-bold">TOTAL DEDUCTIONS</small>
+          <div class="h4 font-weight-bold text-danger mb-0">₹{{ summary.total_deductions|default:"0.00" }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 8px; border-left: 4px solid #10B981 !important;">
+        <div class="card-body py-3">
+          <small class="text-muted font-weight-bold">NET SALARY DISBURSEMENT</small>
+          <div class="h4 font-weight-bold text-success mb-0">₹{{ summary.total_net|default:"0.00" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Records Table -->
+  <div class="card shadow-sm border-0" style="border-radius: 10px;">
+    <div class="card-header bg-white font-weight-bold">
+      <i class="fas fa-users mr-1 text-primary"></i> Employee Salary Records ({{ records.count }})
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <thead class="thead-light">
+          <tr>
+            <th>Employee</th>
+            <th>Payable Days</th>
+            <th>Gross Earnings</th>
+            <th>Deductions</th>
+            <th>Net Salary</th>
+            <th>Status</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+            <tr>
+              <td>
+                <strong>{{ r.employee.full_name }}</strong>
+                <div class="small text-muted">{{ r.employee.employee_code }} | {{ r.employee.designation.name }}</div>
+              </td>
+              <td>{{ r.payable_days }} / {{ r.working_days }}</td>
+              <td>₹{{ r.gross_earnings }}</td>
+              <td>₹{{ r.total_deductions }}</td>
+              <td><strong>₹{{ r.net_salary }}</strong></td>
+              <td>
+                {% if r.status == 'PAID' %}
+                  <span class="badge badge-success">Paid</span>
+                {% elif r.status == 'PROCESSED' %}
+                  <span class="badge badge-primary">Processed</span>
+                {% else %}
+                  <span class="badge badge-secondary">{{ r.status }}</span>
+                {% endif %}
+              </td>
+              <td class="text-right">
+                <a href="{% url 'hr:payslip_detail' r.pk %}" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.8rem;">
+                  <i class="fas fa-receipt mr-1"></i> Payslip
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">
+                <i class="fas fa-calculator fa-3x mb-3 text-secondary"></i><br>
+                Payroll has not been processed for this cycle yet.<br>
+                Click "Calculate / Re-Calculate Payroll" to generate payslips.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

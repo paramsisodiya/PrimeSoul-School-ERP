@@ -39,3 +39,37 @@ def health_view(request):
         code = 503
 
     return JsonResponse({"status": status, "checks": checks}, status=code)
+
+
+def csrf_failure_view(request, reason=""):
+    """
+    Custom CSRF failure handler for PrimeSoul School ERP.
+    Gracefully handles expired, stale, or back-forward-cache CSRF tokens.
+    For login/authentication forms, silently refreshes the token and redirects
+    with an informative notice rather than crashing to a raw 403 error page.
+    """
+    from django.shortcuts import render, redirect
+    from django.contrib import messages
+    from django.conf import settings
+    from django.middleware.csrf import get_token, rotate_token
+
+    path = request.path or ''
+    rotate_token(request)
+    new_token = get_token(request)
+    cookie_name = getattr(settings, 'CSRF_COOKIE_NAME', 'csrftoken')
+
+    # If submitting login or auth form, gracefully redirect back to login
+    if any(auth_path in path for auth_path in ['/login/', '/accounts/', '/auth/']):
+        messages.warning(request, "Your security session was refreshed. Please enter your credentials to sign in.")
+        response = redirect(path if path else '/accounts/login/')
+        response.set_cookie(cookie_name, new_token)
+        return response
+
+    context = {
+        'reason': reason,
+        'path': path,
+        'new_token': new_token,
+    }
+    response = render(request, '403_csrf.html', context, status=403)
+    response.set_cookie(cookie_name, new_token)
+    return response

@@ -1,0 +1,303 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Transport</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="font-weight-bold text-dark mb-0">Transport Fleet & Logistics Command Hub</h4>
+        {% if academic_year %}
+          <span class="badge badge-success px-2 py-1 ml-2 font-weight-normal" style="border-radius: 6px;">
+            <i class="fas fa-calendar-alt mr-1"></i> Session: {{ academic_year.name }}
+          </span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">Manage vehicle fleet, route logistics, pickup stops, drivers, attendants, and student transport subscriptions.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      {% if can_manage %}
+        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#assignRouteModal">
+          <i class="fas fa-link mr-1"></i> Assign Route & Driver
+        </button>
+      {% endif %}
+      <a href="{% url 'transport:vehicles' %}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-bus mr-1"></i> Vehicles
+      </a>
+      <a href="{% url 'transport:routes' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-route mr-1"></i> Routes
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- KPI Row -->
+  <div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #4F46E5 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Fleet Vehicles</div>
+              <div class="h3 font-weight-bold text-dark mb-0">{{ metrics.total_vehicles }}</div>
+              <div class="small text-muted mt-1">Buses, Vans & Cabs</div>
+            </div>
+            <div class="p-3 rounded-circle bg-light text-primary" style="font-size: 1.5rem;">
+              <i class="fas fa-bus-alt"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #059669 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Active Routes</div>
+              <div class="h3 font-weight-bold text-dark mb-0">{{ metrics.active_routes }}</div>
+              <div class="small text-success mt-1">{{ metrics.total_stops }} pickup landmarks</div>
+            </div>
+            <div class="p-3 rounded-circle bg-light text-success" style="font-size: 1.5rem;">
+              <i class="fas fa-route"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #D97706 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Students Onboard</div>
+              <div class="h3 font-weight-bold text-dark mb-0">{{ metrics.active_students }}</div>
+              <div class="small text-muted mt-1">Subscribed transport users</div>
+            </div>
+            <div class="p-3 rounded-circle bg-light text-warning" style="font-size: 1.5rem;">
+              <i class="fas fa-user-graduate"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card shadow-sm border-0 h-100" style="border-radius: 10px; border-left: 4px solid #DC2626 !important;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small font-weight-bold text-uppercase mb-1">Transport Staff</div>
+              <div class="h3 font-weight-bold text-dark mb-0">{{ metrics.drivers_count }} / {{ metrics.attendants_count }}</div>
+              <div class="small text-muted mt-1">Drivers / Attendants</div>
+            </div>
+            <div class="p-3 rounded-circle bg-light text-danger" style="font-size: 1.5rem;">
+              <i class="fas fa-id-card"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expiry Warnings Alert Banner if any -->
+  {% if metrics.expiring_licenses_count > 0 or metrics.expiring_vehicles_count > 0 %}
+    <div class="alert alert-warning border-0 shadow-sm mb-4" style="border-radius: 10px; border-left: 4px solid #D97706 !important;">
+      <div class="d-flex align-items-center">
+        <i class="fas fa-exclamation-triangle text-warning mr-3" style="font-size: 1.5rem;"></i>
+        <div>
+          <h6 class="font-weight-bold mb-1 text-dark">Safety Compliance & Document Expiry Warnings:</h6>
+          <div class="small text-muted">
+            {% if metrics.expiring_licenses_count > 0 %}
+              <strong>{{ metrics.expiring_licenses_count }}</strong> driver license(s) expiring within 30 days or already expired.
+            {% endif %}
+            {% if metrics.expiring_vehicles_count > 0 %}
+              <strong>{{ metrics.expiring_vehicles_count }}</strong> vehicle(s) requiring Insurance, PUCC, or Fitness renewal.
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Route Assignments Grid -->
+  <div class="row">
+    <div class="col-lg-8 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+          <h6 class="font-weight-bold text-dark mb-0">
+            <i class="fas fa-map-marked-alt text-primary mr-2"></i> Active Route Allocations
+          </h6>
+          <a href="{% url 'transport:routes' %}" class="btn btn-sm btn-outline-primary">View All Routes</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+              <thead class="bg-light text-muted">
+                <tr>
+                  <th class="border-0 px-3">Route</th>
+                  <th class="border-0">Assigned Vehicle</th>
+                  <th class="border-0">Driver & Attendant</th>
+                  <th class="border-0 text-right px-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for a in metrics.assignments %}
+                  <tr>
+                    <td class="px-3">
+                      <div class="font-weight-bold text-dark">{{ a.route.code }} - {{ a.route.name }}</div>
+                      <span class="text-muted small">{{ a.route.stops.count }} stops configured</span>
+                    </td>
+                    <td>
+                      <div class="font-weight-bold text-primary">{{ a.vehicle.vehicle_number }}</div>
+                      <span class="badge badge-light border">{{ a.vehicle.registration_number }} (Cap: {{ a.vehicle.capacity }})</span>
+                    </td>
+                    <td>
+                      <div class="text-dark"><i class="fas fa-user-tie text-muted mr-1"></i> {{ a.driver.name }}</div>
+                      <small class="text-muted">
+                        {% if a.attendant %}Attendant: {{ a.attendant.name }}{% else %}No attendant{% endif %}
+                      </small>
+                    </td>
+                    <td class="text-right px-3">
+                      <a href="{% url 'transport:route_detail' pk=a.route.id %}" class="btn btn-sm btn-light border">
+                        <i class="fas fa-eye text-primary mr-1"></i> Route Details
+                      </a>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="text-center py-4 text-muted">
+                      No active vehicle-route assignments configured for {{ academic_year.name }}.
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Links Sidebar -->
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="font-weight-bold text-dark mb-0">
+            <i class="fas fa-sliders-h text-primary mr-2"></i> Logistics Navigation
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="list-group list-group-flush">
+            <a href="{% url 'transport:vehicles' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-0">
+              <div>
+                <i class="fas fa-bus text-primary mr-2"></i>
+                <span class="font-weight-bold text-dark">Fleet Vehicles</span>
+                <div class="small text-muted ml-4">Register buses, vans, and manage capacity</div>
+              </div>
+              <i class="fas fa-chevron-right text-muted small"></i>
+            </a>
+            <a href="{% url 'transport:routes' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-0">
+              <div>
+                <i class="fas fa-route text-success mr-2"></i>
+                <span class="font-weight-bold text-dark">Routes & Stops</span>
+                <div class="small text-muted ml-4">Configure routes, stop sequences & timings</div>
+              </div>
+              <i class="fas fa-chevron-right text-muted small"></i>
+            </a>
+            <a href="{% url 'transport:staff' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-0">
+              <div>
+                <i class="fas fa-id-card text-danger mr-2"></i>
+                <span class="font-weight-bold text-dark">Transport Staff</span>
+                <div class="small text-muted ml-4">Drivers, attendants & commercial license expiry</div>
+              </div>
+              <i class="fas fa-chevron-right text-muted small"></i>
+            </a>
+            <a href="{% url 'transport:students' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-0">
+              <div>
+                <i class="fas fa-users text-warning mr-2"></i>
+                <span class="font-weight-bold text-dark">Student Transport</span>
+                <div class="small text-muted ml-4">Assign students to pickup/drop stops</div>
+              </div>
+              <i class="fas fa-chevron-right text-muted small"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Assign Route Modal -->
+{% if can_manage and assignment_form %}
+<div class="modal fade" id="assignRouteModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content border-0 shadow">
+      <form method="POST" action="{% url 'transport:assignment_create' %}">
+        {% csrf_token %}
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title font-weight-bold">Assign Vehicle & Driver to Route</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="font-weight-bold small">Select Route <span class="text-danger">*</span></label>
+            {{ assignment_form.route }}
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small">Vehicle <span class="text-danger">*</span></label>
+            {{ assignment_form.vehicle }}
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small">Assigned Driver <span class="text-danger">*</span></label>
+            {{ assignment_form.driver }}
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold small">Attendant / Helper</label>
+            {{ assignment_form.attendant }}
+          </div>
+          <div class="row">
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">Effective From</label>
+              {{ assignment_form.start_date }}
+            </div>
+            <div class="col-6 form-group">
+              <label class="font-weight-bold small">Valid Until</label>
+              {{ assignment_form.end_date }}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm font-weight-bold">Save Allocation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

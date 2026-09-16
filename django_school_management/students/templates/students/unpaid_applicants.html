@@ -41,7 +41,7 @@
                         <tr>
                             <th scope="row">{{ forloop.counter }}</th>
                             <td>
-                                <img src="{{ applicant.photo.url }}" width="50" height="50" class="rounded" alt="{{ applicant.name }}">
+                                {% if applicant.photo %}<img src="{{ applicant.photo.url }}" width="50" height="50" class="rounded" alt="{{ applicant.name }}">{% endif %}
                             </td>
                             <td>
                                 <a href="{% url 'students:update_online_registrant' pk=applicant.id %}">

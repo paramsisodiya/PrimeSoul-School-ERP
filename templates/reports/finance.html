@@ -1,0 +1,170 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'reports:dashboard' %}" class="text-decoration-none">Reports</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Finance</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Finance & Fee Collection Reports</h4>
+      <p class="text-muted small mb-0">Fee collection register, outstanding student dues, and payment mode distributions.</p>
+    </div>
+    <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+      <a href="?export=csv&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&payment_method={{ selected_method|default:'' }}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-file-csv mr-1"></i> Export CSV
+      </a>
+      <a href="?export=pdf&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&payment_method={{ selected_method|default:'' }}" class="btn btn-outline-danger btn-sm">
+        <i class="fas fa-file-pdf mr-1"></i> Export PDF
+      </a>
+      <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Hub
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card shadow-sm border-0 mb-4" style="border-radius: 10px;">
+    <div class="card-body py-3">
+      <form method="get" class="row align-items-center">
+        <div class="col-md-3 mb-2 mb-md-0">
+          <label class="small text-muted font-weight-bold mb-1">Academic Year</label>
+          <select name="academic_year" class="form-control form-control-sm">
+            <option value="">-- All Academic Years --</option>
+            {% for ay in academic_years %}
+              <option value="{{ ay.id }}" {% if selected_year|stringformat:"s" == ay.id|stringformat:"s" %}selected{% endif %}>{{ ay.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 mb-2 mb-md-0">
+          <label class="small text-muted font-weight-bold mb-1">From Date</label>
+          <input type="date" name="start_date" class="form-control form-control-sm" value="{{ start_date }}">
+        </div>
+        <div class="col-md-3 mb-2 mb-md-0">
+          <label class="small text-muted font-weight-bold mb-1">To Date</label>
+          <input type="date" name="end_date" class="form-control form-control-sm" value="{{ end_date }}">
+        </div>
+        <div class="col-md-2 mb-2 mb-md-0">
+          <label class="small text-muted font-weight-bold mb-1">Payment Method</label>
+          <select name="payment_method" class="form-control form-control-sm">
+            <option value="">-- All Modes --</option>
+            <option value="CASH" {% if selected_method == 'CASH' %}selected{% endif %}>Cash</option>
+            <option value="ONLINE" {% if selected_method == 'ONLINE' %}selected{% endif %}>Online / Gateway</option>
+            <option value="CHEQUE" {% if selected_method == 'CHEQUE' %}selected{% endif %}>Cheque</option>
+            <option value="BANK_TRANSFER" {% if selected_method == 'BANK_TRANSFER' %}selected{% endif %}>Bank Transfer</option>
+          </select>
+        </div>
+        <div class="col-md-1 text-right mt-3">
+          <button type="submit" class="btn btn-primary btn-sm btn-block"><i class="fas fa-filter"></i></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="row mb-4">
+    <div class="col-md-4 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #4F46E5 !important;">
+        <div class="card-body">
+          <div class="text-muted small font-weight-bold text-uppercase">Total Invoiced Amount</div>
+          <div class="h3 font-weight-bold text-dark mb-0">₹{{ data.totals.total_invoiced }}</div>
+          <small class="text-muted">{{ data.totals.invoice_count }} Invoices Issued</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #10B981 !important;">
+        <div class="card-body">
+          <div class="text-muted small font-weight-bold text-uppercase">Total Realized Collection</div>
+          <div class="h3 font-weight-bold text-success mb-0">₹{{ data.totals.total_collected }}</div>
+          <small class="text-success font-weight-bold">Cleared Receipts</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card shadow-sm border-0" style="border-radius: 10px; border-left: 4px solid #EF4444 !important;">
+        <div class="card-body">
+          <div class="text-muted small font-weight-bold text-uppercase">Total Outstanding Dues</div>
+          <div class="h3 font-weight-bold text-danger mb-0">₹{{ data.totals.total_outstanding }}</div>
+          <small class="text-danger font-weight-bold">Pending Student Dues</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Fee Receipts Statement -->
+    <div class="col-lg-8 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-receipt mr-2 text-primary"></i> Fee Receipts Register</h6>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+            <thead class="bg-light">
+              <tr>
+                <th>Receipt No</th>
+                <th>Date</th>
+                <th>Student</th>
+                <th>Amount (₹)</th>
+                <th>Mode</th>
+                <th>Received By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in data.receipts_list %}
+                <tr>
+                  <td class="font-weight-bold text-primary">{{ r.receipt_number }}</td>
+                  <td>{{ r.receipt_date|date:"d M Y" }}</td>
+                  <td>
+                    <div class="font-weight-bold text-dark">{{ r.student.get_full_name }}</div>
+                    <small class="text-muted">{{ r.student.admission_number }}</small>
+                  </td>
+                  <td class="font-weight-bold text-success">₹{{ r.amount }}</td>
+                  <td><span class="badge badge-light border">{{ r.payment_method }}</span></td>
+                  <td class="text-muted small">{{ r.issued_by.get_full_name|default:"Online" }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">No fee receipts found.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mode Breakdown -->
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-chart-pie mr-2 text-info"></i> Collection by Payment Mode</h6>
+        </div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            {% for m in data.method_breakdown %}
+              <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                <div>
+                  <div class="font-weight-bold text-dark">{{ m.payment_method }}</div>
+                  <small class="text-muted">{{ m.count }} transactions</small>
+                </div>
+                <span class="font-weight-bold text-success">₹{{ m.total_amount }}</span>
+              </li>
+            {% empty %}
+              <li class="list-group-item text-center text-muted py-3">No payments recorded.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

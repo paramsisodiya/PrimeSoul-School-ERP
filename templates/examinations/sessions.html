@@ -1,0 +1,87 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'examinations:dashboard' %}">Examinations</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Sessions</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Examination Sessions</h4>
+      <p class="text-muted small mb-0">Master exam cycles grouping assessments across terms and semesters.</p>
+    </div>
+    <div>
+      <a href="{% url 'examinations:session_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus mr-1"></i> New Session
+      </a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card shadow-sm border-0" style="border-radius: 12px;">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+        <thead class="bg-light text-muted small text-uppercase">
+          <tr>
+            <th class="pl-4">Session Name</th>
+            <th>Code</th>
+            <th>Academic Year</th>
+            <th>Date Range</th>
+            <th>Exams Count</th>
+            <th>Status</th>
+            <th class="text-right pr-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sessions %}
+          <tr>
+            <td class="pl-4 font-weight-bold text-dark">{{ s.name }}</td>
+            <td><code>{{ s.code }}</code></td>
+            <td>{{ s.academic_year.name }}</td>
+            <td>{{ s.start_date|date:"d M Y" }} &ndash; {{ s.end_date|date:"d M Y" }}</td>
+            <td><span class="badge badge-light border">{{ s.exams.count }} exams</span></td>
+            <td>
+              {% if s.status == 'COMPLETED' %}
+                <span class="badge badge-success px-2 py-1">Completed</span>
+              {% elif s.status == 'ONGOING' %}
+                <span class="badge badge-primary px-2 py-1">Ongoing</span>
+              {% elif s.status == 'SCHEDULED' %}
+                <span class="badge badge-info px-2 py-1">Scheduled</span>
+              {% else %}
+                <span class="badge badge-secondary px-2 py-1">{{ s.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td class="text-right pr-4">
+              <a href="{% url 'examinations:session_edit' s.id %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-edit"></i> Edit
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-4 text-muted">
+              No examination sessions found. Click "New Session" to create one.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

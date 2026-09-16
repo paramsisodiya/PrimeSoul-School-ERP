@@ -1,0 +1,110 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block dashboard-body %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap pb-3 mb-3 border-bottom">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
+          <li class="breadcrumb-item"><a href="{% url 'inventory:dashboard' %}" class="text-decoration-none">Inventory</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Asset Categories</li>
+        </ol>
+      </nav>
+      <h4 class="font-weight-bold text-dark mb-0">Fixed Asset Categories</h4>
+      <p class="text-muted small mb-0">Categorization for institutional capital equipment (IT, Furniture, Labs, Electrical, Audio-Visual).</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'inventory:asset_list' %}" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-laptop mr-1"></i> Asset Register
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row">
+    <!-- Category List -->
+    <div class="col-lg-7 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-tags mr-2 text-primary"></i> Asset Categories</h6>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+            <thead class="bg-light">
+              <tr>
+                <th>Category Name</th>
+                <th>Total Assets</th>
+                <th>Description</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cat in categories %}
+                <tr>
+                  <td class="font-weight-bold text-dark">{{ cat.name }}</td>
+                  <td><span class="badge badge-light border">{{ cat.assets.count }}</span></td>
+                  <td class="text-muted small">{{ cat.description|default:"-" }}</td>
+                  <td>
+                    {% if cat.is_active %}
+                      <span class="badge badge-success">Active</span>
+                    {% else %}
+                      <span class="badge badge-secondary">Inactive</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-muted">No asset categories registered.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Asset Category Form -->
+    <div class="col-lg-5 mb-4">
+      <div class="card shadow-sm border-0" style="border-radius: 10px;">
+        <div class="card-header bg-white py-3">
+          <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-plus-circle mr-2 text-success"></i> Add Asset Category</h6>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+              <label class="font-weight-bold small">Category Name *</label>
+              {{ form.name }}
+              {% if form.name.errors %}<small class="text-danger">{{ form.name.errors }}</small>{% endif %}
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold small">Description</label>
+              {{ form.description }}
+            </div>
+            <div class="form-group form-check">
+              {{ form.is_active }}
+              <label class="form-check-label font-weight-bold small ml-2" for="{{ form.is_active.id_for_label }}">Active</label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block btn-sm mt-3">Save Category</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

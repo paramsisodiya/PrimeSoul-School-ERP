@@ -5,7 +5,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login</title>
+    <title>Sign In | PrimeSoul School ERP</title>
     <link
       href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css"
       rel="stylesheet"
@@ -18,12 +18,19 @@
       <div class="max-w-md w-full space-y-8">
         <!-- Topbar messages -->
         <div>
+          {% if request_institute and request_institute.logo %}
           <img
             class="mx-auto h-12 w-auto"
             src="{{ request_institute.logo.url }}"
             alt="{{ request_institute.name }}"
           />
-          <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          {% else %}
+          <div class="mx-auto h-12 w-12 bg-indigo-600 rounded-full flex items-center justify-center shadow">
+            <span class="text-white text-xl font-bold">P</span>
+          </div>
+          {% endif %}
+          <div class="text-center mt-2 text-xs uppercase tracking-wider font-semibold text-indigo-600">PrimeSoul School ERP</div>
+          <h2 class="mt-4 text-center text-3xl font-extrabold text-gray-900">
             Sign in to your account
           </h2>
           <p class="mt-2 text-center text-sm text-gray-600">
@@ -93,31 +100,49 @@
           <div>
             <button
               type="submit"
-              class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm"
             >
-              <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                <!-- Heroicon name: lock-closed -->
-                <svg
-                  class="h-5 w-5 text-indigo-500 group-hover:text-indigo-400"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </span>
-              Sign in
+              Sign in to PrimeSoul ERP
             </button>
           </div>
         </form>
+
+        <!-- Demo Accounts Quick-Fill Box -->
+        <div class="mt-6 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+          <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center justify-between">
+            <span>Demo Quick Logins (Password: demo@123)</span>
+            <span class="text-indigo-600 font-semibold">Local Dev</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <button type="button" onclick="fillCreds('admin@primesoul.com')" class="p-2 border border-gray-200 rounded hover:bg-indigo-50 hover:border-indigo-300 text-left transition">
+              <div class="font-bold text-gray-900">School Admin</div>
+              <div class="text-gray-500 text-xs">admin@primesoul.com</div>
+            </button>
+            <button type="button" onclick="fillCreds('principal@primesoul.com')" class="p-2 border border-gray-200 rounded hover:bg-indigo-50 hover:border-indigo-300 text-left transition">
+              <div class="font-bold text-gray-900">Principal</div>
+              <div class="text-gray-500 text-xs">principal@primesoul.com</div>
+            </button>
+            <button type="button" onclick="fillCreds('accountant@primesoul.com')" class="p-2 border border-gray-200 rounded hover:bg-indigo-50 hover:border-indigo-300 text-left transition">
+              <div class="font-bold text-gray-900">Accountant</div>
+              <div class="text-gray-500 text-xs">accountant@primesoul.com</div>
+            </button>
+            <button type="button" onclick="fillCreds('receptionist@primesoul.com')" class="p-2 border border-gray-200 rounded hover:bg-indigo-50 hover:border-indigo-300 text-left transition">
+              <div class="font-bold text-gray-900">Receptionist</div>
+              <div class="text-gray-500 text-xs">receptionist@primesoul.com</div>
+            </button>
+            <button type="button" onclick="fillCreds('teacher@primesoul.com')" class="p-2 border border-gray-200 rounded hover:bg-indigo-50 hover:border-indigo-300 text-left transition">
+              <div class="font-bold text-gray-900">Teacher</div>
+              <div class="text-gray-500 text-xs">teacher@primesoul.com</div>
+            </button>
+            <button type="button" onclick="fillCreds('student@primesoul.com')" class="p-2 border border-gray-200 rounded hover:bg-indigo-50 hover:border-indigo-300 text-left transition">
+              <div class="font-bold text-gray-900">Student</div>
+              <div class="text-gray-500 text-xs">student@primesoul.com</div>
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
-
 
     <script>
       function showPassword() {
@@ -127,7 +152,21 @@
         } else {
           passwordInput.type = "password";
         }
-      } 
+      }
+
+      function fillCreds(email) {
+        var loginInput = document.getElementById("id_login") || document.getElementById("id_username");
+        if (loginInput) loginInput.value = email;
+        var pwdInput = document.getElementById("id_password");
+        if (pwdInput) pwdInput.value = "demo@123";
+      }
+
+      // Auto-reload page when restored from back-forward cache (bfcache) to keep CSRF tokens in sync
+      window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+          window.location.reload();
+        }
+      });
     </script>
   </body>
 </html>

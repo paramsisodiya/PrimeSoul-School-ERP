@@ -1,0 +1,65 @@
+{% extends 'portal/portal_base.html' %}
+{% load static %}
+
+{% block title %}Exams & Marks Entry - Teacher Portal{% endblock %}
+
+{% block portal_content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+      <h4 class="font-weight-bold text-dark mb-1">Exams & Marks Entry</h4>
+      <p class="text-muted small mb-0">Assigned examination subjects and marks entry tasks for your classes.</p>
+    </div>
+  </div>
+
+  <div class="portal-card">
+    <div class="card-header bg-white font-weight-bold py-3">
+      <i class="fas fa-pen-nib mr-2 text-primary"></i> Examination Subject Assignments
+    </div>
+    <div class="card-body p-0">
+      {% if exam_tasks %}
+        <div class="table-responsive">
+          <table class="table portal-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Examination</th>
+                <th>Subject</th>
+                <th>Class & Section</th>
+                <th>Exam Date</th>
+                <th>Max Marks</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for task in exam_tasks %}
+                <tr>
+                  <td class="font-weight-bold text-dark">{{ task.exam.name }}</td>
+                  <td class="font-weight-bold text-primary">{{ task.exam_subject.subject.name }}</td>
+                  <td>{{ task.exam.grade_level.name }} {% if task.exam.section %}- {{ task.exam.section.name }}{% endif %}</td>
+                  <td>{{ task.exam_subject.exam_date|date:"d M Y"|default:"-" }}</td>
+                  <td>{{ task.exam_subject.max_marks }}</td>
+                  <td>
+                    {% if task.can_enter_marks %}
+                      <a href="{% url 'examinations:marks_entry' %}?exam_id={{ task.exam.id }}&subject_id={{ task.exam_subject.id }}" class="btn btn-primary btn-sm py-0 px-2 font-weight-500">
+                        <i class="fas fa-edit mr-1"></i> Enter Marks
+                      </a>
+                    {% else %}
+                      <span class="badge badge-light border text-muted">View Only</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-5 text-center text-muted">
+          <i class="fas fa-pen-nib fa-3x mb-3 text-muted"></i>
+          <h5>No Active Marks Entry Tasks</h5>
+          <p class="small mb-0">There are no ongoing examinations requiring mark entry for your assigned subjects.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
