@@ -1,43 +1,30 @@
 FROM python:3.11-slim-bookworm
 
-# set work directory
+# Set work directory
 WORKDIR /usr/src/app
 
-# set environment variables
+# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# install build deps for C extensions (e.g. psutil on aarch64 when no wheel is available)
+# Install build dependencies for C extensions (e.g. psutil on aarch64)
 RUN apt-get update && apt-get install -y --no-install-recommends gcc libpython3.11-dev \
     && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --upgrade pip
+
+# Install python dependencies
 COPY ./requirements.txt .
 RUN pip install -r requirements.txt
-
-# copy project
-COPY . .
-
-RUN chmod +x pre-deploy.sh
-
 RUN pip install gunicorn==21.2.0
 
-# collectstatic moved to runtime (pre-deploy.sh) so build does not require DB.
-# django_prometheus with PROMETHEUS_EXPORT_MIGRATIONS=True connects to DB at startup.
+# Copy application source code
+COPY . .
 
-# Tell uWSGI where to find your wsgi file (change this):
-ENV UWSGI_WSGI_FILE=./config/wsgi.py
-
-# Base uWSGI configuration (you shouldn't need to change these):
-ENV UWSGI_HTTP=:8000 UWSGI_MASTER=1 UWSGI_HTTP_AUTO_CHUNKED=1 UWSGI_HTTP_KEEPALIVE=1 UWSGI_LAZY_APPS=1 UWSGI_WSGI_ENV_BEHAVIOR=holy
-
-# Number of uWSGI workers and threads per worker (customize as needed):
-ENV UWSGI_WORKERS=2 UWSGI_THREADS=4
-
-# uWSGI static file serving configuration (customize or comment out if not needed):
-ENV UWSGI_STATIC_MAP="/static/=/code/static/" UWSGI_STATIC_EXPIRES_URI="/static/.*\.[a-f0-9]{12,}\.(css|js|png|jpg|jpeg|gif|ico|woff|ttf|otf|svg|scss|map|txt) 315360000"
-
-# RUN python manage.py migrate --noinput
+# Ensure entrypoint and pre-deploy scripts have execution permissions
+RUN chmod +x docker-entrypoint.sh pre-deploy.sh
 
 EXPOSE 8000
 
-CMD ["python", "-m", "gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
+ENTRYPOINT ["/usr/src/app/docker-entrypoint.sh"]
+CMD ["gunicorn"]
