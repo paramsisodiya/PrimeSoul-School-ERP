@@ -116,7 +116,12 @@ def dashboard(request):
     school = getattr(request.user, 'school', None)
     if not school:
         school = School.objects.filter(is_active=True).first()
-        if school and request.user.is_authenticated:
+        if not school:
+            inst = getattr(request.user, 'institute', None) or InstituteProfile.objects.filter(active=True).first()
+            if inst:
+                from django_school_management.tenants.services import sync_institute_to_school_tenant
+                school = sync_institute_to_school_tenant(inst, user=request.user)
+        elif request.user.is_authenticated and request.user.school_id != school.id:
             request.user.school = school
             request.user.save(update_fields=['school'])
 

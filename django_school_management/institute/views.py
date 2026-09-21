@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core import serializers
 from django.db import models
@@ -136,6 +137,11 @@ def onboarding_step1(request):
             inst.save()
             request.user.institute = inst
             request.user.save(update_fields=['institute'])
+
+            from django_school_management.tenants.services import sync_institute_to_school_tenant
+            sync_institute_to_school_tenant(inst, user=request.user)
+
+            messages.success(request, f"Institute details for {inst.name} saved successfully.")
             return redirect('institute:onboarding_step2')
     else:
         form = OnboardingStep1Form(instance=institute)
@@ -282,6 +288,10 @@ def onboarding_step4(request):
             institute.save(update_fields=['current_session'])
         institute.onboarding_completed = True
         institute.save(update_fields=['onboarding_completed'])
+
+        from django_school_management.tenants.services import sync_institute_to_school_tenant
+        sync_institute_to_school_tenant(institute, user=request.user)
+
         request.session.pop('skip_onboarding', None)
         return redirect('index_view')
 

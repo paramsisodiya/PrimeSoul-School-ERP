@@ -1,6 +1,6 @@
 from django import forms
 from django.db import models
-from django_countries.fields import CountryField
+from django_countries import countries
 
 from django_school_management.institute.models import (
     InstituteProfile,
@@ -14,6 +14,15 @@ FC = {'class': 'form-control'}
 
 class OnboardingStep1Form(forms.ModelForm):
     """Institute profile basics including institute type."""
+    country = forms.ChoiceField(
+        choices=[('', '---------')] + list(countries),
+        required=False,
+        widget=forms.Select(attrs=FC)
+    )
+    logo = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs=FC)
+    )
 
     class Meta:
         model = InstituteProfile
@@ -37,8 +46,7 @@ class OnboardingStep1Form(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Show institute types in onboarding priority order: school, madrasah, polytechnic
         self.fields['institute_type'].choices = [('', '---------')] + list(INSTITUTE_TYPE_CHOICES)
-        if 'country' in self.fields:
-            self.fields['country'].widget.attrs.update(FC)
+        self.fields['logo'].required = False
 
 
 class OnboardingDepartmentForm(forms.Form):

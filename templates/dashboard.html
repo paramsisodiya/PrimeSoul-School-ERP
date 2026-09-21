@@ -79,6 +79,9 @@
       <!-- HEADER NAVBAR -->
       {% include "_dashboard_header_navbar.html" %}
 
+      <!-- GLOBAL FLOATING MESSAGES TOASTS -->
+      {% include "_global_messages.html" %}
+
       <main class="main-content">
         <div id="mainContent">
           {% block dashboard-body %}
@@ -102,18 +105,6 @@
                 </a>
               </div>
             </div>
-
-            <!-- Messages Alerts -->
-            {% if messages %}
-              {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 8px;">
-                  <i class="fas fa-info-circle mr-2"></i> {{ message }}
-                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                  </button>
-                </div>
-              {% endfor %}
-            {% endif %}
 
             <!-- FIRST LOGIN GUIDANCE (Visible when a new school has 0 students) -->
             {% if total_students == 0 %}
@@ -141,9 +132,15 @@
                       </div>
                     </div>
                     <div class="d-none d-lg-block text-right">
-                      <div class="badge badge-primary px-3 py-2" style="font-size: 0.85rem; border-radius: 20px;">
-                        <i class="fas fa-shield-alt mr-1"></i> Tenant Active
-                      </div>
+                      {% if school and school.is_active %}
+                        <div class="badge badge-primary px-3 py-2" style="font-size: 0.85rem; border-radius: 20px;">
+                          <i class="fas fa-shield-alt mr-1"></i> Tenant Active ({{ school.name }})
+                        </div>
+                      {% else %}
+                        <div class="badge badge-secondary px-3 py-2" style="font-size: 0.85rem; border-radius: 20px;">
+                          <i class="fas fa-info-circle mr-1"></i> Onboarding Completed
+                        </div>
+                      {% endif %}
                     </div>
                   </div>
                 </div>
