@@ -15,14 +15,20 @@ class ProfileCompleteService:
         self.session_messages = session_messages
 
     def _handle_user_profile_update(self) -> None:
+        profile = getattr(self.user, 'profile', None)
+        if not profile:
+            from django_school_management.accounts.models import CommonUserProfile
+            profile, _ = CommonUserProfile.objects.get_or_create(user=self.user)
+            self.user.refresh_from_db()
+
         profile_edit_form = CommonUserProfileForm(
             self.request.POST,
             self.request.FILES,
-            instance=self.user.profile
+            instance=profile
         )
         social_links_form = UserProfileSocialLinksFormSet(
             self.request.POST,
-            instance=self.user.profile
+            instance=profile
         )
         if profile_edit_form.is_valid():
             profile_edit_form.save()
@@ -37,6 +43,18 @@ class ProfileCompleteService:
         )
 
     def _handle_handle_approval_submit(self) -> None:
+        if getattr(self.user, 'is_superuser', False):
+            # Superuser verification is permanent and cannot be demoted to pending
+            if self.user.approval_status != 'a':
+                self.user.approval_status = 'a'
+                self.user.save(update_fields=['approval_status'])
+            self.session_messages.add_message(
+                self.request,
+                self.session_messages.INFO,
+                'Superuser account is already verified.'
+            )
+            return
+
         verification_form = ProfileCompleteForm(
             self.request.POST,
             instance=self.user

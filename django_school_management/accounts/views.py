@@ -46,11 +46,15 @@ def profile_complete(request):
             map_profile_approval_status_message(request.user.approval_status)
         )
     else:
+        profile = getattr(user, 'profile', None)
+        if not profile:
+            from .models import CommonUserProfile
+            profile, _ = CommonUserProfile.objects.get_or_create(user=user)
         profile_edit_form = CommonUserProfileForm(
-            instance=user.profile
+            instance=profile
         )
         social_links_form = UserProfileSocialLinksFormSet(
-            instance=user.profile
+            instance=profile
         )
         ctx.update({
             'profile_edit_form': profile_edit_form,

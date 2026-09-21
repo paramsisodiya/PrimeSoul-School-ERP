@@ -21,9 +21,9 @@ def create_profile_for_approved_account(user):
 
 
 def handle_superuser_creation(user):
-    create_profile_for_approved_account(user)
     user.approval_status = ProfileApprovalStatusEnum.approved.value
     user.requested_role = AccountTypesEnum.admin.value
+    create_profile_for_approved_account(user)
     if not user.institute:
         from django_school_management.institute.models import InstituteProfile
         active = InstituteProfile.objects.filter(active=True).first()

@@ -100,8 +100,17 @@ UserProfileSocialLinksFormSet = inlineformset_factory(
     max_num=4
 )
 
+from django_countries import countries
+
+
 class CommonUserProfileForm(djform.ModelForm):
     """Core details of user profile created only after account verification by institute."""
+    country = djform.ChoiceField(
+        choices=[('', '---------')] + list(countries),
+        required=False,
+        widget=djform.Select(attrs={'class': 'form-control'})
+    )
+
     class Meta:
         model = CommonUserProfile
         fields = [

@@ -3,6 +3,8 @@ from django_school_management.accounts.models import User
 
 
 def profile_not_approved(user: User) -> bool:
+    if getattr(user, 'is_superuser', False):
+        return False
     return user.approval_status != ProfileApprovalStatusEnum.approved.value
 
 

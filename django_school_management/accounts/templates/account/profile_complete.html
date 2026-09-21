@@ -33,7 +33,7 @@
       <!-- profile card -->
       <div class="col-md-4">
         <div class="card text-center">
-          <div class="card-header">{{ user.get_approval_status_display }}</div>
+          <div class="card-header">{% if user.is_superuser %}Verified (Super Admin){% else %}{{ user.get_approval_status_display }}{% endif %}</div>
           <div class="card-body d-flex">
             <form action="{% url account_urls.profile_picture_upload %}"
             method="post" id="profile-image-form"
@@ -54,6 +54,7 @@
               <div class="text-left">
                   <h6 class="mb-0">
                   <span>{{ request.user.username }}</span>
+                  {% if not user.is_superuser %}
                   <span class="small text-dark"
                     style="cursor: pointer;"
                     data-toggle="modal" 
@@ -63,8 +64,9 @@
                       <i class="fas fa-cog"></i>
                     </span>
                   </span>
+                  {% endif %}
                 </h6>
-                {% if user.approval_status == 'a'%}
+                {% if user.approval_status == 'a' or user.is_superuser %}
                   <small>({{ request.user.requested_role }})</small>
                 {% endif %}
                 <small>
@@ -79,7 +81,7 @@
       <!-- Profile Complete Form -->
       <div class="col-md-8">
         <div class="card p-3">
-          {% if user.approval_status != 'a' %}
+          {% if not user.is_superuser and user.approval_status != 'a' %}
           <div class="alert alert-warning d-flex justify-content-between align-items-center" role="alert">
             <b>Your profile is not verified yet.</b>
               {% if user.approval_status == 'p' %}
@@ -114,7 +116,7 @@
           {% endif %} 
           
           <!-- Form for UnVerified User (SENDS A VERIFICATION REQUEST) -->
-          {% if user.approval_status != 'a' %}
+          {% if not user.is_superuser and user.approval_status != 'a' %}
             <form method="post">
               <div
                 class="alert alert-warning alert-dismissible fade show"
