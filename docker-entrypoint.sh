@@ -4,8 +4,8 @@ set -e
 # Dynamically bind to PORT assigned by Render or container host (default: 8000)
 PORT="${PORT:-8000}"
 
-# Optional automatic startup migration if RUN_MIGRATIONS_ON_STARTUP is enabled
-if [ "${RUN_MIGRATIONS_ON_STARTUP:-false}" = "true" ]; then
+# Automatic startup migration before Gunicorn starts (defaults to true for environments without pre-deploy hooks)
+if [ "${RUN_MIGRATIONS_ON_STARTUP:-true}" = "true" ]; then
     echo "[Entrypoint] Running database migrations..."
     python manage.py migrate --noinput
 fi
