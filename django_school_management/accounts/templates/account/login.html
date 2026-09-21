@@ -107,7 +107,8 @@
           </div>
         </form>
 
-        <!-- Demo Accounts Quick-Fill Box -->
+        <!-- Demo Accounts Quick-Fill Box (Only visible in Development / Demo Environment) -->
+        {% if is_demo_env %}
         <div class="mt-6 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
           <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center justify-between">
             <span>Demo Quick Logins (Password: demo@123)</span>
@@ -140,6 +141,7 @@
             </button>
           </div>
         </div>
+        {% endif %}
 
       </div>
     </div>
@@ -154,12 +156,14 @@
         }
       }
 
+      {% if is_demo_env %}
       function fillCreds(email) {
         var loginInput = document.getElementById("id_login") || document.getElementById("id_username");
         if (loginInput) loginInput.value = email;
         var pwdInput = document.getElementById("id_password");
         if (pwdInput) pwdInput.value = "demo@123";
       }
+      {% endif %}
 
       // Auto-reload page when restored from back-forward cache (bfcache) to keep CSRF tokens in sync
       window.addEventListener('pageshow', function(event) {
