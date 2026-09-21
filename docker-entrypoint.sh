@@ -10,6 +10,12 @@ if [ "${RUN_MIGRATIONS_ON_STARTUP:-false}" = "true" ]; then
     python manage.py migrate --noinput
 fi
 
+# Ensure staticfiles manifest exists before starting web server (safety check)
+if [ ! -f "staticfiles/staticfiles.json" ]; then
+    echo "[Entrypoint] staticfiles.json not found; running collectstatic..."
+    python manage.py collectstatic --noinput
+fi
+
 # If no arguments provided, start Gunicorn web server
 if [ "$#" -eq 0 ]; then
     echo "[Entrypoint] Starting Gunicorn on 0.0.0.0:${PORT}..."

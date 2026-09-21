@@ -24,6 +24,10 @@ COPY . .
 # Ensure entrypoint and pre-deploy scripts have execution permissions
 RUN chmod +x docker-entrypoint.sh pre-deploy.sh
 
+# Collect static files during Docker build so image is self-contained with hashed assets and staticfiles.json
+ENV DJANGO_SETTINGS_MODULE=config.settings.production
+RUN python manage.py collectstatic --noinput
+
 EXPOSE 8000
 
 ENTRYPOINT ["/usr/src/app/docker-entrypoint.sh"]

@@ -12,7 +12,7 @@
     <title>{{ request_institute.site_title }}</title>
     <!--====== Favicon Icon ======-->
     <link rel="shortcut icon" 
-      href="{{ request_institute.favicon.url }}" 
+      href="{% if request_institute and request_institute.favicon %}{{ request_institute.favicon.url }}{% else %}{% static 'images/favicon.png' %}{% endif %}" 
       type="image/png">
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="{% static 'landing/css/bootstrap.min.css' %}">

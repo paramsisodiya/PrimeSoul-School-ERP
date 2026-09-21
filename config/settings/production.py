@@ -22,9 +22,12 @@ STORAGES = {
         "BACKEND": env('DEFAULT_FILE_STORAGE_BACKEND', default="django.core.files.storage.FileSystemStorage"),
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "django_school_management.utils.storage.ResilientCompressedManifestStaticFilesStorage",
     },
 }
+
+# Allow WhiteNoise to skip missing optional third-party assets in vendor CSS without throwing 500
+WHITENOISE_MANIFEST_STRICT = env.bool('WHITENOISE_MANIFEST_STRICT', default=False)
 
 # Production Security Hardening
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
