@@ -61,8 +61,10 @@
 
           <!-- Subject Marks Breakdown -->
           {% if item.marks %}
-            <h6 class="font-weight-bold text-dark mb-2">Subject Breakdown</h6>
-            <div class="table-responsive">
+            <h6 class="font-weight-bold text-dark mb-2 mt-3">Subject Breakdown</h6>
+            
+            <!-- Desktop Table View (>= 768px) -->
+            <div class="table-responsive d-none d-md-block">
               <table class="table table-bordered table-sm portal-table mb-0">
                 <thead>
                   <tr>
@@ -91,6 +93,26 @@
                   {% endfor %}
                 </tbody>
               </table>
+            </div>
+
+            <!-- Mobile Card Feed (< 768px) -->
+            <div class="d-md-none">
+              {% for mark in item.marks %}
+                <div class="p-3 mb-2 rounded bg-light border d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="font-weight-bold text-dark" style="font-size: 0.95rem;">{{ mark.exam_subject.subject.name }}</div>
+                    <div class="text-muted small">Max Marks: {{ mark.exam_subject.max_marks }} &bull; Grade: <strong>{{ mark.grade|default:"-" }}</strong></div>
+                  </div>
+                  <div class="text-right">
+                    <div class="font-weight-bold text-dark" style="font-size: 1.1rem;">{{ mark.marks_obtained|default:"-" }}</div>
+                    {% if mark.is_passed %}
+                      <span class="badge badge-success">Passed</span>
+                    {% else %}
+                      <span class="badge badge-danger">Failed</span>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endfor %}
             </div>
           {% endif %}
         </div>

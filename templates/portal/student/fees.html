@@ -5,7 +5,7 @@
 
 {% block portal_content %}
 <div class="container-fluid px-0">
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+  <div class="d-flex justify-content-between align-items-center mb-3 mb-md-4 flex-wrap">
     <div>
       <h4 class="font-weight-bold text-dark mb-1">My Fee Dues & Receipts</h4>
       <p class="text-muted small mb-0">Authorized student fee schedule, pending installments, and verified receipts.</p>
@@ -13,8 +13,8 @@
   </div>
 
   <!-- Summary Cards -->
-  <div class="row mb-4">
-    <div class="col-sm-4 mb-3">
+  <div class="row mb-3 mb-md-4">
+    <div class="col-12 col-sm-4 mb-3">
       <div class="portal-card stat-widget h-100">
         <div>
           <span class="text-muted small font-weight-bold text-uppercase">Assigned Payable</span>
@@ -27,7 +27,7 @@
       </div>
     </div>
 
-    <div class="col-sm-4 mb-3">
+    <div class="col-6 col-sm-4 mb-3">
       <div class="portal-card stat-widget h-100">
         <div>
           <span class="text-muted small font-weight-bold text-uppercase">Paid Fees</span>
@@ -40,7 +40,7 @@
       </div>
     </div>
 
-    <div class="col-sm-4 mb-3">
+    <div class="col-6 col-sm-4 mb-3">
       <div class="portal-card stat-widget h-100">
         <div>
           <span class="text-muted small font-weight-bold text-uppercase">Pending Balance</span>
@@ -54,14 +54,38 @@
     </div>
   </div>
 
-  <!-- Installments Table -->
+  <!-- Installments Feed -->
   <div class="portal-card mb-4">
-    <div class="card-header bg-white font-weight-bold py-3">
-      <i class="fas fa-calendar-alt mr-2 text-primary"></i> Fee Installment Schedule
+    <div class="card-header bg-white font-weight-bold py-3 d-flex justify-content-between align-items-center">
+      <span><i class="fas fa-calendar-alt mr-2 text-primary"></i> Fee Installment Schedule</span>
+      <span class="badge badge-light border text-muted small">{{ installments|length }} Installments</span>
     </div>
-    <div class="card-body p-0">
+    <div class="card-body p-3 p-md-0">
       {% if installments %}
-        <div class="table-responsive">
+        <!-- Mobile Card Feed (< 768px) -->
+        <div class="d-md-none">
+          {% for inst in installments %}
+            <div class="p-3 border rounded mb-2.5 bg-white">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <div class="font-weight-bold text-dark">{{ inst.installment_name }}</div>
+                  <span class="text-muted small"><i class="far fa-calendar-alt mr-1"></i>Due: {{ inst.due_date|date:"d M Y" }}</span>
+                </div>
+                <span class="portal-badge {% if inst.status == 'PAID' %}badge-paid{% elif inst.status == 'PARTIAL' %}badge-partial{% elif inst.status == 'OVERDUE' %}badge-overdue{% else %}badge-pending{% endif %}">
+                  {{ inst.get_status_display }}
+                </span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center small py-1 border-top">
+                <span class="text-muted">Payable: <strong>₹{{ inst.payable_amount }}</strong></span>
+                <span class="text-success">Paid: <strong>₹{{ inst.paid_amount }}</strong></span>
+                <span class="{% if inst.balance_amount > 0 %}text-danger{% else %}text-success{% endif %}">Due: <strong>₹{{ inst.balance_amount }}</strong></span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- Desktop Table (>= 768px) -->
+        <div class="table-responsive d-none d-md-block">
           <table class="table portal-table align-middle mb-0">
             <thead>
               <tr>
@@ -97,39 +121,57 @@
     </div>
   </div>
 
-  <!-- Receipts Table -->
+  <!-- Receipts Feed -->
   <div class="portal-card">
     <div class="card-header bg-white font-weight-bold py-3">
-      <i class="fas fa-receipt mr-2 text-success"></i> Payment Receipts
+      <i class="fas fa-receipt mr-2 text-success"></i> Payment Receipts History
     </div>
-    <div class="card-body p-0">
-      {% if receipts %}
-        <div class="table-responsive">
+    <div class="card-body p-3 p-md-0">
+      {% if payments %}
+        <!-- Mobile Receipts Cards (< 768px) -->
+        <div class="d-md-none">
+          {% for p in payments %}
+            <div class="p-3 border rounded mb-2.5 bg-white">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <div class="font-weight-bold text-dark"><code>{{ p.receipt_number|default:p.transaction_id }}</code></div>
+                  <span class="text-muted small"><i class="far fa-calendar-alt mr-1"></i>{{ p.payment_date|date:"d M Y" }}</span>
+                </div>
+                <span class="font-weight-bold text-success" style="font-size: 1.05rem;">₹{{ p.amount }}</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center small py-1 border-top">
+                <span class="text-muted">Mode: <span class="badge badge-light border">{{ p.get_payment_mode_display }}</span></span>
+                <a href="{% url 'fees:receipt_pdf' p.id %}" class="btn btn-outline-primary btn-sm">
+                  <i class="fas fa-download mr-1"></i> Receipt PDF
+                </a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- Desktop Table (>= 768px) -->
+        <div class="table-responsive d-none d-md-block">
           <table class="table portal-table align-middle mb-0">
             <thead>
               <tr>
-                <th>Receipt No</th>
+                <th>Receipt / Transaction</th>
                 <th>Date</th>
+                <th>Mode</th>
                 <th>Amount</th>
-                <th>Payment Mode</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {% for rcpt in receipts %}
+              {% for p in payments %}
                 <tr>
-                  <td><code>{{ rcpt.receipt_number }}</code></td>
-                  <td>{{ rcpt.receipt_date|date:"d M Y" }}</td>
-                  <td class="font-weight-bold text-success">₹{{ rcpt.amount }}</td>
-                  <td><span class="badge badge-light border">{{ rcpt.payment_method }}</span></td>
+                  <td><code>{{ p.receipt_number|default:p.transaction_id }}</code></td>
+                  <td>{{ p.payment_date|date:"d M Y" }}</td>
+                  <td><span class="badge badge-light border">{{ p.get_payment_mode_display }}</span></td>
+                  <td class="font-weight-bold text-success">₹{{ p.amount }}</td>
                   <td>
-                    {% if rcpt.generated_pdf %}
-                      <a href="{{ rcpt.generated_pdf.url }}" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2">
-                        <i class="fas fa-file-pdf mr-1"></i> PDF
-                      </a>
-                    {% else %}
-                      <span class="text-muted small">Verified</span>
-                    {% endif %}
+                    <a href="{% url 'fees:receipt_pdf' p.id %}" class="btn btn-outline-primary btn-sm py-0 px-2">
+                      <i class="fas fa-download mr-1"></i> PDF
+                    </a>
                   </td>
                 </tr>
               {% endfor %}
@@ -137,7 +179,7 @@
           </table>
         </div>
       {% else %}
-        <div class="p-4 text-center text-muted">No receipts generated yet.</div>
+        <div class="p-4 text-center text-muted">No verified payment receipts found.</div>
       {% endif %}
     </div>
   </div>

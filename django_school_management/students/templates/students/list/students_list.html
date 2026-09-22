@@ -14,85 +14,173 @@
         <li class="breadcrumb-item">
             <a href="{% url 'students:all_applicants' %}">Applicants</a>
         </li>
-        <li class="breadcrumb-item active" aria-current="page">List</li>
+        <li class="breadcrumb-item active" aria-current="page">Student Roster</li>
     </ol>
 </nav>
 
-<div class="row">
+<div class="d-flex justify-content-between align-items-center mb-3 mb-md-4 flex-wrap">
+  <div>
+    <h4 class="font-weight-bold text-dark mb-0">Student Registry Roster</h4>
+    <p class="text-muted small mb-0">Enrolled student cohort and student information system profiles.</p>
+  </div>
+  <div class="mt-2 mt-sm-0">
+    <a href="{% url 'students:add_student' %}" class="btn btn-primary font-weight-bold btn-sm">
+      <i class="fas fa-user-plus mr-1"></i> Add Student
+    </a>
+  </div>
+</div>
+
+<!-- Mobile Student Card Feed (< 768px) -->
+<div class="d-md-none mb-4">
+  {% if students %}
+    {% for student in students %}
+      <div class="mobile-student-card">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div class="d-flex align-items-center" style="min-width: 0;">
+            <div class="rounded-circle bg-light text-primary font-weight-bold d-flex align-items-center justify-content-center mr-2.5 border flex-shrink-0" style="width: 42px; height: 42px; font-size: 1.1rem;">
+              {% if student.photo %}
+                <img src="{{ student.photo.url }}" class="rounded-circle" height="42" width="42" alt="{{ student.get_full_name }}" style="object-fit: cover;">
+              {% else %}
+                {{ student.first_name|default:student.name|slice:":1"|upper }}
+              {% endif %}
+            </div>
+            <div style="min-width: 0;">
+              <h6 class="font-weight-bold text-dark mb-0 text-truncate">{{ student.get_full_name|default:student.name }}</h6>
+              <span class="text-muted small"><code>{{ student.admission_number|default:student.temporary_id|default:student.id }}</code></span>
+            </div>
+          </div>
+          <div>
+            <span class="badge badge-light border text-primary" style="font-size: 0.75rem;">
+              Roll: {{ student.roll_number|default:student.roll|default:'—' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="p-2 bg-light rounded small mb-2 d-flex justify-content-between align-items-center">
+          <div>
+            <span class="text-muted">Class:</span>
+            <strong class="text-dark">
+              {% if student.grade_level %}
+                {{ student.grade_level.name }}{% if student.section %} - Section {{ student.section.name }}{% endif %}
+              {% elif student.admission_student and student.admission_student.choosen_department %}
+                {{ student.admission_student.choosen_department.name }}
+              {% elif student.department %}
+                {{ student.department.name }}
+              {% else %}
+                —
+              {% endif %}
+            </strong>
+          </div>
+          <div>
+            <span class="text-muted">Session:</span>
+            <strong class="text-dark">
+              {% if student.academic_year %}
+                {{ student.academic_year.name }}
+              {% elif student.ac_session %}
+                {{ student.ac_session }}
+              {% else %}
+                —
+              {% endif %}
+            </strong>
+          </div>
+        </div>
+
+        <div class="mobile-card-actions">
+          <a href="{% url 'students:student_sis' pk=student.id %}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-id-card mr-1"></i> SIS Profile
+          </a>
+          <a href="{% url 'students:update_student' pk=student.id %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-edit mr-1"></i> Edit
+          </a>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="portal-card p-4 text-center text-muted">
+      <i class="fas fa-user-graduate fa-2x mb-2 text-muted"></i>
+      <div>No Student Data Found</div>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Desktop Table (>= 768px) -->
+<div class="row d-none d-md-block">
   <div class="col-12">
-    <div class="table-responsive">
-      <table class="table table-bordered table-hover" id="studentsDataTable">
-        <thead>
-          <tr>
-            <th scope="col">Admission / ID</th>
-            <th scope="col">Name</th>
-            <th scope="col">Class &amp; Section</th>
-            <th scope="col">Roll</th>
-            <th scope="col">Session</th>
-            <th scope="col">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% if students %}
-            {% for student in students %}
+    <div class="portal-card p-3">
+      <div class="table-responsive">
+        <table class="table table-hover portal-table mb-0" id="studentsDataTable">
+          <thead>
             <tr>
-              <th scope="row">
-                <a href="{% url 'students:student_sis' pk=student.id %}">
-                  {{ student.admission_number|default:student.temporary_id|default:student.id }}
-                </a>
-              </th>
-              <td>
-                <a href="{% url 'students:student_sis' pk=student.id %}">
-                  {% if student.photo %}
-                    <img src="{{ student.photo.url }}" class="mr-2 rounded-circle" height="24" width="24" alt="{{ student.get_full_name }}" style="object-fit: cover;">
-                  {% elif student.admission_student and student.admission_student.photo %}
-                    <img src="{{ student.admission_student.photo.url }}" class="mr-2 rounded-circle" height="24" width="24" alt="{{ student.admission_student.name }}" style="object-fit: cover;">
-                  {% endif %}
-                  {{ student.get_full_name }}
-                </a>
-              </td>
-              <td>
-                <a href="{% url 'students:student_sis' pk=student.id %}">
-                  {% if student.grade_level %}
-                    {{ student.grade_level.name }}{% if student.section %} - Section {{ student.section.name }}{% endif %}
-                  {% elif student.admission_student and student.admission_student.choosen_department %}
-                    {{ student.admission_student.choosen_department.name }}
-                  {% elif student.department %}
-                    {{ student.department.name }}
+              <th scope="col">Admission / ID</th>
+              <th scope="col">Name</th>
+              <th scope="col">Class &amp; Section</th>
+              <th scope="col">Roll</th>
+              <th scope="col">Session</th>
+              <th scope="col">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if students %}
+              {% for student in students %}
+              <tr>
+                <th scope="row">
+                  <a href="{% url 'students:student_sis' pk=student.id %}">
+                    {{ student.admission_number|default:student.temporary_id|default:student.id }}
+                  </a>
+                </th>
+                <td>
+                  <a href="{% url 'students:student_sis' pk=student.id %}">
+                    {% if student.photo %}
+                      <img src="{{ student.photo.url }}" class="mr-2 rounded-circle" height="24" width="24" alt="{{ student.get_full_name }}" style="object-fit: cover;">
+                    {% elif student.admission_student and student.admission_student.photo %}
+                      <img src="{{ student.admission_student.photo.url }}" class="mr-2 rounded-circle" height="24" width="24" alt="{{ student.admission_student.name }}" style="object-fit: cover;">
+                    {% endif %}
+                    {{ student.get_full_name }}
+                  </a>
+                </td>
+                <td>
+                  <a href="{% url 'students:student_sis' pk=student.id %}">
+                    {% if student.grade_level %}
+                      {{ student.grade_level.name }}{% if student.section %} - Section {{ student.section.name }}{% endif %}
+                    {% elif student.admission_student and student.admission_student.choosen_department %}
+                      {{ student.admission_student.choosen_department.name }}
+                    {% elif student.department %}
+                      {{ student.department.name }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </a>
+                </td>
+                <td>
+                  {{ student.roll_number|default:student.roll|default:'—' }}
+                </td>
+                <td>
+                  {% if student.academic_year %}
+                    {{ student.academic_year.name }}
+                  {% elif student.ac_session %}
+                    {{ student.ac_session }}
                   {% else %}
                     —
                   {% endif %}
-                </a>
-              </td>
-              <td>
-                {{ student.roll_number|default:student.roll|default:'—' }}
-              </td>
-              <td>
-                {% if student.academic_year %}
-                  {{ student.academic_year.name }}
-                {% elif student.ac_session %}
-                  {{ student.ac_session }}
-                {% else %}
-                  —
-                {% endif %}
-              </td>
-              <td>
-                <a href="{% url 'students:student_sis' pk=student.id %}" class="btn btn-sm btn-outline-primary mr-1" title="View Profile"><i class="fas fa-info-circle"></i></a>
-                <a href="{% url 'students:update_student' pk=student.id %}" class="btn btn-sm btn-primary" title="Edit Student">
-                  <i class="fas fa-edit"></i>
-                </a>
-              </td>
-            </tr>
-            {% endfor %}
-          {% else %}
-            <tr>
-              <td colspan="6" class="text-center text-muted py-4">
-                No Student Data Found
-              </td>
-            </tr>
-          {% endif %}
-        </tbody>
-      </table>
+                </td>
+                <td>
+                  <a href="{% url 'students:student_sis' pk=student.id %}" class="btn btn-sm btn-outline-primary mr-1" title="View Profile"><i class="fas fa-info-circle"></i></a>
+                  <a href="{% url 'students:update_student' pk=student.id %}" class="btn btn-sm btn-primary" title="Edit Student">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                  No Student Data Found
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -104,7 +192,9 @@
   <script src="{% static 'js/dataTables.bootstrap4.min.js' %}"></script>
   <script>
     $(document).ready(function() {
-      $('#studentsDataTable').dataTable();
+      if ($('#studentsDataTable').length) {
+        $('#studentsDataTable').dataTable();
+      }
     });
   </script>
 {% endblock extrajs %}

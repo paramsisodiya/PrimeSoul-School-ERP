@@ -5,76 +5,121 @@
 
 {% block portal_content %}
 <div class="container-fluid px-0">
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+  <div class="d-flex justify-content-between align-items-center mb-3 mb-md-4 flex-wrap">
     <div>
       <h4 class="font-weight-bold text-dark mb-1">My Attendance Record</h4>
       <p class="text-muted small mb-0">Daily attendance log and percentage summary for the current academic session.</p>
     </div>
   </div>
 
-  <!-- Stats Grid -->
-  <div class="row mb-4">
-    <div class="col-sm-6 col-lg-3 mb-3">
-      <div class="portal-card stat-widget h-100">
-        <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Overall Percentage</span>
-          <h2 class="font-weight-bold mt-1 mb-0 {% if percentage >= 75 %}text-success{% else %}text-danger{% endif %}">{{ percentage }}%</h2>
-          <span class="small text-muted">CBSE Target: 75%</span>
+  <!-- Big Metric Card + Summary Pills -->
+  <div class="row mb-3 mb-md-4">
+    <div class="col-12 col-md-4 mb-3">
+      <div class="portal-card p-4 h-100 text-center d-flex flex-column align-items-center justify-content-center bg-white">
+        <div class="rounded-circle d-flex flex-column align-items-center justify-content-center mb-2 shadow-sm" style="width: 110px; height: 110px; background: {% if percentage >= 75 %}#DCFCE7; color: #166534; border: 4px solid #86EFAC;{% else %}#FEE2E2; color: #991B1B; border: 4px solid #FCA5A5;{% endif %}">
+          <span style="font-size: 1.85rem; font-weight: 800; line-height: 1;">{{ percentage }}%</span>
+          <span style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; margin-top: 2px;">Overall</span>
         </div>
-        <div class="icon-box" style="background: #DCFCE7; color: #166534;">
-          <i class="fas fa-percentage"></i>
-        </div>
+        <div class="font-weight-bold text-dark" style="font-size: 0.95rem;">Academic Year Standing</div>
+        <span class="badge {% if percentage >= 75 %}badge-success{% else %}badge-danger{% endif %} mt-1">
+          {% if percentage >= 75 %}Eligible (>= 75% CBSE Norm){% else %}Below 75% Requirement{% endif %}
+        </span>
       </div>
     </div>
 
-    <div class="col-sm-6 col-lg-3 mb-3">
-      <div class="portal-card stat-widget h-100">
-        <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Present Days</span>
-          <h2 class="font-weight-bold mt-1 mb-0 text-success">{{ present_count }}</h2>
-          <span class="small text-muted">Late: {{ late_count }} | Half: {{ half_day_count }}</span>
+    <div class="col-12 col-md-8">
+      <div class="row">
+        <div class="col-6 col-sm-6 mb-3">
+          <div class="portal-card stat-widget h-100">
+            <div>
+              <span class="text-muted small font-weight-bold text-uppercase">Present Days</span>
+              <h3 class="font-weight-bold mt-1 mb-0 text-success">{{ present_count }}</h3>
+              <span class="small text-muted">On-time sessions</span>
+            </div>
+            <div class="icon-box" style="background: #DCFCE7; color: #166534;">
+              <i class="fas fa-check"></i>
+            </div>
+          </div>
         </div>
-        <div class="icon-box" style="background: #E0E7FF; color: #3730A3;">
-          <i class="fas fa-user-check"></i>
-        </div>
-      </div>
-    </div>
 
-    <div class="col-sm-6 col-lg-3 mb-3">
-      <div class="portal-card stat-widget h-100">
-        <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Absent Days</span>
-          <h2 class="font-weight-bold mt-1 mb-0 text-danger">{{ absent_count }}</h2>
-          <span class="small text-muted">Excused: {{ excused_count }}</span>
+        <div class="col-6 col-sm-6 mb-3">
+          <div class="portal-card stat-widget h-100">
+            <div>
+              <span class="text-muted small font-weight-bold text-uppercase">Absent Days</span>
+              <h3 class="font-weight-bold mt-1 mb-0 text-danger">{{ absent_count }}</h3>
+              <span class="small text-muted">Excused: {{ excused_count }}</span>
+            </div>
+            <div class="icon-box" style="background: #FEE2E2; color: #991B1B;">
+              <i class="fas fa-times"></i>
+            </div>
+          </div>
         </div>
-        <div class="icon-box" style="background: #FEE2E2; color: #991B1B;">
-          <i class="fas fa-user-times"></i>
-        </div>
-      </div>
-    </div>
 
-    <div class="col-sm-6 col-lg-3 mb-3">
-      <div class="portal-card stat-widget h-100">
-        <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Total Marked Sessions</span>
-          <h2 class="font-weight-bold mt-1 mb-0 text-dark">{{ total_records }}</h2>
-          <span class="small text-muted">Working days</span>
+        <div class="col-6 col-sm-6 mb-3">
+          <div class="portal-card stat-widget h-100">
+            <div>
+              <span class="text-muted small font-weight-bold text-uppercase">Late Marks</span>
+              <h3 class="font-weight-bold mt-1 mb-0 text-warning">{{ late_count }}</h3>
+              <span class="small text-muted">Half day: {{ half_day_count }}</span>
+            </div>
+            <div class="icon-box" style="background: #FEF3C7; color: #92400E;">
+              <i class="fas fa-clock"></i>
+            </div>
+          </div>
         </div>
-        <div class="icon-box" style="background: #F1F5F9; color: #475569;">
-          <i class="fas fa-calendar-alt"></i>
+
+        <div class="col-6 col-sm-6 mb-3">
+          <div class="portal-card stat-widget h-100">
+            <div>
+              <span class="text-muted small font-weight-bold text-uppercase">Total Working</span>
+              <h3 class="font-weight-bold mt-1 mb-0 text-dark">{{ total_records }}</h3>
+              <span class="small text-muted">Marked sessions</span>
+            </div>
+            <div class="icon-box" style="background: #F1F5F9; color: #475569;">
+              <i class="fas fa-calendar-alt"></i>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Attendance History Table -->
+  <!-- Attendance History Log -->
   <div class="portal-card">
-    <div class="card-header bg-white font-weight-bold py-3">
-      <i class="fas fa-history mr-2 text-primary"></i> Attendance History Log
+    <div class="card-header bg-white font-weight-bold py-3 d-flex justify-content-between align-items-center">
+      <span><i class="fas fa-history mr-2 text-primary"></i> Attendance History Log</span>
+      <span class="badge badge-light border text-muted small">{{ recent_records|length }} Recent Days</span>
     </div>
-    <div class="card-body p-0">
+    <div class="card-body p-3 p-md-0">
       {% if recent_records %}
-        <div class="table-responsive">
+        <!-- Mobile Card Feed (< 768px) -->
+        <div class="d-md-none">
+          {% for rec in recent_records %}
+            <div class="mobile-attendance-card">
+              <div class="att-date-col">
+                <div class="att-day-box">
+                  <span class="att-day-num">{{ rec.attendance_date|date:"d" }}</span>
+                  <span class="att-day-name">{{ rec.attendance_date|date:"M" }}</span>
+                </div>
+                <div>
+                  <div class="font-weight-bold text-dark" style="font-size: 0.88rem;">{{ rec.attendance_date|date:"l" }}</div>
+                  <div class="text-muted small">{{ rec.grade_level.name }} - {{ rec.section.name }}</div>
+                  {% if rec.remarks %}
+                    <div class="text-muted small italic"><i class="fas fa-info-circle mr-1"></i>{{ rec.remarks }}</div>
+                  {% endif %}
+                </div>
+              </div>
+              <div>
+                <span class="portal-badge {% if rec.status == 'PRESENT' %}badge-present{% elif rec.status == 'ABSENT' %}badge-absent{% elif rec.status == 'LATE' %}badge-late{% elif rec.status == 'HALF_DAY' %}badge-halfday{% else %}badge-excused{% endif %}">
+                  {{ rec.get_status_display }}
+                </span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- Desktop Table (>= 768px) -->
+        <div class="table-responsive d-none d-md-block">
           <table class="table portal-table align-middle mb-0">
             <thead>
               <tr>
@@ -103,9 +148,7 @@
           </table>
         </div>
       {% else %}
-        <div class="p-5 text-center text-muted">
-          <p class="mb-0">No attendance history records available.</p>
-        </div>
+        <div class="p-5 text-center text-muted">No attendance entries recorded yet for this session.</div>
       {% endif %}
     </div>
   </div>

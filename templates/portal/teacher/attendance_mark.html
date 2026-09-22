@@ -4,21 +4,21 @@
 {% block title %}Mark Attendance - {{ section }}{% endblock %}
 
 {% block portal_content %}
-<div class="container-fluid px-0">
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+<div class="container-fluid px-0" style="padding-bottom: 70px;">
+  <div class="d-flex justify-content-between align-items-center mb-3 mb-md-4 flex-wrap">
     <div>
-      <nav aria-label="breadcrumb">
+      <nav aria-label="breadcrumb" class="d-none d-sm-block">
         <ol class="breadcrumb bg-transparent p-0 mb-1" style="font-size: 0.85rem;">
           <li class="breadcrumb-item"><a href="{% url 'portal:teacher_dashboard' %}">Teacher Portal</a></li>
           <li class="breadcrumb-item"><a href="{% url 'portal:teacher_attendance' %}">Attendance</a></li>
           <li class="breadcrumb-item active">{{ section }}</li>
         </ol>
       </nav>
-      <h4 class="font-weight-bold text-dark mb-0">Mark Daily Attendance: {{ section }}</h4>
+      <h4 class="font-weight-bold text-dark mb-0">Daily Register: {{ section }}</h4>
     </div>
     <div class="d-flex align-items-center mt-2 mt-sm-0">
-      <span class="badge badge-light border p-2 mr-3 font-weight-bold">
-        <i class="far fa-calendar-alt text-primary mr-1"></i> Date: {{ target_date|date:"d M Y" }}
+      <span class="badge badge-light border p-2 mr-2 font-weight-bold">
+        <i class="far fa-calendar-alt text-primary mr-1"></i> {{ target_date|date:"d M Y" }}
       </span>
       <a href="{% url 'portal:teacher_attendance' %}" class="btn btn-outline-secondary btn-sm">
         <i class="fas fa-arrow-left mr-1"></i> Back
@@ -26,24 +26,68 @@
     </div>
   </div>
 
-  <form method="post">
+  <form method="post" id="attendanceForm">
     {% csrf_token %}
-    <div class="portal-card">
+    <div class="portal-card mb-4">
       <div class="card-header bg-white font-weight-bold py-3 d-flex justify-content-between align-items-center flex-wrap">
-        <span><i class="fas fa-user-check mr-2 text-primary"></i> Student Attendance Sheet ({{ sheet|length }} Students)</span>
+        <span><i class="fas fa-user-check mr-2 text-primary"></i> Attendance Sheet ({{ sheet|length }} Students)</span>
         <div class="mt-2 mt-sm-0">
-          <button type="button" class="btn btn-sm btn-outline-success mr-2" id="markAllPresentBtn">
+          <button type="button" class="btn btn-sm btn-outline-success font-weight-bold mr-2" id="markAllPresentBtn">
             <i class="fas fa-check-double mr-1"></i> Set All Present
           </button>
-          <button type="submit" class="btn btn-sm btn-primary">
+          <button type="submit" class="btn btn-sm btn-primary font-weight-bold d-none d-md-inline-block">
             <i class="fas fa-save mr-1"></i> Save Attendance
           </button>
         </div>
       </div>
 
-      <div class="card-body p-0">
+      <div class="card-body p-3 p-md-0">
         {% if sheet %}
-          <div class="table-responsive">
+          <!-- Mobile Attendance Sheet Cards (< 768px) -->
+          <div class="d-md-none">
+            {% for item in sheet %}
+              <div class="teacher-student-row-card">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-light text-primary font-weight-bold d-flex align-items-center justify-content-center mr-2.5 border" style="width: 36px; height: 36px; font-size: 0.95rem;">
+                      {{ item.roll_number|default:"-" }}
+                    </div>
+                    <div>
+                      <div class="font-weight-bold text-dark" style="font-size: 0.95rem;">{{ item.student_name }}</div>
+                      <span class="text-muted small"><code>{{ item.admission_number }}</code></span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Touch Segmented Controls (Min 40px height) -->
+                <div class="attendance-segmented-control">
+                  <label class="attendance-segment-btn opt-present {% if item.status == 'PRESENT' %}active{% endif %}">
+                    <input type="radio" name="status_{{ item.student_id }}" value="PRESENT" class="status-radio d-none" {% if item.status == 'PRESENT' %}checked{% endif %}>
+                    <span>P</span>
+                  </label>
+                  <label class="attendance-segment-btn opt-absent {% if item.status == 'ABSENT' %}active{% endif %}">
+                    <input type="radio" name="status_{{ item.student_id }}" value="ABSENT" class="status-radio d-none" {% if item.status == 'ABSENT' %}checked{% endif %}>
+                    <span>A</span>
+                  </label>
+                  <label class="attendance-segment-btn opt-late {% if item.status == 'LATE' %}active{% endif %}">
+                    <input type="radio" name="status_{{ item.student_id }}" value="LATE" class="status-radio d-none" {% if item.status == 'LATE' %}checked{% endif %}>
+                    <span>L</span>
+                  </label>
+                  <label class="attendance-segment-btn opt-half {% if item.status == 'HALF_DAY' %}active{% endif %}">
+                    <input type="radio" name="status_{{ item.student_id }}" value="HALF_DAY" class="status-radio d-none" {% if item.status == 'HALF_DAY' %}checked{% endif %}>
+                    <span>HD</span>
+                  </label>
+                </div>
+
+                <div class="mt-2">
+                  <input type="text" name="remarks_{{ item.student_id }}" value="{{ item.remarks }}" class="form-control form-control-sm" placeholder="Remarks (optional e.g. Fever)">
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+          <!-- Desktop Table (>= 768px) -->
+          <div class="table-responsive d-none d-md-block">
             <table class="table portal-table align-middle mb-0">
               <thead>
                 <tr>
@@ -89,11 +133,21 @@
         {% endif %}
       </div>
 
-      <div class="card-footer bg-white text-right py-3">
+      <div class="card-footer bg-white text-right py-3 d-none d-md-block">
         <button type="submit" class="btn btn-primary font-weight-bold">
           <i class="fas fa-save mr-1"></i> Save Daily Attendance
         </button>
       </div>
+    </div>
+
+    <!-- Mobile Sticky Submit Bar (< 768px) -->
+    <div class="portal-sticky-submit-bar d-md-none">
+      <button type="button" class="btn btn-outline-success font-weight-bold flex-grow-1 mr-1" id="mobileMarkAllPresent">
+        <i class="fas fa-check-double mr-1"></i> All Present
+      </button>
+      <button type="submit" class="btn btn-primary font-weight-bold flex-grow-1">
+        <i class="fas fa-save mr-1"></i> Save Attendance
+      </button>
     </div>
   </form>
 </div>
@@ -101,12 +155,27 @@
 
 {% block extra_js %}
 <script>
-  $('#markAllPresentBtn').on('click', function() {
-    $('input[type="radio"][value="PRESENT"]').each(function() {
-      $(this).prop('checked', true);
-      $(this).closest('.btn-group-toggle').find('.btn').removeClass('active');
-      $(this).closest('label').addClass('active');
+  (function($) {
+    // Set All Present Button handler (desktop + mobile)
+    $('#markAllPresentBtn, #mobileMarkAllPresent').on('click', function(e) {
+      e.preventDefault();
+      // Update radio inputs
+      $('input[type="radio"][value="PRESENT"]').prop('checked', true);
+      // Update desktop bootstrap active class
+      $('.btn-group-toggle label').removeClass('active');
+      $('.btn-group-toggle label:has(input[value="PRESENT"])').addClass('active');
+      // Update mobile segmented buttons
+      $('.attendance-segment-btn').removeClass('active');
+      $('.attendance-segment-btn.opt-present').addClass('active');
     });
-  });
+
+    // Mobile Segmented Button Click Handler
+    $('.attendance-segment-btn').on('click', function() {
+      var $container = $(this).closest('.attendance-segmented-control');
+      $container.find('.attendance-segment-btn').removeClass('active');
+      $(this).addClass('active');
+      $(this).find('input[type="radio"]').prop('checked', true);
+    });
+  })(jQuery);
 </script>
 {% endblock %}

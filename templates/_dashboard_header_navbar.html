@@ -7,10 +7,10 @@
       <i class="fas fa-bars"></i>
     </button>
 
-    <!-- School Identity Pill -->
-    <div class="school-meta-pill d-none d-md-inline-flex">
+    <!-- School Identity Pill (Responsive) -->
+    <div class="school-meta-pill d-inline-flex">
       <i class="fas fa-school text-primary mr-1"></i>
-      <span>{{ school.name|default:"PrimeSoul School ERP" }}</span>
+      <span class="text-truncate">{{ school.name|default:"PrimeSoul School ERP" }}</span>
     </div>
 
     <!-- Academic Session Tag -->
@@ -32,7 +32,7 @@
         <i class="fas fa-bell"></i>
         <span class="header-badge-dot"></span>
       </button>
-      <div class="dropdown-menu dropdown-menu-right shadow border-0" aria-labelledby="notifDropdown" style="width: 320px; border-radius: 12px; padding: 0; margin-top: 10px;">
+      <div class="dropdown-menu dropdown-menu-right shadow border-0" aria-labelledby="notifDropdown" style="width: min(320px, calc(100vw - 24px)); border-radius: 12px; padding: 0; margin-top: 10px;">
         <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-light" style="border-radius: 12px 12px 0 0;">
           <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-bell text-primary mr-2"></i>System Alerts</h6>
           <span class="badge badge-primary badge-pill">2 New</span>

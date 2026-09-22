@@ -14,67 +14,69 @@
 
   <!-- Stats Grid -->
   <div class="row mb-4">
-    <div class="col-sm-6 col-lg-3 mb-3">
-      <div class="portal-card stat-widget h-100">
+    <div class="col-6 col-lg-3 mb-3">
+      <div class="portal-card stat-widget h-100 p-3">
         <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Overall Percentage</span>
-          <h2 class="font-weight-bold mt-1 mb-0 {% if percentage >= 75 %}text-success{% else %}text-danger{% endif %}">{{ percentage }}%</h2>
-          <span class="small text-muted">Academic Year Target: 75%</span>
+          <span class="text-muted small font-weight-bold text-uppercase d-block" style="font-size: 0.72rem;">Overall %</span>
+          <h3 class="font-weight-bold mt-1 mb-0 {% if percentage >= 75 %}text-success{% else %}text-danger{% endif %}">{{ percentage }}%</h3>
+          <span class="small text-muted" style="font-size: 0.7rem;">Target: 75%</span>
         </div>
-        <div class="icon-box" style="background: #DCFCE7; color: #166534;">
+        <div class="icon-box" style="background: #DCFCE7; color: #166534; width: 36px; height: 36px; font-size: 1rem;">
           <i class="fas fa-percentage"></i>
         </div>
       </div>
     </div>
 
-    <div class="col-sm-6 col-lg-3 mb-3">
-      <div class="portal-card stat-widget h-100">
+    <div class="col-6 col-lg-3 mb-3">
+      <div class="portal-card stat-widget h-100 p-3">
         <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Present Days</span>
-          <h2 class="font-weight-bold mt-1 mb-0 text-success">{{ present_count }}</h2>
-          <span class="small text-muted">Late: {{ late_count }} | Half-Day: {{ half_day_count }}</span>
+          <span class="text-muted small font-weight-bold text-uppercase d-block" style="font-size: 0.72rem;">Present</span>
+          <h3 class="font-weight-bold mt-1 mb-0 text-success">{{ present_count }}</h3>
+          <span class="small text-muted" style="font-size: 0.7rem;">Late: {{ late_count }}</span>
         </div>
-        <div class="icon-box" style="background: #E0E7FF; color: #3730A3;">
+        <div class="icon-box" style="background: #E0E7FF; color: #3730A3; width: 36px; height: 36px; font-size: 1rem;">
           <i class="fas fa-user-check"></i>
         </div>
       </div>
     </div>
 
-    <div class="col-sm-6 col-lg-3 mb-3">
-      <div class="portal-card stat-widget h-100">
+    <div class="col-6 col-lg-3 mb-3">
+      <div class="portal-card stat-widget h-100 p-3">
         <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Absent Days</span>
-          <h2 class="font-weight-bold mt-1 mb-0 text-danger">{{ absent_count }}</h2>
-          <span class="small text-muted">Excused: {{ excused_count }}</span>
+          <span class="text-muted small font-weight-bold text-uppercase d-block" style="font-size: 0.72rem;">Absent</span>
+          <h3 class="font-weight-bold mt-1 mb-0 text-danger">{{ absent_count }}</h3>
+          <span class="small text-muted" style="font-size: 0.7rem;">Excused: {{ excused_count }}</span>
         </div>
-        <div class="icon-box" style="background: #FEE2E2; color: #991B1B;">
+        <div class="icon-box" style="background: #FEE2E2; color: #991B1B; width: 36px; height: 36px; font-size: 1rem;">
           <i class="fas fa-user-times"></i>
         </div>
       </div>
     </div>
 
-    <div class="col-sm-6 col-lg-3 mb-3">
-      <div class="portal-card stat-widget h-100">
+    <div class="col-6 col-lg-3 mb-3">
+      <div class="portal-card stat-widget h-100 p-3">
         <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Total Working Days</span>
-          <h2 class="font-weight-bold mt-1 mb-0 text-dark">{{ total_records }}</h2>
-          <span class="small text-muted">Recorded sessions</span>
+          <span class="text-muted small font-weight-bold text-uppercase d-block" style="font-size: 0.72rem;">Working Days</span>
+          <h3 class="font-weight-bold mt-1 mb-0 text-dark">{{ total_records }}</h3>
+          <span class="small text-muted" style="font-size: 0.7rem;">Recorded sessions</span>
         </div>
-        <div class="icon-box" style="background: #F1F5F9; color: #475569;">
+        <div class="icon-box" style="background: #F1F5F9; color: #475569; width: 36px; height: 36px; font-size: 1rem;">
           <i class="fas fa-calendar-alt"></i>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Attendance History Table -->
+  <!-- Attendance History -->
   <div class="portal-card">
-    <div class="card-header bg-white font-weight-bold py-3">
-      <i class="fas fa-history mr-2 text-primary"></i> Attendance History
+    <div class="card-header bg-white font-weight-bold py-3 d-flex justify-content-between align-items-center">
+      <span><i class="fas fa-history mr-2 text-primary"></i> Attendance History</span>
+      <span class="badge badge-light border text-muted small">{{ recent_records|length }} records</span>
     </div>
     <div class="card-body p-0">
       {% if recent_records %}
-        <div class="table-responsive">
+        <!-- Desktop Table View (>= 768px) -->
+        <div class="table-responsive d-none d-md-block">
           <table class="table portal-table align-middle mb-0">
             <thead>
               <tr>
@@ -101,6 +103,27 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
+
+        <!-- Mobile Card View (< 768px) -->
+        <div class="d-md-none p-3">
+          {% for rec in recent_records %}
+            <div class="mobile-attendance-card mb-2">
+              <div class="date-badge">
+                <span class="day">{{ rec.attendance_date|date:"d" }}</span>
+                <span class="month">{{ rec.attendance_date|date:"M" }}</span>
+              </div>
+              <div class="details">
+                <div class="day-name font-weight-bold text-dark">{{ rec.attendance_date|date:"l, Y" }}</div>
+                <div class="subject-info text-muted small">{{ rec.grade_level.name }} - {{ rec.section.name }}{% if rec.remarks %} &bull; {{ rec.remarks }}{% endif %}</div>
+              </div>
+              <div class="status-pill">
+                <span class="portal-badge {% if rec.status == 'PRESENT' %}badge-present{% elif rec.status == 'ABSENT' %}badge-absent{% elif rec.status == 'LATE' %}badge-late{% elif rec.status == 'HALF_DAY' %}badge-halfday{% else %}badge-excused{% endif %}">
+                  {{ rec.get_status_display }}
+                </span>
+              </div>
+            </div>
+          {% endfor %}
         </div>
       {% else %}
         <div class="p-5 text-center text-muted">

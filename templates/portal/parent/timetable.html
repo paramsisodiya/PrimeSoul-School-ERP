@@ -19,7 +19,8 @@
     </div>
     <div class="card-body p-0">
       {% if today_entries %}
-        <div class="table-responsive">
+        <!-- Desktop Table (>= 768px) -->
+        <div class="table-responsive d-none d-md-block">
           <table class="table portal-table align-middle mb-0">
             <thead>
               <tr>
@@ -40,6 +41,20 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
+
+        <!-- Mobile Card Feed (< 768px) -->
+        <div class="d-md-none p-3">
+          {% for entry in today_entries %}
+            <div class="mobile-period-card mb-2">
+              <div class="time-pill">{{ entry.time_slot.start_time|time:"H:i" }} - {{ entry.time_slot.end_time|time:"H:i" }}</div>
+              <div class="subject-title text-primary font-weight-bold">{{ entry.subject.name }}</div>
+              <div class="faculty-name text-muted small"><i class="fas fa-user-tie mr-1"></i> {{ entry.teacher.name|default:"Faculty" }}</div>
+              {% if entry.room %}
+                <div class="mt-1"><span class="badge badge-light border" style="font-size: 0.72rem;">Room: {{ entry.room.name }}</span></div>
+              {% endif %}
+            </div>
+          {% endfor %}
         </div>
       {% else %}
         <div class="p-4 text-center text-muted">No classes scheduled for today.</div>

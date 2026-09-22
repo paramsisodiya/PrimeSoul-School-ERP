@@ -39,64 +39,64 @@
   <!-- KPI Cards -->
   <div class="row mb-4">
     <!-- Today's Classes -->
-    <div class="col-sm-6 col-lg-3 mb-3">
-      <div class="portal-card stat-widget h-100">
+    <div class="col-6 col-lg-3 mb-3">
+      <div class="portal-card stat-widget h-100 p-3">
         <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Today's Classes</span>
-          <h3 class="font-weight-bold mt-1 mb-0 text-dark">{{ today_schedule|length }} Periods</h3>
-          <span class="small text-muted">Scheduled lectures today</span>
+          <span class="text-muted small font-weight-bold text-uppercase d-block" style="font-size: 0.72rem;">Today's Classes</span>
+          <h3 class="font-weight-bold mt-1 mb-0 text-dark">{{ today_schedule|length }}</h3>
+          <span class="small text-muted" style="font-size: 0.7rem;">Scheduled lectures</span>
         </div>
-        <div class="icon-box" style="background: #EEF2FF; color: #4F46E5;">
+        <div class="icon-box" style="background: #EEF2FF; color: #4F46E5; width: 36px; height: 36px; font-size: 1rem;">
           <i class="fas fa-chalkboard-teacher"></i>
         </div>
       </div>
     </div>
 
     <!-- Attendance Tasks -->
-    <div class="col-sm-6 col-lg-3 mb-3">
-      <div class="portal-card stat-widget h-100">
+    <div class="col-6 col-lg-3 mb-3">
+      <div class="portal-card stat-widget h-100 p-3">
         <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Attendance Tasks</span>
-          <h3 class="font-weight-bold mt-1 mb-0 text-dark">{{ pending_attendance|length }} Sections</h3>
-          <span class="small text-muted">Daily class registers</span>
+          <span class="text-muted small font-weight-bold text-uppercase d-block" style="font-size: 0.72rem;">Attendance</span>
+          <h3 class="font-weight-bold mt-1 mb-0 text-dark">{{ pending_attendance|length }}</h3>
+          <span class="small text-muted" style="font-size: 0.7rem;">Sections assigned</span>
         </div>
-        <div class="icon-box" style="background: #DCFCE7; color: #166534;">
+        <div class="icon-box" style="background: #DCFCE7; color: #166534; width: 36px; height: 36px; font-size: 1rem;">
           <i class="fas fa-clipboard-check"></i>
         </div>
       </div>
     </div>
 
     <!-- Leave Balances -->
-    <div class="col-sm-6 col-lg-3 mb-3">
-      <div class="portal-card stat-widget h-100">
+    <div class="col-6 col-lg-3 mb-3">
+      <div class="portal-card stat-widget h-100 p-3">
         <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Leave Quota</span>
+          <span class="text-muted small font-weight-bold text-uppercase d-block" style="font-size: 0.72rem;">Leave Quota</span>
           <h3 class="font-weight-bold mt-1 mb-0 text-dark">
-            {% if leave_summary.balances %}{{ leave_summary.balances.0.closing_balance }} Days{% else %}Available{% endif %}
+            {% if leave_summary.balances %}{{ leave_summary.balances.0.closing_balance }}d{% else %}-{% endif %}
           </h3>
-          <span class="small text-muted">
-            <a href="{% url 'portal:teacher_leave_apply' %}" class="text-primary font-weight-bold">+ Apply Leave</a>
+          <span class="small text-muted" style="font-size: 0.7rem;">
+            <a href="{% url 'portal:teacher_leave_apply' %}" class="text-primary font-weight-bold">+ Apply</a>
           </span>
         </div>
-        <div class="icon-box" style="background: #FEF3C7; color: #92400E;">
+        <div class="icon-box" style="background: #FEF3C7; color: #92400E; width: 36px; height: 36px; font-size: 1rem;">
           <i class="fas fa-calendar-minus"></i>
         </div>
       </div>
     </div>
 
     <!-- Latest Payslip -->
-    <div class="col-sm-6 col-lg-3 mb-3">
-      <div class="portal-card stat-widget h-100">
+    <div class="col-6 col-lg-3 mb-3">
+      <div class="portal-card stat-widget h-100 p-3">
         <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Latest Payslip</span>
-          <h3 class="font-weight-bold mt-1 mb-0 text-success">
+          <span class="text-muted small font-weight-bold text-uppercase d-block" style="font-size: 0.72rem;">Payslip</span>
+          <h3 class="font-weight-bold mt-1 mb-0 text-success" style="font-size: 1.25rem;">
             {% if latest_payslip %}₹{{ latest_payslip.net_salary }}{% else %}-{% endif %}
           </h3>
-          <span class="small text-muted">
-            {% if latest_payslip %}{{ latest_payslip.payroll_period }}{% else %}No payroll generated{% endif %}
+          <span class="small text-muted" style="font-size: 0.7rem;">
+            {% if latest_payslip %}{{ latest_payslip.payroll_period }}{% else %}No payroll{% endif %}
           </span>
         </div>
-        <div class="icon-box" style="background: #F1F5F9; color: #475569;">
+        <div class="icon-box" style="background: #F1F5F9; color: #475569; width: 36px; height: 36px; font-size: 1rem;">
           <i class="fas fa-file-invoice-dollar"></i>
         </div>
       </div>
@@ -113,7 +113,8 @@
         </div>
         <div class="card-body p-0">
           {% if today_schedule %}
-            <div class="table-responsive">
+            <!-- Desktop Table (>= 768px) -->
+            <div class="table-responsive d-none d-md-block">
               <table class="table portal-table align-middle mb-0">
                 <thead>
                   <tr>
@@ -135,6 +136,20 @@
                 </tbody>
               </table>
             </div>
+
+            <!-- Mobile Card Feed (< 768px) -->
+            <div class="d-md-none p-3">
+              {% for entry in today_schedule %}
+                <div class="mobile-period-card mb-2">
+                  <div class="time-pill">{{ entry.time_slot.start_time|time:"H:i" }} - {{ entry.time_slot.end_time|time:"H:i" }}</div>
+                  <div class="subject-title text-success font-weight-bold">{{ entry.subject.name }}</div>
+                  <div class="faculty-name text-dark font-weight-bold">{{ entry.section.grade_level.name }} - Section {{ entry.section.name }}</div>
+                  {% if entry.room %}
+                    <div class="mt-1"><span class="badge badge-light border" style="font-size: 0.72rem;">Room: {{ entry.room.name }}</span></div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
           {% else %}
             <div class="p-4 text-center text-muted">No teaching periods scheduled for today.</div>
           {% endif %}
@@ -149,7 +164,8 @@
         </div>
         <div class="card-body p-0">
           {% if pending_attendance %}
-            <div class="table-responsive">
+            <!-- Desktop Table (>= 768px) -->
+            <div class="table-responsive d-none d-md-block">
               <table class="table portal-table align-middle mb-0">
                 <thead>
                   <tr>
@@ -180,6 +196,26 @@
                   {% endfor %}
                 </tbody>
               </table>
+            </div>
+
+            <!-- Mobile Card Feed (< 768px) -->
+            <div class="d-md-none p-3">
+              {% for p in pending_attendance %}
+                <div class="p-3 mb-2 rounded bg-light border">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="font-weight-bold text-dark" style="font-size: 1rem;">{{ p.grade_level.name }} - {{ p.section.name }}</span>
+                    {% if p.is_marked %}
+                      <span class="portal-badge badge-paid">Marked ({{ p.records_count }})</span>
+                    {% else %}
+                      <span class="portal-badge badge-overdue">Pending</span>
+                    {% endif %}
+                  </div>
+                  <div class="text-muted small mb-2">Class Teacher: {{ p.class_teacher }}</div>
+                  <a href="{% url 'portal:teacher_attendance_mark' p.section.id %}" class="btn btn-block {% if p.is_marked %}btn-outline-primary{% else %}btn-primary{% endif %} btn-sm font-weight-bold py-2">
+                    {% if p.is_marked %}<i class="fas fa-edit mr-1"></i> Review / Edit Attendance{% else %}<i class="fas fa-clipboard-check mr-1"></i> Mark Section Attendance{% endif %}
+                  </a>
+                </div>
+              {% endfor %}
             </div>
           {% else %}
             <div class="p-4 text-center text-muted">No pending section attendance registers assigned to you.</div>

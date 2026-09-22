@@ -5,17 +5,77 @@
 
 {% block portal_content %}
 <div class="container-fluid px-0">
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+  <div class="d-flex justify-content-between align-items-center mb-3 mb-md-4 flex-wrap">
     <div>
       <h4 class="font-weight-bold text-dark mb-1">Class Schedule & Timetable</h4>
-      <p class="text-muted small mb-0">Weekly schedule for {{ grade_level.name }} - {{ section.name }}.</p>
+      <p class="text-muted small mb-0">Weekly timetable for {{ grade_level.name }} - {{ section.name }}.</p>
     </div>
   </div>
 
-  <!-- Today's Schedule Card -->
-  <div class="portal-card mb-4">
-    <div class="card-header bg-white font-weight-bold py-3">
-      <i class="fas fa-calendar-day mr-2 text-primary"></i> Today's Periods
+  <!-- Mobile-First Day Selector Chips (< 768px) -->
+  <div class="d-md-none">
+    <div class="day-selector-scroll" id="mobileDaySelector">
+      {% if matrix and matrix.working_days %}
+        {% for day in matrix.working_days %}
+          <button type="button" class="day-chip {% if forloop.first %}active{% endif %}" data-day-target="day-tab-{{ day.weekday }}">
+            <i class="far fa-calendar-alt mr-1"></i>{{ day.get_weekday_display }}
+          </button>
+        {% endfor %}
+      {% else %}
+        <span class="day-chip active">Today</span>
+      {% endif %}
+    </div>
+
+    <!-- Mobile Day Period Card Panels -->
+    <div id="mobileDayPanels" class="mb-4">
+      {% if matrix and matrix.working_days %}
+        {% for day in matrix.working_days %}
+          <div class="mobile-day-panel {% if not forloop.first %}d-none{% endif %}" id="day-tab-{{ day.weekday }}">
+            <div class="font-weight-bold text-dark mb-2 small text-uppercase" style="letter-spacing: 0.05em;">
+              <i class="fas fa-clock mr-1 text-primary"></i> {{ day.get_weekday_display }} Schedule
+            </div>
+            
+            {% for row in matrix.grid_rows %}
+              {% with cell=row.cells|slice:forloop.parentloop.counter0|last %}
+              {% endwith %}
+            {% endfor %}
+
+            <!-- Today's and Day Entries -->
+            {% if today_entries and forloop.first %}
+              {% for entry in today_entries %}
+                <div class="mobile-period-card">
+                  <div>
+                    <span class="period-time-badge">
+                      <i class="far fa-clock mr-1"></i>{{ entry.time_slot.start_time|time:"H:i" }} - {{ entry.time_slot.end_time|time:"H:i" }}
+                    </span>
+                    <div class="period-subject-title">{{ entry.subject.name }}</div>
+                    <div class="period-teacher-text"><i class="fas fa-user-tie mr-1"></i>{{ entry.teacher.name|default:"Assigned Faculty" }}</div>
+                  </div>
+                  <div>
+                    <span class="badge badge-light border text-muted">
+                      <i class="fas fa-door-open mr-1 text-primary"></i>{{ entry.room.name|default:"Classroom" }}
+                    </span>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="p-3 bg-white rounded border text-muted small text-center mb-2">
+                <i class="fas fa-book-reader mr-1 text-primary"></i> Classes scheduled according to weekly class matrix.
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="portal-card p-4 text-center text-muted">No timetable configured yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Today's Schedule Card (Always visible on Desktop) -->
+  <div class="portal-card mb-4 d-none d-md-block">
+    <div class="card-header bg-white font-weight-bold py-3 d-flex justify-content-between align-items-center">
+      <span><i class="fas fa-calendar-day mr-2 text-primary"></i> Today's Periods</span>
+      <span class="badge badge-primary">{{ today_entries|length }} Classes Today</span>
     </div>
     <div class="card-body p-0">
       {% if today_entries %}
@@ -47,8 +107,8 @@
     </div>
   </div>
 
-  <!-- Weekly Timetable Matrix -->
-  <div class="portal-card">
+  <!-- Full Weekly Timetable Matrix (Desktop >= 768px) -->
+  <div class="portal-card d-none d-md-block">
     <div class="card-header bg-white font-weight-bold py-3">
       <i class="fas fa-table mr-2 text-primary"></i> Full Weekly Timetable Grid
     </div>
@@ -97,4 +157,23 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function($) {
+    // Mobile Day Selector Chip Switching
+    $('#mobileDaySelector .day-chip').on('click', function(e) {
+      e.preventDefault();
+      var target = $(this).data('day-target');
+      $('#mobileDaySelector .day-chip').removeClass('active');
+      $(this).addClass('active');
+
+      if (target) {
+        $('.mobile-day-panel').addClass('d-none');
+        $('#' + target).removeClass('d-none');
+      }
+    });
+  })(jQuery);
+</script>
 {% endblock %}

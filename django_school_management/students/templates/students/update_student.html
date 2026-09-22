@@ -3,65 +3,74 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
-<section id="update-student" class="py-5">
+<section id="update-student" class="py-3 py-md-5">
   <div id="update-student-inner">
     <div class="container">
       <div class="row justify-content-center">
-        <div class="col-3">
-          <a href="{% url 'students:student_sis' pk=object.id %}">
-            <div class="card" style="width: 100%;">
-              {% if object.photo %}
-              <img class="card-img-top" src="{{ object.photo.url }}" style="max-height: 200px; object-fit: cover;">
-              {% elif object.admission_student and object.admission_student.photo %}
-              <img class="card-img-top" src="{{ object.admission_student.photo.url }}" style="max-height: 200px; object-fit: cover;">
-              {% endif %}
-              <div class="card-body bg-primary text-light">
-                <h5 class="card-title mb-0">
-                  {{ object.get_full_name }}
-                </h5>
+        <!-- Student Card (Mobile Stacked) -->
+        <div class="col-12 col-md-4 mb-4">
+          <div class="portal-card overflow-hidden shadow-sm">
+            {% if object.photo %}
+              <img class="card-img-top" src="{{ object.photo.url }}" style="max-height: 200px; width: 100%; object-fit: cover;">
+            {% elif object.admission_student and object.admission_student.photo %}
+              <img class="card-img-top" src="{{ object.admission_student.photo.url }}" style="max-height: 200px; width: 100%; object-fit: cover;">
+            {% else %}
+              <div class="p-4 text-center bg-light border-bottom">
+                <i class="fas fa-user-graduate fa-3x text-primary"></i>
               </div>
-              <ul class="list-group list-group-flush">
-                <li class="list-group-item">
-                  {% if object.grade_level %}
-                    {{ object.grade_level.name }}{% if object.section %} (Section {{ object.section.name }}){% endif %}
-                  {% elif object.admission_student and object.admission_student.choosen_department %}
-                    {{ object.admission_student.choosen_department }}
-                  {% else %}
-                    Student
-                  {% endif %}
-                </li>
-                <li class="list-group-item">
-                  Session: {{ object.academic_year.name|default:object.ac_session|default:'—' }}
-                </li>
-                <li class="list-group-item">
-                  {% if object.admission_number %}
-                    Admission No: {{ object.admission_number }}
-                  {% elif object.roll_number %}
-                    Roll: {{ object.roll_number }}
-                  {% elif object.batch %}
-                    Batch: {{ object.batch.number }}
-                  {% else %}
-                    ID: {{ object.temporary_id|default:object.id }}
-                  {% endif %}
-                </li>
-              </ul>
-              <div class="card-footer">
-                <a href="{% url 'students:student_sis' pk=object.id %}" class="btn btn-sm btn-dark">
-                  View Details
-                </a>
-              </div>
+            {% endif %}
+            <div class="card-body bg-primary text-light p-3">
+              <h5 class="card-title mb-0 font-weight-bold">
+                {{ object.get_full_name }}
+              </h5>
             </div>
-          </a>
+            <ul class="list-group list-group-flush small">
+              <li class="list-group-item">
+                {% if object.grade_level %}
+                  <strong>{{ object.grade_level.name }}{% if object.section %} (Section {{ object.section.name }}){% endif %}</strong>
+                {% elif object.admission_student and object.admission_student.choosen_department %}
+                  <strong>{{ object.admission_student.choosen_department }}</strong>
+                {% else %}
+                  Student
+                {% endif %}
+              </li>
+              <li class="list-group-item">
+                Session: <strong>{{ object.academic_year.name|default:object.ac_session|default:'—' }}</strong>
+              </li>
+              <li class="list-group-item">
+                {% if object.admission_number %}
+                  Admission No: <code>{{ object.admission_number }}</code>
+                {% elif object.roll_number %}
+                  Roll: <strong>{{ object.roll_number }}</strong>
+                {% else %}
+                  ID: {{ object.temporary_id|default:object.id }}
+                {% endif %}
+              </li>
+            </ul>
+            <div class="card-footer bg-white p-3">
+              <a href="{% url 'students:student_sis' pk=object.id %}" class="btn btn-sm btn-outline-primary btn-block font-weight-bold">
+                <i class="fas fa-id-card mr-1"></i> View SIS Profile
+              </a>
+            </div>
+          </div>
         </div>
-        <div class="col-8 py-5">
-          <div id="student-update-form">
-            <form class="sudent-update-form" method="post" action="">
+
+        <!-- Student Update Form -->
+        <div class="col-12 col-md-8">
+          <div class="portal-card p-3 p-md-4 shadow-sm">
+            <h4 class="font-weight-bold text-dark mb-1">Edit Student Record</h4>
+            <p class="text-muted small mb-4">Update student profile, enrollment, and guardian contact details.</p>
+            <form class="student-update-form" method="post" action="">
               {% csrf_token %}
               {{ form|crispy }}
-              <a href="{% url 'index_view' %}" class="btn btn-dark">
-                <i class="fas fa-arrow-left"></i> Back
-              </a>
-              <input class="btn btn-info" type="submit" value="Update Details">
+              <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top flex-wrap gap-2">
+                <a href="{% url 'students:all_student' %}" class="btn btn-outline-secondary mb-2 mb-sm-0">
+                  <i class="fas fa-arrow-left mr-1"></i> Back to Roster
+                </a>
+                <button class="btn btn-primary font-weight-bold px-4 mb-2 mb-sm-0" type="submit">
+                  <i class="fas fa-save mr-1"></i> Save Changes
+                </button>
+              </div>
             </form>
           </div>
         </div>

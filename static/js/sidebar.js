@@ -66,7 +66,9 @@
   $(document).on("click", "#sidebarToggle, #sidebar-toggle, .sidebar-toggle-btn, [data-toggle-sidebar]", function(e) {
     e.preventDefault();
     if ($(window).width() < 992) {
+      var isOpen = $("body").hasClass("sidebar-open");
       $("body").toggleClass("sidebar-open");
+      $(this).attr("aria-expanded", !isOpen);
     } else {
       $("body.app").toggleClass("is-collapsed");
     }
@@ -76,6 +78,23 @@
   $(document).on("click", ".sidebar-backdrop, #sidebar-close-btn", function(e) {
     e.preventDefault();
     $("body").removeClass("sidebar-open");
+    $("#sidebarToggle, .sidebar-toggle-btn").attr("aria-expanded", "false");
+  });
+
+  // ── Auto-close drawer on mobile navigation item click ──
+  $(document).on("click", ".sidebar .sidebar-menu a:not(.sidebar-dropdown-toggle)", function() {
+    if ($(window).width() < 992) {
+      $("body").removeClass("sidebar-open");
+      $("#sidebarToggle, .sidebar-toggle-btn").attr("aria-expanded", "false");
+    }
+  });
+
+  // ── Keyboard accessibility (ESC to close drawer) ──
+  $(document).on("keydown", function(e) {
+    if (e.key === "Escape" && $("body").hasClass("sidebar-open")) {
+      $("body").removeClass("sidebar-open");
+      $("#sidebarToggle, .sidebar-toggle-btn").attr("aria-expanded", "false");
+    }
   });
 
 })(jQuery);

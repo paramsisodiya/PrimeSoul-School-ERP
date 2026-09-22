@@ -6,45 +6,59 @@
 {% block portal_content %}
 <div class="container-fluid px-0">
 
-  <!-- Student Banner Card -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="portal-card p-4" style="background: linear-gradient(135deg, #0EA5E9 0%, #0369A1 100%); color: white;">
-        <div class="d-flex justify-content-between align-items-center flex-wrap">
-          <div class="d-flex align-items-center mb-2 mb-md-0">
-            <div class="rounded-circle bg-white text-info font-weight-bold d-flex align-items-center justify-content-center mr-3 shadow" style="width: 58px; height: 58px; font-size: 1.5rem;">
-              {{ student.first_name|first|upper }}
-            </div>
-            <div>
-              <h3 class="font-weight-bold mb-1">{{ student.name }}</h3>
-              <p class="text-white-50 small mb-0">
-                <span>Class: <strong>{{ student.grade_level.name }} - Section {{ student.section.name }}</strong></span>
-                <span class="mx-2">•</span>
-                <span>Roll No: <strong>{{ student.roll_number|default:"-" }}</strong></span>
-                <span class="mx-2">•</span>
-                <span>Adm No: <code>{{ student.admission_number|default:"-" }}</code></span>
-              </p>
-            </div>
-          </div>
-          <div>
-            <a href="{% url 'portal:student_profile' %}" class="btn btn-light btn-sm font-weight-bold">
-              <i class="fas fa-id-card mr-1"></i> My Profile
-            </a>
+  <!-- Mobile-First Student Hero Banner -->
+  <div class="student-hero-banner mb-3 mb-md-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap">
+      <div class="d-flex align-items-center mb-2 mb-sm-0" style="min-width: 0;">
+        <div class="student-avatar-box mr-3">
+          {{ student.first_name|first|upper }}
+        </div>
+        <div style="min-width: 0;">
+          <h3 class="student-hero-name text-truncate mb-0">{{ student.name }}</h3>
+          <div class="student-meta-chips">
+            <span class="student-meta-chip"><i class="fas fa-graduation-cap mr-1"></i>{{ student.grade_level.name }} - {{ student.section.name }}</span>
+            <span class="student-meta-chip"><i class="fas fa-hashtag mr-1"></i>Roll: {{ student.roll_number|default:"-" }}</span>
+            <span class="student-meta-chip"><i class="fas fa-id-badge mr-1"></i>Adm: {{ student.admission_number|default:"-" }}</span>
           </div>
         </div>
+      </div>
+      <div class="d-none d-sm-block">
+        <a href="{% url 'portal:student_profile' %}" class="btn btn-light btn-sm font-weight-bold shadow-sm">
+          <i class="fas fa-id-card mr-1 text-info"></i> My Profile
+        </a>
       </div>
     </div>
   </div>
 
-  <!-- KPI Grid -->
-  <div class="row mb-4">
+  <!-- Mobile Quick Actions Grid -->
+  <div class="mobile-quick-actions mb-3 mb-md-4">
+    <a href="{% url 'portal:student_attendance' %}" class="mobile-action-pill">
+      <i class="fas fa-calendar-check text-success"></i>
+      <span>Attendance</span>
+    </a>
+    <a href="{% url 'portal:student_timetable' %}" class="mobile-action-pill">
+      <i class="fas fa-clock text-primary"></i>
+      <span>Timetable</span>
+    </a>
+    <a href="{% url 'portal:student_results' %}" class="mobile-action-pill">
+      <i class="fas fa-award text-warning"></i>
+      <span>Results</span>
+    </a>
+    <a href="{% url 'portal:student_fees' %}" class="mobile-action-pill">
+      <i class="fas fa-receipt text-danger"></i>
+      <span>Fee Dues</span>
+    </a>
+  </div>
+
+  <!-- KPI Overview Grid -->
+  <div class="row mb-3 mb-md-4">
     <!-- Attendance -->
-    <div class="col-sm-6 col-lg-3 mb-3">
+    <div class="col-6 col-lg-3 mb-3">
       <div class="portal-card stat-widget h-100">
         <div>
-          <span class="text-muted small font-weight-bold text-uppercase">My Attendance</span>
+          <span class="text-muted small font-weight-bold text-uppercase d-block text-truncate">Attendance</span>
           <h3 class="font-weight-bold mt-1 mb-0 text-dark">{{ attendance.percentage }}%</h3>
-          <span class="small {% if attendance.today_record and attendance.today_record.status == 'PRESENT' %}text-success{% elif attendance.today_record and attendance.today_record.status == 'ABSENT' %}text-danger{% else %}text-muted{% endif %}">
+          <span class="small {% if attendance.today_record and attendance.today_record.status == 'PRESENT' %}text-success{% elif attendance.today_record and attendance.today_record.status == 'ABSENT' %}text-danger{% else %}text-muted{% endif %} font-weight-bold text-truncate d-block">
             Today: {{ attendance.today_status }}
           </span>
         </div>
@@ -55,16 +69,16 @@
     </div>
 
     <!-- Exam Performance -->
-    <div class="col-sm-6 col-lg-3 mb-3">
+    <div class="col-6 col-lg-3 mb-3">
       <div class="portal-card stat-widget h-100">
         <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Latest Exam</span>
+          <span class="text-muted small font-weight-bold text-uppercase d-block text-truncate">Latest Exam</span>
           {% if latest_result %}
             <h3 class="font-weight-bold mt-1 mb-0 text-dark">{{ latest_result.percentage }}%</h3>
             <span class="badge badge-success font-weight-bold">{{ latest_result.grade }} ({{ latest_result.status }})</span>
           {% else %}
             <h4 class="font-weight-bold mt-1 mb-0 text-muted">No Exams</h4>
-            <span class="text-muted small">Awaiting published results</span>
+            <span class="text-muted small text-truncate d-block">Awaiting release</span>
           {% endif %}
         </div>
         <div class="icon-box" style="background: #FEF3C7; color: #92400E;">
@@ -74,15 +88,15 @@
     </div>
 
     <!-- Library Pass -->
-    <div class="col-sm-6 col-lg-3 mb-3">
+    <div class="col-6 col-lg-3 mb-3">
       <div class="portal-card stat-widget h-100">
         <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Library Books</span>
+          <span class="text-muted small font-weight-bold text-uppercase d-block text-truncate">Library Books</span>
           <h3 class="font-weight-bold mt-1 mb-0 text-dark">
             {% if library %}{{ library.active_issues|length }} On Loan{% else %}0 Books{% endif %}
           </h3>
-          <span class="text-muted small">
-            {% if library and library.outstanding_fines > 0 %}<span class="text-danger">Fine: ₹{{ library.outstanding_fines }}</span>{% else %}No overdue fines{% endif %}
+          <span class="text-muted small text-truncate d-block">
+            {% if library and library.outstanding_fines > 0 %}<span class="text-danger">Fine: ₹{{ library.outstanding_fines }}</span>{% else %}No dues{% endif %}
           </span>
         </div>
         <div class="icon-box" style="background: #E0E7FF; color: #3730A3;">
@@ -91,14 +105,14 @@
       </div>
     </div>
 
-    <!-- Transport / Schedule -->
-    <div class="col-sm-6 col-lg-3 mb-3">
+    <!-- Classes Scheduled -->
+    <div class="col-6 col-lg-3 mb-3">
       <div class="portal-card stat-widget h-100">
         <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Today's Classes</span>
+          <span class="text-muted small font-weight-bold text-uppercase d-block text-truncate">Today's Classes</span>
           <h3 class="font-weight-bold mt-1 mb-0 text-dark">{{ timetable_today|length }} Periods</h3>
-          <span class="text-muted small">
-            {% if transport %}Bus Route: {{ transport.route.name }}{% else %}Self Commute{% endif %}
+          <span class="text-muted small text-truncate d-block">
+            {% if transport %}Bus: {{ transport.route.name }}{% else %}Self Commute{% endif %}
           </span>
         </div>
         <div class="icon-box" style="background: #F1F5F9; color: #475569;">
@@ -113,12 +127,33 @@
     <div class="col-lg-8 mb-4">
       <div class="portal-card mb-4">
         <div class="card-header bg-white font-weight-bold d-flex justify-content-between align-items-center py-3">
-          <span><i class="fas fa-clock mr-2 text-primary"></i> Today's Schedule</span>
+          <span><i class="fas fa-clock mr-2 text-primary"></i> Today's Class Schedule</span>
           <a href="{% url 'portal:student_timetable' %}" class="small font-weight-bold text-primary">Full Timetable <i class="fas fa-arrow-right ml-1"></i></a>
         </div>
-        <div class="card-body p-0">
+        <div class="card-body p-3 p-md-0">
           {% if timetable_today %}
-            <div class="table-responsive">
+            <!-- Mobile Periods Card View (< 768px) -->
+            <div class="d-md-none">
+              {% for entry in timetable_today %}
+                <div class="mobile-period-card">
+                  <div>
+                    <span class="period-time-badge">
+                      <i class="far fa-clock mr-1"></i>{{ entry.time_slot.start_time|time:"H:i" }} - {{ entry.time_slot.end_time|time:"H:i" }}
+                    </span>
+                    <div class="period-subject-title">{{ entry.subject.name }}</div>
+                    <div class="period-teacher-text"><i class="fas fa-user-tie mr-1"></i>{{ entry.teacher.name|default:"Assigned Faculty" }}</div>
+                  </div>
+                  <div>
+                    <span class="badge badge-light border text-muted" style="font-size: 0.75rem;">
+                      <i class="fas fa-door-open mr-1 text-primary"></i>{{ entry.room.name|default:"Classroom" }}
+                    </span>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+            <!-- Desktop Table (>= 768px) -->
+            <div class="table-responsive d-none d-md-block">
               <table class="table portal-table align-middle mb-0">
                 <thead>
                   <tr>
@@ -150,11 +185,42 @@
       <div class="portal-card">
         <div class="card-header bg-white font-weight-bold d-flex justify-content-between align-items-center py-3">
           <span><i class="fas fa-award mr-2 text-warning"></i> Recent Examination Results</span>
-          <a href="{% url 'portal:student_results' %}" class="small font-weight-bold text-primary">All Results & Reports <i class="fas fa-arrow-right ml-1"></i></a>
+          <a href="{% url 'portal:student_results' %}" class="small font-weight-bold text-primary">All Results <i class="fas fa-arrow-right ml-1"></i></a>
         </div>
-        <div class="card-body p-0">
+        <div class="card-body p-3 p-md-0">
           {% if results %}
-            <div class="table-responsive">
+            <!-- Mobile Scorecard Feed (< 768px) -->
+            <div class="d-md-none">
+              {% for item in results|slice:":3" %}
+                <div class="p-3 border rounded mb-2 bg-light">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                      <div class="font-weight-bold text-dark">{{ item.exam.name }}</div>
+                      <span class="badge badge-light border text-muted small">{{ item.exam.academic_year.name }}</span>
+                    </div>
+                    <span class="badge {% if item.result.result_status == 'PASSED' %}badge-success{% else %}badge-danger{% endif %} font-weight-bold">
+                      {{ item.status }}
+                    </span>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center small py-1">
+                    <span class="text-muted">Total Score:</span>
+                    <span class="font-weight-bold text-dark">{{ item.result.total_marks_obtained }} / {{ item.result.total_max_marks }} ({{ item.result.percentage }}%)</span>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center small py-1">
+                    <span class="text-muted">Overall Grade:</span>
+                    <span class="font-weight-bold text-success">{{ item.result.overall_grade }}</span>
+                  </div>
+                  <div class="mt-2 pt-2 border-top text-right">
+                    <a href="{% url 'examinations:report_card_pdf' item.result.id %}" class="btn btn-outline-primary btn-sm btn-block">
+                      <i class="fas fa-file-pdf mr-1"></i> Download PDF Report Card
+                    </a>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+            <!-- Desktop Table (>= 768px) -->
+            <div class="table-responsive d-none d-md-block">
               <table class="table portal-table align-middle mb-0">
                 <thead>
                   <tr>
@@ -213,7 +279,7 @@
                   <div class="d-flex justify-content-between small text-muted">
                     <span><i class="far fa-calendar-alt mr-1"></i> {{ notice.created|date:"d M Y" }}</span>
                     {% if notice.file %}
-                      <span class="badge badge-light border"><i class="fas fa-paperclip mr-1"></i> Attachment</span>
+                      <span class="badge badge-light border"><i class="fas fa-paperclip mr-1"></i> Doc</span>
                     {% endif %}
                   </div>
                 </li>
@@ -228,7 +294,7 @@
       <!-- Transport Card -->
       <div class="portal-card">
         <div class="card-header bg-white font-weight-bold py-3">
-          <i class="fas fa-bus mr-2 text-info"></i> Transport Assignment
+          <i class="fas fa-bus mr-2 text-info"></i> Transport Details
         </div>
         <div class="card-body p-3">
           {% if transport %}

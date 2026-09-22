@@ -1,0 +1,646 @@
+/* ==========================================================================
+   PrimeSoul School ERP — Mobile-First ERP Design System & Portal Stylesheet
+   Product: PrimeSoul School ERP
+   Owner: PrimeSoul Web Solutions
+   Target: Mobile-first responsive UX across phones (320px+), tablets, desktop
+   ========================================================================== */
+
+/* ─────────────────────────────────────────────────────────────
+   1. MOBILE-FIRST FOUNDATIONS & DESIGN TOKENS
+   ───────────────────────────────────────────────────────────── */
+:root {
+  --mobile-nav-height: 64px;
+  --mobile-header-height: 56px;
+  --touch-target-min: 44px;
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-top: env(safe-area-inset-top, 0px);
+
+  /* Primary Brand Tokens */
+  --ps-primary: #4F46E5;
+  --ps-primary-dark: #3730A3;
+  --ps-primary-light: #EEF2FF;
+  --ps-primary-border: #C7D2FE;
+  --ps-accent: #06B6D4;
+  
+  /* Neutral Slate Palette */
+  --ps-slate-50: #F8FAFC;
+  --ps-slate-100: #F1F5F9;
+  --ps-slate-200: #E2E8F0;
+  --ps-slate-300: #CBD5E1;
+  --ps-slate-400: #94A3B8;
+  --ps-slate-500: #64748B;
+  --ps-slate-600: #475569;
+  --ps-slate-700: #334155;
+  --ps-slate-800: #1E293B;
+  --ps-slate-900: #0F172A;
+
+  /* Status Colors */
+  --ps-success: #10B981;
+  --ps-success-bg: #DCFCE7;
+  --ps-success-text: #166534;
+  
+  --ps-danger: #EF4444;
+  --ps-danger-bg: #FEE2E2;
+  --ps-danger-text: #991B1B;
+  
+  --ps-warning: #F59E0B;
+  --ps-warning-bg: #FEF3C7;
+  --ps-warning-text: #92400E;
+  
+  --ps-info: #0284C7;
+  --ps-info-bg: #E0F2FE;
+  --ps-info-text: #075985;
+}
+
+/* Global anti-overflow rule */
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.portal-body {
+  padding-bottom: calc(var(--mobile-nav-height) + var(--safe-area-bottom) + 16px);
+  background-color: var(--ps-slate-50);
+}
+
+@media (min-width: 768px) {
+  body.portal-body {
+    padding-bottom: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   2. TOUCH-FRIENDLY INTERACTIVE CONTROLS (MIN 44PX)
+   ───────────────────────────────────────────────────────────── */
+.touch-target,
+.btn-touch,
+.form-control,
+.custom-select,
+.nav-link,
+.dropdown-item {
+  min-height: var(--touch-target-min);
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-touch {
+  justify-content: center;
+  padding: 0.65rem 1.25rem;
+  font-weight: 600;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  transition: all 0.15s ease;
+}
+
+.btn-touch:active {
+  transform: scale(0.98);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   3. MOBILE STICKY BOTTOM NAVIGATION BAR (PORTALS)
+   ───────────────────────────────────────────────────────────── */
+.portal-mobile-bottom-nav {
+  display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--mobile-nav-height) + var(--safe-area-bottom));
+  padding-bottom: var(--safe-area-bottom);
+  background: #FFFFFF;
+  border-top: 1px solid var(--ps-slate-200);
+  box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
+  z-index: 1050;
+  justify-content: space-around;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .portal-mobile-bottom-nav {
+    display: none !important;
+  }
+}
+
+.portal-bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--ps-slate-500);
+  text-decoration: none;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 4px 2px;
+  transition: color 0.15s ease;
+  min-width: 0;
+}
+
+.portal-bottom-nav-item i {
+  font-size: 1.25rem;
+  margin-bottom: 2px;
+  transition: transform 0.15s ease;
+}
+
+.portal-bottom-nav-item:hover,
+.portal-bottom-nav-item:focus {
+  color: var(--ps-primary);
+  text-decoration: none;
+}
+
+.portal-bottom-nav-item.active {
+  color: var(--ps-primary);
+  font-weight: 700;
+}
+
+.portal-bottom-nav-item.active i {
+  transform: translateY(-2px);
+}
+
+.portal-bottom-nav-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   4. MOBILE ACTION DRAWER / BOTTOM SHEET
+   ───────────────────────────────────────────────────────────── */
+.portal-bottom-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #FFFFFF;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -10px 25px rgba(15, 23, 42, 0.15);
+  z-index: 1060;
+  transform: translateY(100%);
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 1.25rem 1.25rem calc(1.5rem + var(--safe-area-bottom));
+}
+
+.portal-bottom-sheet.show {
+  transform: translateY(0);
+}
+
+.portal-sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--ps-slate-300);
+  border-radius: 2px;
+  margin: 0 auto 1.25rem;
+}
+
+.portal-sheet-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1055;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.portal-sheet-backdrop.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.portal-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.portal-sheet-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0.5rem;
+  background: var(--ps-slate-50);
+  border: 1px solid var(--ps-slate-200);
+  border-radius: 14px;
+  color: var(--ps-slate-800);
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.portal-sheet-item i {
+  font-size: 1.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.portal-sheet-item:hover,
+.portal-sheet-item:active {
+  background: var(--ps-primary-light);
+  border-color: var(--ps-primary-border);
+  color: var(--ps-primary);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   5. MOBILE STUDENT HERO BANNER & IDENTITY CARD
+   ───────────────────────────────────────────────────────────── */
+.student-hero-banner {
+  background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
+  color: #FFFFFF;
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25);
+}
+
+.student-hero-banner::after {
+  content: '';
+  position: absolute;
+  right: -20px;
+  bottom: -20px;
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.student-avatar-box {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #FFFFFF;
+  color: #0284C7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.student-hero-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 0.2rem;
+}
+
+.student-meta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+.student-meta-chip {
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   6. MOBILE QUICK ACTION TILES & HORIZONTAL SCROLL CAROUSELS
+   ───────────────────────────────────────────────────────────── */
+.mobile-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 360px) {
+  .mobile-quick-actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.mobile-action-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 0.25rem;
+  background: #FFFFFF;
+  border: 1px solid var(--ps-slate-200);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--ps-slate-800);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: all 0.15s ease;
+}
+
+.mobile-action-pill i {
+  font-size: 1.3rem;
+  margin-bottom: 0.35rem;
+}
+
+.mobile-action-pill:active {
+  background: var(--ps-primary-light);
+  border-color: var(--ps-primary-border);
+  color: var(--ps-primary);
+  transform: scale(0.97);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   7. DAY SELECTOR CHIPS & MOBILE TIMETABLE CARDS
+   ───────────────────────────────────────────────────────────── */
+.day-selector-scroll {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.day-selector-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.day-chip {
+  padding: 0.5rem 1rem;
+  background: #FFFFFF;
+  border: 1px solid var(--ps-slate-200);
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ps-slate-600);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.day-chip.active {
+  background: var(--ps-primary);
+  color: #FFFFFF;
+  border-color: var(--ps-primary);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+}
+
+.mobile-period-card {
+  background: #FFFFFF;
+  border: 1px solid var(--ps-slate-200);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+
+.mobile-period-card.current-period {
+  border-left: 4px solid var(--ps-primary);
+  background: #FAFAFE;
+}
+
+.period-time-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ps-slate-600);
+  background: var(--ps-slate-100);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  display: inline-block;
+  margin-bottom: 0.25rem;
+}
+
+.period-subject-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--ps-slate-900);
+  margin-bottom: 0.15rem;
+}
+
+.period-teacher-text {
+  font-size: 0.78rem;
+  color: var(--ps-slate-500);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   8. MOBILE ATTENDANCE FEED CARDS
+   ───────────────────────────────────────────────────────────── */
+.mobile-attendance-card {
+  background: #FFFFFF;
+  border: 1px solid var(--ps-slate-200);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.att-date-col {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.att-day-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--ps-slate-100);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: var(--ps-slate-700);
+  line-height: 1;
+}
+
+.att-day-num {
+  font-size: 1rem;
+}
+
+.att-day-name {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  color: var(--ps-slate-400);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   9. MOBILE TEACHER ATTENDANCE REGISTER CARDS
+   ───────────────────────────────────────────────────────────── */
+.teacher-student-row-card {
+  background: #FFFFFF;
+  border: 1px solid var(--ps-slate-200);
+  border-radius: 12px;
+  padding: 0.9rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+
+.attendance-segmented-control {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.35rem;
+  margin-top: 0.65rem;
+}
+
+.attendance-segment-btn {
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--ps-slate-200);
+  background: #FFFFFF;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.attendance-segment-btn.opt-present.active,
+.attendance-segment-btn.opt-present:has(input:checked) {
+  background: #DCFCE7 !important;
+  color: #166534 !important;
+  border-color: #86EFAC !important;
+  font-weight: 800;
+}
+
+.attendance-segment-btn.opt-absent.active,
+.attendance-segment-btn.opt-absent:has(input:checked) {
+  background: #FEE2E2 !important;
+  color: #991B1B !important;
+  border-color: #FCA5A5 !important;
+  font-weight: 800;
+}
+
+.attendance-segment-btn.opt-late.active,
+.attendance-segment-btn.opt-late:has(input:checked) {
+  background: #FEF3C7 !important;
+  color: #92400E !important;
+  border-color: #FCD34D !important;
+  font-weight: 800;
+}
+
+.attendance-segment-btn.opt-half.active,
+.attendance-segment-btn.opt-half:has(input:checked) {
+  background: #E0E7FF !important;
+  color: #3730A3 !important;
+  border-color: #A5B4FC !important;
+  font-weight: 800;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   10. MOBILE STUDENT REGISTRY CARD VIEW (ADMIN ERP)
+   ───────────────────────────────────────────────────────────── */
+.mobile-student-card {
+  background: #FFFFFF;
+  border: 1px solid var(--ps-slate-200);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.mobile-student-card:hover {
+  border-color: var(--ps-primary-border);
+}
+
+.mobile-card-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--ps-slate-100);
+}
+
+.mobile-card-actions .btn {
+  flex: 1;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.45rem 0.5rem;
+  min-height: 38px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   11. STICKY MOBILE ACTION BAR (FOR SUBMITTING FORMS)
+   ───────────────────────────────────────────────────────────── */
+.mobile-sticky-action-bar {
+  position: sticky;
+  bottom: var(--safe-area-bottom);
+  background: #FFFFFF;
+  border-top: 1px solid var(--ps-slate-200);
+  padding: 0.75rem 1rem;
+  box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.08);
+  z-index: 1045;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (max-width: 767.98px) {
+  .portal-sticky-submit-bar {
+    position: fixed;
+    bottom: calc(var(--mobile-nav-height) + var(--safe-area-bottom));
+    left: 0;
+    right: 0;
+    background: #FFFFFF;
+    border-top: 1px solid var(--ps-slate-200);
+    padding: 0.75rem 1rem;
+    box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.08);
+    z-index: 1048;
+    display: flex;
+    gap: 0.75rem;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   12. RESPONSIVE HEADER ADAPTATIONS
+   ───────────────────────────────────────────────────────────── */
+.school-meta-pill {
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 480px) {
+  .school-meta-pill {
+    max-width: 140px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .school-meta-pill {
+    max-width: 110px;
+    font-size: 0.75rem;
+  }
+}

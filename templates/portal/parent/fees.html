@@ -14,40 +14,40 @@
 
   <!-- Financial Summary Cards -->
   <div class="row mb-4">
-    <div class="col-sm-4 mb-3">
-      <div class="portal-card stat-widget h-100">
+    <div class="col-6 col-md-4 mb-3">
+      <div class="portal-card stat-widget h-100 p-3">
         <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Total Fee Assigned</span>
-          <h2 class="font-weight-bold mt-1 mb-0 text-dark">₹{{ total_payable }}</h2>
-          <span class="small text-muted">Annual charges & dues</span>
+          <span class="text-muted small font-weight-bold text-uppercase d-block" style="font-size: 0.72rem;">Total Fee</span>
+          <h3 class="font-weight-bold mt-1 mb-0 text-dark">₹{{ total_payable }}</h3>
+          <span class="small text-muted" style="font-size: 0.7rem;">Assigned dues</span>
         </div>
-        <div class="icon-box" style="background: #EEF2FF; color: #4F46E5;">
+        <div class="icon-box" style="background: #EEF2FF; color: #4F46E5; width: 36px; height: 36px; font-size: 1rem;">
           <i class="fas fa-file-invoice"></i>
         </div>
       </div>
     </div>
 
-    <div class="col-sm-4 mb-3">
-      <div class="portal-card stat-widget h-100">
+    <div class="col-6 col-md-4 mb-3">
+      <div class="portal-card stat-widget h-100 p-3">
         <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Total Paid</span>
-          <h2 class="font-weight-bold mt-1 mb-0 text-success">₹{{ total_paid }}</h2>
-          <span class="small text-muted">Realized payments</span>
+          <span class="text-muted small font-weight-bold text-uppercase d-block" style="font-size: 0.72rem;">Total Paid</span>
+          <h3 class="font-weight-bold mt-1 mb-0 text-success">₹{{ total_paid }}</h3>
+          <span class="small text-muted" style="font-size: 0.7rem;">Realized</span>
         </div>
-        <div class="icon-box" style="background: #DCFCE7; color: #166534;">
+        <div class="icon-box" style="background: #DCFCE7; color: #166534; width: 36px; height: 36px; font-size: 1rem;">
           <i class="fas fa-check-circle"></i>
         </div>
       </div>
     </div>
 
-    <div class="col-sm-4 mb-3">
-      <div class="portal-card stat-widget h-100">
+    <div class="col-12 col-md-4 mb-3">
+      <div class="portal-card stat-widget h-100 p-3">
         <div>
-          <span class="text-muted small font-weight-bold text-uppercase">Outstanding Balance</span>
-          <h2 class="font-weight-bold mt-1 mb-0 {% if total_outstanding > 0 %}text-danger{% else %}text-success{% endif %}">₹{{ total_outstanding }}</h2>
-          <span class="small text-muted">Current pending dues</span>
+          <span class="text-muted small font-weight-bold text-uppercase d-block" style="font-size: 0.72rem;">Outstanding</span>
+          <h3 class="font-weight-bold mt-1 mb-0 {% if total_outstanding > 0 %}text-danger{% else %}text-success{% endif %}">₹{{ total_outstanding }}</h3>
+          <span class="small text-muted" style="font-size: 0.7rem;">Pending balance</span>
         </div>
-        <div class="icon-box" style="background: #FEE2E2; color: #991B1B;">
+        <div class="icon-box" style="background: #FEE2E2; color: #991B1B; width: 36px; height: 36px; font-size: 1rem;">
           <i class="fas fa-exclamation-circle"></i>
         </div>
       </div>
@@ -61,7 +61,8 @@
     </div>
     <div class="card-body p-0">
       {% if installments %}
-        <div class="table-responsive">
+        <!-- Desktop Table (>= 768px) -->
+        <div class="table-responsive d-none d-md-block">
           <table class="table portal-table align-middle mb-0">
             <thead>
               <tr>
@@ -95,6 +96,28 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Mobile Feed (< 768px) -->
+        <div class="d-md-none p-3">
+          {% for inst in installments %}
+            <div class="p-3 mb-2 rounded bg-light border">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="font-weight-bold text-dark">{{ inst.installment_name }}</span>
+                <span class="portal-badge {% if inst.status == 'PAID' %}badge-paid{% elif inst.status == 'PARTIAL' %}badge-partial{% elif inst.status == 'OVERDUE' %}badge-overdue{% else %}badge-pending{% endif %}">
+                  {{ inst.get_status_display }}
+                </span>
+              </div>
+              <div class="d-flex justify-content-between text-muted small mb-2">
+                <span>Due: {{ inst.due_date|date:"d M Y" }}</span>
+                <span>Payable: <strong class="text-dark">₹{{ inst.payable_amount }}</strong></span>
+              </div>
+              <div class="d-flex justify-content-between pt-2 border-top small">
+                <span>Paid: <span class="text-success font-weight-bold">₹{{ inst.paid_amount }}</span></span>
+                <span>Balance: <span class="font-weight-bold {% if inst.balance_amount > 0 %}text-danger{% else %}text-success{% endif %}">₹{{ inst.balance_amount }}</span></span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
       {% else %}
         <div class="p-4 text-center text-muted">No installments assigned.</div>
       {% endif %}
@@ -111,7 +134,8 @@
         </div>
         <div class="card-body p-0">
           {% if invoices %}
-            <div class="table-responsive">
+            <!-- Desktop Table (>= 768px) -->
+            <div class="table-responsive d-none d-md-block">
               <table class="table portal-table align-middle mb-0">
                 <thead>
                   <tr>
@@ -137,6 +161,24 @@
                 </tbody>
               </table>
             </div>
+
+            <!-- Mobile Card Feed (< 768px) -->
+            <div class="d-md-none p-3">
+              {% for inv in invoices %}
+                <div class="p-3 mb-2 rounded bg-light border d-flex justify-content-between align-items-center">
+                  <div>
+                    <code class="d-block font-weight-bold">{{ inv.invoice_number }}</code>
+                    <span class="text-muted small">{{ inv.invoice_date|date:"d M Y" }}</span>
+                  </div>
+                  <div class="text-right">
+                    <div class="font-weight-bold text-dark">₹{{ inv.total }}</div>
+                    <span class="portal-badge {% if inv.status == 'PAID' %}badge-paid{% elif inv.status == 'PARTIAL' %}badge-partial{% elif inv.status == 'OVERDUE' %}badge-overdue{% else %}badge-pending{% endif %}">
+                      {{ inv.get_status_display }}
+                    </span>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
           {% else %}
             <div class="p-4 text-center text-muted small">No invoices generated yet.</div>
           {% endif %}
@@ -152,7 +194,8 @@
         </div>
         <div class="card-body p-0">
           {% if receipts %}
-            <div class="table-responsive">
+            <!-- Desktop Table (>= 768px) -->
+            <div class="table-responsive d-none d-md-block">
               <table class="table portal-table align-middle mb-0">
                 <thead>
                   <tr>
@@ -183,6 +226,26 @@
                   {% endfor %}
                 </tbody>
               </table>
+            </div>
+
+            <!-- Mobile Card Feed (< 768px) -->
+            <div class="d-md-none p-3">
+              {% for rcpt in receipts %}
+                <div class="p-3 mb-2 rounded bg-light border d-flex justify-content-between align-items-center">
+                  <div>
+                    <code class="d-block font-weight-bold">{{ rcpt.receipt_number }}</code>
+                    <span class="text-muted small">{{ rcpt.receipt_date|date:"d M Y" }} &bull; {{ rcpt.payment_method }}</span>
+                  </div>
+                  <div class="text-right">
+                    <div class="font-weight-bold text-success mb-1">₹{{ rcpt.amount }}</div>
+                    {% if rcpt.generated_pdf %}
+                      <a href="{{ rcpt.generated_pdf.url }}" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2">
+                        <i class="fas fa-file-pdf mr-1"></i> Receipt
+                      </a>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endfor %}
             </div>
           {% else %}
             <div class="p-4 text-center text-muted small">No payment receipts available yet.</div>
