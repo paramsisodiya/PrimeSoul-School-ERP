@@ -7,7 +7,15 @@
     <div class="sidebar-logo">
       <a class="sidebar-brand" href="{% url 'index_view' %}">
         <div class="sidebar-brand-logo">
-          <i class="fas fa-graduation-cap"></i>
+          {% if school and school.logo %}
+            <img src="{{ school.logo.url }}" alt="{{ school.name }}" style="max-height: 36px; max-width: 36px; object-fit: contain; border-radius: 6px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';" />
+            <i class="fas fa-graduation-cap" style="display: none;"></i>
+          {% elif request_institute and request_institute.logo %}
+            <img src="{{ request_institute.logo.url }}" alt="{{ request_institute.name }}" style="max-height: 36px; max-width: 36px; object-fit: contain; border-radius: 6px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';" />
+            <i class="fas fa-graduation-cap" style="display: none;"></i>
+          {% else %}
+            <i class="fas fa-graduation-cap"></i>
+          {% endif %}
         </div>
         <div class="sidebar-brand-text">
           <div class="sidebar-brand-title">

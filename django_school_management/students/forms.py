@@ -290,9 +290,34 @@ class StudentUpdateForm(forms.ModelForm):
     class Meta:
         model = Student
         fields = (
+            'first_name',
+            'last_name',
+            'admission_number',
+            'roll_number',
+            'grade_level',
+            'section',
+            'academic_year',
+            'emergency_contact_number',
             'roll',
             'registration_number',
             'semester',
             'guardian_mobile',
-            'is_alumni', 'is_dropped'
+            'is_alumni',
+            'is_dropped'
         )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from django_school_management.academics.models import GradeLevel, Section, AcademicYear
+        if self.instance and self.instance.school_id:
+            school = self.instance.school
+            if 'grade_level' in self.fields:
+                self.fields['grade_level'].queryset = GradeLevel.objects.filter(school=school)
+            if 'section' in self.fields:
+                self.fields['section'].queryset = Section.objects.filter(school=school)
+            if 'academic_year' in self.fields:
+                self.fields['academic_year'].queryset = AcademicYear.objects.filter(school=school)
+        for f in ['roll', 'registration_number', 'semester', 'guardian_mobile', 'grade_level', 'section', 'academic_year', 'emergency_contact_number']:
+            if f in self.fields:
+                self.fields[f].required = False
+

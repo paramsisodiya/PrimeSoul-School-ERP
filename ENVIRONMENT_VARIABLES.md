@@ -32,9 +32,13 @@ PrimeSoul School ERP strictly adheres to **Twelve-Factor App** principles for co
 | **Redis** | `REDIS_PORT` | **YES** | `6379` | Redis server port. |
 | **Celery** | `CELERY_BROKER_URL` | **YES** | `redis://localhost:6379/1` | Redis URL for Celery message queue. |
 | **Celery** | `CELERY_RESULT_BACKEND` | Optional | `redis://localhost:6379/2` | Redis URL for Celery result storage. |
-| **Security** | `SECURE_SSL_REDIRECT` | **YES** | `True` | Enforces HTTP to HTTPS redirection. |
-| **Security** | `SESSION_COOKIE_SECURE` | **YES** | `True` | Restricts session cookies to HTTPS connections. |
 | **Security** | `CSRF_COOKIE_SECURE` | **YES** | `True` | Restricts CSRF cookies to HTTPS connections. |
+| **Storage** | `USE_S3` | Optional | `False` | Enables S3/Cloud persistent media storage. |
+| **Storage** | `AWS_STORAGE_BUCKET_NAME` | Conditional | *None* | S3 / R2 / Supabase Storage bucket name. |
+| **Storage** | `AWS_ACCESS_KEY_ID` | Conditional | *None* | AWS / R2 S3 access key. |
+| **Storage** | `AWS_SECRET_ACCESS_KEY` | Conditional | *None* | AWS / R2 S3 secret key. |
+| **Storage** | `AWS_S3_REGION_NAME` | Optional | *None* | AWS region (e.g. `ap-south-1`). |
+| **Storage** | `AWS_S3_ENDPOINT_URL` | Optional | *None* | Endpoint URL for Cloudflare R2, MinIO, Supabase. |
 | **Email** | `EMAIL_HOST` | **YES** | `smtp.gmail.com` | Outgoing SMTP server hostname. |
 | **Email** | `EMAIL_PORT` | **YES** | `587` | SMTP server port. |
 | **Email** | `EMAIL_HOST_USER` | **YES** | *None* | SMTP username or API key. |

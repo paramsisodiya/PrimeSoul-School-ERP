@@ -20,13 +20,33 @@
         <div>
           {% if request_institute and request_institute.logo %}
           <img
-            class="mx-auto h-12 w-auto"
+            class="mx-auto h-12 w-auto object-contain"
             src="{{ request_institute.logo.url }}"
             alt="{{ request_institute.name }}"
+            onerror="this.style.display='none'; document.getElementById('login-logo-fallback').style.display='flex';"
           />
+          <div id="login-logo-fallback" style="display: none;" class="mx-auto h-12 w-12 bg-indigo-600 rounded-full items-center justify-center shadow">
+            <span class="text-white text-xl font-bold">{{ request_institute.name|slice:":1"|default:"P" }}</span>
+          </div>
+          {% elif school and school.logo %}
+          <img
+            class="mx-auto h-12 w-auto object-contain"
+            src="{{ school.logo.url }}"
+            alt="{{ school.name }}"
+            onerror="this.style.display='none'; document.getElementById('login-logo-fallback').style.display='flex';"
+          />
+          <div id="login-logo-fallback" style="display: none;" class="mx-auto h-12 w-12 bg-indigo-600 rounded-full items-center justify-center shadow">
+            <span class="text-white text-xl font-bold">{{ school.name|slice:":1"|default:"P" }}</span>
+          </div>
           {% else %}
           <div class="mx-auto h-12 w-12 bg-indigo-600 rounded-full flex items-center justify-center shadow">
-            <span class="text-white text-xl font-bold">P</span>
+            {% if request_institute and request_institute.name %}
+              <span class="text-white text-xl font-bold">{{ request_institute.name|slice:":1" }}</span>
+            {% elif school and school.name %}
+              <span class="text-white text-xl font-bold">{{ school.name|slice:":1" }}</span>
+            {% else %}
+              <span class="text-white text-xl font-bold">P</span>
+            {% endif %}
           </div>
           {% endif %}
           <div class="text-center mt-2 text-xs uppercase tracking-wider font-semibold text-indigo-600">PrimeSoul School ERP</div>

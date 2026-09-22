@@ -24,9 +24,11 @@
       <table class="table table-bordered table-hover" id="studentsDataTable">
         <thead>
           <tr>
-            <th scope="col">ID</th>
+            <th scope="col">Admission / ID</th>
             <th scope="col">Name</th>
-            <th scope="col">{{ department_label }}</th>
+            <th scope="col">Class &amp; Section</th>
+            <th scope="col">Roll</th>
+            <th scope="col">Session</th>
             <th scope="col">Action</th>
           </tr>
         </thead>
@@ -36,23 +38,47 @@
             <tr>
               <th scope="row">
                 <a href="{% url 'students:student_sis' pk=student.id %}">
-                  {{ student.temporary_id }}
+                  {{ student.admission_number|default:student.temporary_id|default:student.id }}
                 </a>
               </th>
               <td>
                 <a href="{% url 'students:student_sis' pk=student.id %}">
-                  {% if student.admission_student.photo %}<img src="{{ student.admission_student.photo.url }}" class="mr-2 rounded-circle" height="24" width="24" alt="">{% endif %}
-                  {{ student.admission_student.name }}
+                  {% if student.photo %}
+                    <img src="{{ student.photo.url }}" class="mr-2 rounded-circle" height="24" width="24" alt="{{ student.get_full_name }}" style="object-fit: cover;">
+                  {% elif student.admission_student and student.admission_student.photo %}
+                    <img src="{{ student.admission_student.photo.url }}" class="mr-2 rounded-circle" height="24" width="24" alt="{{ student.admission_student.name }}" style="object-fit: cover;">
+                  {% endif %}
+                  {{ student.get_full_name }}
                 </a>
               </td>
               <td>
                 <a href="{% url 'students:student_sis' pk=student.id %}">
-                  {{ student.admission_student.choosen_department.name }}
+                  {% if student.grade_level %}
+                    {{ student.grade_level.name }}{% if student.section %} - Section {{ student.section.name }}{% endif %}
+                  {% elif student.admission_student and student.admission_student.choosen_department %}
+                    {{ student.admission_student.choosen_department.name }}
+                  {% elif student.department %}
+                    {{ student.department.name }}
+                  {% else %}
+                    —
+                  {% endif %}
                 </a>
               </td>
               <td>
-                <a href="{% url 'students:student_sis' pk=student.id %}" class="btn btn-sm btn-outline-primary mr-1"><i class="fas fa-info-circle"></i></a>
-                <a href="{% url 'students:update_student' pk=student.id %}" class="btn btn-sm btn-primary">
+                {{ student.roll_number|default:student.roll|default:'—' }}
+              </td>
+              <td>
+                {% if student.academic_year %}
+                  {{ student.academic_year.name }}
+                {% elif student.ac_session %}
+                  {{ student.ac_session }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'students:student_sis' pk=student.id %}" class="btn btn-sm btn-outline-primary mr-1" title="View Profile"><i class="fas fa-info-circle"></i></a>
+                <a href="{% url 'students:update_student' pk=student.id %}" class="btn btn-sm btn-primary" title="Edit Student">
                   <i class="fas fa-edit"></i>
                 </a>
               </td>
@@ -60,7 +86,7 @@
             {% endfor %}
           {% else %}
             <tr>
-              <td colspan="4" class="text-center text-muted py-4">
+              <td colspan="6" class="text-center text-muted py-4">
                 No Student Data Found
               </td>
             </tr>

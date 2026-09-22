@@ -14,22 +14,34 @@
   <div class="card-body">
     <div class="row align-items-center">
       <div class="col-auto">
-        {% if student.admission_student.photo %}
-        <img src="{{ student.admission_student.photo.url }}" alt="" class="rounded" width="100" height="100" style="object-fit: cover;">
+        {% if student.photo %}
+        <img src="{{ student.photo.url }}" alt="{{ student.get_full_name }}" class="rounded" width="100" height="100" style="object-fit: cover;">
+        {% elif student.admission_student and student.admission_student.photo %}
+        <img src="{{ student.admission_student.photo.url }}" alt="{{ student.admission_student.name }}" class="rounded" width="100" height="100" style="object-fit: cover;">
         {% else %}
         <div class="rounded bg-light d-flex align-items-center justify-content-center" style="width:100px;height:100px;"><i class="fas fa-user fa-3x text-muted"></i></div>
         {% endif %}
       </div>
       <div class="col">
-        <h4 class="mb-1">{{ student.admission_student.name }}</h4>
+        <h4 class="mb-1">{{ student.get_full_name }}</h4>
         <p class="text-muted mb-0">
-          {{ student.admission_student.choosen_department }} · {{ student.semester }} · Session {{ student.ac_session }}
+          {% if student.grade_level %}
+            {{ student.grade_level.name }}{% if student.section %} (Section {{ student.section.name }}){% endif %}
+          {% elif student.admission_student and student.admission_student.choosen_department %}
+            {{ student.admission_student.choosen_department }}
+          {% endif %}
+          {% if student.semester %} · {{ student.semester }}{% endif %}
+          {% if student.academic_year %}
+            · Session {{ student.academic_year.name }}
+          {% elif student.ac_session %}
+            · Session {{ student.ac_session }}
+          {% endif %}
         </p>
         <p class="mb-0 small">
-          {% if student.temporary_id %}ID: {{ student.temporary_id }}{% endif %}
-          {% if student.roll %} · Roll: {{ student.roll }}{% endif %}
+          {% if student.admission_number %}Admission No: {{ student.admission_number }}{% elif student.temporary_id %}ID: {{ student.temporary_id }}{% endif %}
+          {% if student.roll_number %} · Roll: {{ student.roll_number }}{% elif student.roll %} · Roll: {{ student.roll }}{% endif %}
           {% if student.registration_number %} · Reg: {{ student.registration_number }}{% endif %}
-          {% if student.admission_student.mobile_number %} · {{ student.admission_student.mobile_number }}{% endif %}
+          {% if student.emergency_contact_number %} · {{ student.emergency_contact_number }}{% elif student.guardian_mobile %} · {{ student.guardian_mobile }}{% elif student.admission_student and student.admission_student.mobile_number %} · {{ student.admission_student.mobile_number }}{% endif %}
         </p>
       </div>
       <div class="col-auto">

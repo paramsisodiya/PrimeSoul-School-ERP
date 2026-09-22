@@ -8,29 +8,45 @@
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-3">
-          <a href="{% url 'students:student_sis' pk=student.id %}">
+          <a href="{% url 'students:student_sis' pk=object.id %}">
             <div class="card" style="width: 100%;">
-              {% if object.admission_student.photo %}
-              <img class="card-img-top" src="{{ object.admission_student.photo.url }}">
+              {% if object.photo %}
+              <img class="card-img-top" src="{{ object.photo.url }}" style="max-height: 200px; object-fit: cover;">
+              {% elif object.admission_student and object.admission_student.photo %}
+              <img class="card-img-top" src="{{ object.admission_student.photo.url }}" style="max-height: 200px; object-fit: cover;">
               {% endif %}
               <div class="card-body bg-primary text-light">
-                <h5 class="card-title">
-                  {{ object.admission_student.name }}
+                <h5 class="card-title mb-0">
+                  {{ object.get_full_name }}
                 </h5>
               </div>
               <ul class="list-group list-group-flush">
                 <li class="list-group-item">
-                  {{ object.admission_student.choosen_department }}
+                  {% if object.grade_level %}
+                    {{ object.grade_level.name }}{% if object.section %} (Section {{ object.section.name }}){% endif %}
+                  {% elif object.admission_student and object.admission_student.choosen_department %}
+                    {{ object.admission_student.choosen_department }}
+                  {% else %}
+                    Student
+                  {% endif %}
                 </li>
                 <li class="list-group-item">
-                  Session: {{ object.ac_session }}
+                  Session: {{ object.academic_year.name|default:object.ac_session|default:'—' }}
                 </li>
                 <li class="list-group-item">
-                  Batch: {{ object.batch.number }}
+                  {% if object.admission_number %}
+                    Admission No: {{ object.admission_number }}
+                  {% elif object.roll_number %}
+                    Roll: {{ object.roll_number }}
+                  {% elif object.batch %}
+                    Batch: {{ object.batch.number }}
+                  {% else %}
+                    ID: {{ object.temporary_id|default:object.id }}
+                  {% endif %}
                 </li>
               </ul>
               <div class="card-footer">
-                <a href="{% url 'students:student_sis' pk=student.id %}" class="btn btn-sm btn-dark">
+                <a href="{% url 'students:student_sis' pk=object.id %}" class="btn btn-sm btn-dark">
                   View Details
                 </a>
               </div>

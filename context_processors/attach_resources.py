@@ -20,9 +20,20 @@ def attach_institute_data_ctx_processor(request):
             school = getattr(request.user, 'school', None)
     if not institute:
         try:
-            institute = InstituteProfile.objects.get(active=True)
-        except (InstituteProfile.DoesNotExist, Exception):
+            if school:
+                institute = InstituteProfile.objects.filter(name=school.name).first()
+            if not institute:
+                institute = InstituteProfile.objects.filter(active=True).first()
+        except Exception:
             institute = None
+    if not school and institute:
+        try:
+            from django_school_management.tenants.models import School
+            school = School.objects.filter(name=institute.name).first()
+            if not school:
+                school = School.objects.filter(is_active=True).first()
+        except Exception:
+            school = None
             
     is_demo_env = getattr(settings, 'IS_DEMO_ENV', False) or getattr(settings, 'DEBUG', False)
     

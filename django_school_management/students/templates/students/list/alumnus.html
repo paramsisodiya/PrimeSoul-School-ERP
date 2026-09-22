@@ -63,14 +63,27 @@
           {% for alumni in filter.qs %}
             <tr>
               <td>
-                {% if alumni.photo %}<img src="{{ alumni.photo.url }}" class="mr-2 rounded-circle" height="24" width="24" alt="{{ alumni.admission_student.name }}">{% endif %}
-                {{ alumni.admission_student.name }}
+                {% if alumni.photo %}
+                  <img src="{{ alumni.photo.url }}" class="mr-2 rounded-circle" height="24" width="24" alt="{{ alumni.get_full_name }}" style="object-fit: cover;">
+                {% elif alumni.admission_student and alumni.admission_student.photo %}
+                  <img src="{{ alumni.admission_student.photo.url }}" class="mr-2 rounded-circle" height="24" width="24" alt="{{ alumni.admission_student.name }}" style="object-fit: cover;">
+                {% endif %}
+                {{ alumni.get_full_name }}
               </td>
               <td>
-                {{ alumni.admission_student.choosen_department.name }}
+                {% if alumni.grade_level %}
+                  {{ alumni.grade_level.name }}{% if alumni.section %} - Section {{ alumni.section.name }}{% endif %}
+                {% elif alumni.admission_student and alumni.admission_student.choosen_department %}
+                  {{ alumni.admission_student.choosen_department.name }}
+                {% elif alumni.department %}
+                  {{ alumni.department.name }}
+                {% else %}
+                  —
+                {% endif %}
               </td>
               <td>
-                <a href="{% url 'students:update_student' pk=alumni.id %}" class="btn btn-sm btn-primary">
+                <a href="{% url 'students:student_sis' pk=alumni.id %}" class="btn btn-sm btn-outline-primary mr-1" title="View Profile"><i class="fas fa-info-circle"></i></a>
+                <a href="{% url 'students:update_student' pk=alumni.id %}" class="btn btn-sm btn-primary" title="Edit Student">
                   <i class="fas fa-edit"></i>
                 </a>
               </td>

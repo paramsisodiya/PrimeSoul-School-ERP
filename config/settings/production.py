@@ -17,14 +17,35 @@ if 'whitenoise.runserver_nostatic' not in DEFAULT_APPS:
     DEFAULT_APPS.insert(0, 'whitenoise.runserver_nostatic')
 INSTALLED_APPS = DEFAULT_APPS + LOCAL_APPS + THIRD_PARTY_APPS
 
-STORAGES = {
-    "default": {
-        "BACKEND": env('DEFAULT_FILE_STORAGE_BACKEND', default="django.core.files.storage.FileSystemStorage"),
-    },
-    "staticfiles": {
-        "BACKEND": "django_school_management.utils.storage.ResilientCompressedManifestStaticFilesStorage",
-    },
-}
+if USE_S3 and AWS_STORAGE_BUCKET_NAME:
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "bucket_name": AWS_STORAGE_BUCKET_NAME,
+                "access_key": AWS_ACCESS_KEY_ID or None,
+                "secret_key": AWS_SECRET_ACCESS_KEY or None,
+                "region_name": AWS_S3_REGION_NAME or None,
+                "endpoint_url": AWS_S3_ENDPOINT_URL or None,
+                "custom_domain": AWS_S3_CUSTOM_DOMAIN or None,
+                "file_overwrite": AWS_S3_FILE_OVERWRITE,
+                "default_acl": AWS_DEFAULT_ACL,
+                "querystring_auth": AWS_QUERYSTRING_AUTH,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "django_school_management.utils.storage.ResilientCompressedManifestStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": env('DEFAULT_FILE_STORAGE_BACKEND', default="django.core.files.storage.FileSystemStorage"),
+        },
+        "staticfiles": {
+            "BACKEND": "django_school_management.utils.storage.ResilientCompressedManifestStaticFilesStorage",
+        },
+    }
 
 # Allow WhiteNoise to skip missing optional third-party assets in vendor CSS without throwing 500
 WHITENOISE_MANIFEST_STRICT = env.bool('WHITENOISE_MANIFEST_STRICT', default=False)

@@ -3,10 +3,14 @@
 <nav class="navbar navbar-expand-md fixed-top scrolling-navbar">
     <div class="container">
           <a href="/" class="navbar-brand">
-            <img src="{% if request_institute.logo %}{{ request_institute.logo.url }}{% else %}{% static 'landing/img/footer-logo.png' %}{% endif %}"
-              alt="{{ request_institute.name }}"
-              height="60">
-            </a>
+            {% if request_institute and request_institute.logo %}
+              <img src="{{ request_institute.logo.url }}" alt="{{ request_institute.name }}" height="60" style="max-height: 60px; object-fit: contain;" onerror="this.onerror=null; this.src='{% static 'landing/img/footer-logo.png' %}';">
+            {% elif school and school.logo %}
+              <img src="{{ school.logo.url }}" alt="{{ school.name }}" height="60" style="max-height: 60px; object-fit: contain;" onerror="this.onerror=null; this.src='{% static 'landing/img/footer-logo.png' %}';">
+            {% else %}
+              <img src="{% static 'landing/img/footer-logo.png' %}" alt="{% if request_institute %}{{ request_institute.name }}{% elif school %}{{ school.name }}{% else %}PrimeSoul ERP{% endif %}" height="60" style="max-height: 60px; object-fit: contain;">
+            {% endif %}
+          </a>
           <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
             <i class="lni-menu"></i>
           </button>

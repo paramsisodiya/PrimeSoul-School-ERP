@@ -2,7 +2,7 @@ from datetime import date, timedelta, datetime
 from collections import OrderedDict
 
 from django.contrib import messages
-from django.db import transaction
+from django.db import models, transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.urls import reverse_lazy
@@ -42,6 +42,16 @@ from permission_handlers.administrative import (
 )
 from permission_handlers.basic import user_is_student, user_is_teacher, user_is_verified
 from django_school_management.mixins.institute import get_user_institute, get_active_institute
+from django_school_management.tenants.models import School
+
+
+def get_user_school(user):
+    """Safely extracts tenant school for the current user."""
+    if user.is_authenticated and hasattr(user, 'school') and user.school:
+        return user.school
+    if user.is_superuser:
+        return School.objects.filter(is_active=True).first()
+    return None
 
 
 @user_passes_test(user_is_admin_su_or_ac_officer)
@@ -503,32 +513,44 @@ def add_student_view(request):
 @user_passes_test(user_is_admin_su_or_ac_officer)
 def students_view(request):
     """
-    :param request:
-    :return: renders student list with all department
-    and semesters list.
+    Renders student roster with modern tenant-aware filtering and legacy fallback.
     """
+    school = get_user_school(request.user)
     institute = get_user_institute(request.user)
+
     all_students = Student.objects.select_related(
+        "school", "grade_level", "section", "academic_year",
         "admission_student", "semester", "ac_session"
-    ).all()
-    if institute:
+    )
+    if school:
+        all_students = all_students.filter(school=school)
+    elif institute:
         all_students = all_students.filter(
             admission_student__choosen_department__institute=institute
         )
+    elif not request.user.is_superuser:
+        all_students = all_students.none()
+
     context = {
         "students": all_students,
+        "school": school,
     }
     return render(request, "students/list/students_list.html", context)
 
 
 @user_passes_test(user_is_admin_su_or_ac_officer)
 def students_by_department_view(request, pk):
+    school = get_user_school(request.user)
     dept_name = Department.objects.get(pk=pk)
     students = Student.objects.select_related(
+        "school", "grade_level", "section", "academic_year",
         "department", "semester", "ac_session"
     ).filter(department=dept_name)
+    if school:
+        students = students.filter(school=school)
     context = {
         "students": students,
+        "school": school,
     }
     return render(request, "students/students_by_department.html", context)
 
@@ -548,12 +570,25 @@ class StudentUpdateView(
         user = self.request.user
         return user_is_admin_su_or_ac_officer(user)
 
+    def get_queryset(self):
+        school = get_user_school(self.request.user)
+        institute = get_user_institute(self.request.user)
+        qs = Student.objects.all()
+        if school:
+            return qs.filter(school=school)
+        elif institute:
+            return qs.filter(
+                admission_student__choosen_department__institute=institute
+            )
+        return qs if self.request.user.is_superuser else qs.none()
+
     def post(self, request, pk, *args, **kwargs):
-        obj = get_object_or_404(Student, pk=pk)
+        obj = get_object_or_404(self.get_queryset(), pk=pk)
         form = StudentUpdateForm(request.POST, instance=obj)
         if form.is_valid():
             form.save()
             return redirect("students:student_sis", pk=obj.pk)
+        return render(request, self.template_name, {'form': form, 'student': obj, 'object': obj})
 
     def get_success_url(self):
         student_id = self.kwargs["pk"]
@@ -574,15 +609,45 @@ class StudentSISView(
         user = self.request.user
         return user_is_admin_su_or_ac_officer(user) or user_is_teacher(user)
 
+    def get_queryset(self):
+        school = get_user_school(self.request.user)
+        institute = get_user_institute(self.request.user)
+        qs = Student.objects.select_related(
+            "school", "grade_level", "section", "academic_year",
+            "admission_student", "semester", "ac_session"
+        )
+        if school:
+            return qs.filter(school=school)
+        elif institute:
+            return qs.filter(
+                admission_student__choosen_department__institute=institute
+            )
+        return qs if self.request.user.is_superuser else qs.none()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         student = context["student"]
-        sg = SubjectGroup.objects.filter(
-            department=student.admission_student.choosen_department,
-            semester=student.semester,
-        ).first()
+        sg = None
+        subjects_list = []
+        if student.admission_student and student.admission_student.choosen_department:
+            sg = SubjectGroup.objects.filter(
+                department=student.admission_student.choosen_department,
+                semester=student.semester,
+            ).first()
+            if sg:
+                subjects_list = sg.subjects.all()
+        elif student.grade_level:
+            from django_school_management.academics.models import SubjectAssignment
+            assignments = SubjectAssignment.objects.filter(
+                school=student.school,
+                grade_level=student.grade_level
+            ).select_related('subject')
+            if student.section:
+                assignments = assignments.filter(models.Q(section=student.section) | models.Q(section__isnull=True))
+            subjects_list = [a.subject for a in assignments if a.subject]
+
         context["subjects"] = sg
-        context["subjects_list"] = sg.subjects.all() if sg else []
+        context["subjects_list"] = subjects_list
         context["results"] = student.results.select_related(
             "subject", "semester", "exam"
         ).order_by("-semester__number", "subject__name")
@@ -621,8 +686,21 @@ class StudentDetailsView(
 
 @user_passes_test(user_is_admin_su_or_ac_officer)
 def student_delete_view(request, pk):
-    student = Student.objects.get(pk=pk)
+    school = get_user_school(request.user)
+    institute = get_user_institute(request.user)
+    if school:
+        student = get_object_or_404(Student, pk=pk, school=school)
+    elif institute:
+        student = get_object_or_404(
+            Student.objects.filter(
+                admission_student__choosen_department__institute=institute
+            ),
+            pk=pk
+        )
+    else:
+        student = get_object_or_404(Student, pk=pk)
     student.delete()
+    messages.success(request, "Student record deleted successfully.")
     return redirect("students:all_student")
 
 
@@ -638,14 +716,25 @@ class AlumnusListView(
         return user_is_verified(user)
 
     def get_queryset(self):
-        queryset = Student.alumnus.all()
-        return queryset
+        school = get_user_school(self.request.user)
+        institute = get_user_institute(self.request.user)
+        queryset = Student.alumnus.select_related(
+            "school", "grade_level", "section", "academic_year",
+            "admission_student", "semester", "ac_session"
+        )
+        if school:
+            return queryset.filter(school=school)
+        elif institute:
+            return queryset.filter(
+                admission_student__choosen_department__institute=institute
+            )
+        return queryset if self.request.user.is_superuser else queryset.none()
 
     def get_context_data(self, *args, object_list=None, **kwargs):
         ctx = super().get_context_data(
             *args, object_list=object_list, **kwargs
         )
-        alumnus = Student.alumnus.all()
+        alumnus = self.get_queryset()
         f = AlumniFilter(self.request.GET, queryset=alumnus, request=self.request)
         ctx["filter"] = f
         return ctx
@@ -656,28 +745,50 @@ def student_my_portal(request, student_id: str):
     if request.user.employee_or_student_id != student_id:
         return HttpResponseNotFound("Page not found!")
 
-    student = Student.objects.get(temporary_id=student_id)
+    student = Student.objects.filter(models.Q(temporary_id=student_id) | models.Q(admission_number=student_id)).first()
+    if not student:
+        return HttpResponseNotFound("Student record not found!")
 
-    department = student.admission_student.choosen_department
-    subject_group = SubjectGroup.objects.filter(
-        department=department, semester=student.semester
-    ).first()
+    department = getattr(student.admission_student, 'choosen_department', None) if student.admission_student else None
+    subject_group = None
+    if department:
+        subject_group = SubjectGroup.objects.filter(
+            department=department, semester=student.semester
+        ).first()
     subjects = subject_group.subjects.all() if subject_group else []
-    classmates = (
-        Student.objects.filter(
-            batch=student.batch,
-            semester=student.semester,
-            admission_student__choosen_department=department,
+    if not subjects and student.grade_level:
+        from django_school_management.academics.models import SubjectAssignment
+        assignments = SubjectAssignment.objects.filter(
+            school=student.school,
+            grade_level=student.grade_level
+        ).select_related('subject')
+        subjects = [a.subject for a in assignments if a.subject]
+
+    classmates = Student.objects.none()
+    if student.grade_level and student.section:
+        classmates = Student.objects.filter(
+            school=student.school,
+            grade_level=student.grade_level,
+            section=student.section,
+            is_active=True
+        ).exclude(pk=student.pk)[:50]
+    elif student.batch and department:
+        classmates = (
+            Student.objects.filter(
+                batch=student.batch,
+                semester=student.semester,
+                admission_student__choosen_department=department,
+            )
+            .exclude(pk=student.pk)
+            .select_related("admission_student")[:50]
         )
-        .exclude(pk=student.pk)
-        .select_related("admission_student")[:50]
-    )
     ctx = {
         "student": student,
         "subjects": subjects,
         "classmates": classmates,
     }
     return render(request, "students/my-portal.html", ctx)
+
 
 
 @user_passes_test(user_is_admin_su_or_ac_officer)

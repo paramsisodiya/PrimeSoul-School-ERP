@@ -101,10 +101,17 @@ urlpatterns = [
     path('upload/', include('django_file_form.urls')),
 ]
 
-urlpatterns += static(
-    settings.MEDIA_URL,
-    document_root=settings.MEDIA_ROOT
-)
+from django.urls import re_path
+from django.views.static import serve
+
+# Explicitly serve MEDIA_URL across all runtime environments (local and container)
+urlpatterns += [
+    re_path(
+        r'^%s(?P<path>.*)$' % settings.MEDIA_URL.lstrip('/'),
+        serve,
+        {'document_root': settings.MEDIA_ROOT}
+    ),
+]
 urlpatterns += static(
     settings.STATIC_URL,
     document_root=settings.STATIC_ROOT

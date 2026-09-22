@@ -54,9 +54,13 @@
             <div class="col-lg-3 col-md-6 col-sm-6 col-xs-6 col-mb-12">
 
               <div class="footer-logo">
-               <img 
-               src="{% if request_institute.logo %}{{ request_institute.logo.url }}{% else %}{% static 'landing/img/footer-logo.png' %}{% endif %}" 
-               alt="{{ request_institute.name }}">
+               {% if request_institute and request_institute.logo %}
+                 <img src="{{ request_institute.logo.url }}" alt="{{ request_institute.name }}" style="max-height: 50px; object-fit: contain;" onerror="this.onerror=null; this.src='{% static 'landing/img/footer-logo.png' %}';">
+               {% elif school and school.logo %}
+                 <img src="{{ school.logo.url }}" alt="{{ school.name }}" style="max-height: 50px; object-fit: contain;" onerror="this.onerror=null; this.src='{% static 'landing/img/footer-logo.png' %}';">
+               {% else %}
+                 <img src="{% static 'landing/img/footer-logo.png' %}" alt="{% if request_institute %}{{ request_institute.name }}{% elif school %}{{ school.name }}{% else %}PrimeSoul ERP{% endif %}" style="max-height: 50px; object-fit: contain;">
+               {% endif %}
               </div>
             </div>
              <!-- End Col -->

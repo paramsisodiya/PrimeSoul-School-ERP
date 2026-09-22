@@ -195,14 +195,47 @@ else:
         }
     }
 
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
+# Media & Persistent Storage Configuration
+USE_S3 = env.bool('USE_S3', default=False) or bool(env('AWS_STORAGE_BUCKET_NAME', default=''))
+AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', default='')
+AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', default='')
+AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME', default='')
+AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', default='')
+AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL', default='')
+AWS_S3_CUSTOM_DOMAIN = env('AWS_S3_CUSTOM_DOMAIN', default='')
+AWS_S3_FILE_OVERWRITE = env.bool('AWS_S3_FILE_OVERWRITE', default=False)
+AWS_DEFAULT_ACL = env('AWS_DEFAULT_ACL', default=None)
+AWS_QUERYSTRING_AUTH = env.bool('AWS_QUERYSTRING_AUTH', default=False)
+
+if USE_S3 and AWS_STORAGE_BUCKET_NAME:
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "bucket_name": AWS_STORAGE_BUCKET_NAME,
+                "access_key": AWS_ACCESS_KEY_ID or None,
+                "secret_key": AWS_SECRET_ACCESS_KEY or None,
+                "region_name": AWS_S3_REGION_NAME or None,
+                "endpoint_url": AWS_S3_ENDPOINT_URL or None,
+                "custom_domain": AWS_S3_CUSTOM_DOMAIN or None,
+                "file_overwrite": AWS_S3_FILE_OVERWRITE,
+                "default_acl": AWS_DEFAULT_ACL,
+                "querystring_auth": AWS_QUERYSTRING_AUTH,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": env('DEFAULT_FILE_STORAGE_BACKEND', default="django.core.files.storage.FileSystemStorage"),
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
 
 # Cache Configuration (Redis with LocMem fallback for local/testing)
 REDIS_HOST = env('REDIS_HOST', default='')

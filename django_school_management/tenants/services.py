@@ -68,7 +68,7 @@ def sync_institute_to_school_tenant(institute, user=None) -> School:
             if not school.is_active:
                 school.is_active = True
                 updated = True
-            if institute.logo and not school.logo:
+            if institute.logo and (not school.logo or school.logo != institute.logo):
                 school.logo = institute.logo
                 updated = True
             if updated:
