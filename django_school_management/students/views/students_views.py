@@ -713,7 +713,7 @@ class AlumnusListView(
 
     def test_func(self):
         user = self.request.user
-        return user_is_verified(user)
+        return user_is_admin_su_or_ac_officer(user)
 
     def get_queryset(self):
         school = get_user_school(self.request.user)

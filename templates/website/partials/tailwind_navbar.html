@@ -90,10 +90,27 @@
 
                 {% if user.is_authenticated %}
                     {% if user.approval_status == 'a' %}
-                        <a href="{% url account_urls.dashboard %}" class="bg-gray-900 text-gray-300 hover:bg-gray-700
+                        {% if user.requested_role in 'STUDENT,student' %}
+                        <a href="{% url 'portal:student_dashboard' %}" class="bg-gray-900 text-gray-300 hover:bg-gray-700
+                                        hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                            Student Portal
+                        </a>
+                        {% elif user.requested_role in 'PARENT,parent' %}
+                        <a href="{% url 'portal:parent_dashboard' %}" class="bg-gray-900 text-gray-300 hover:bg-gray-700
+                                        hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                            Parent Portal
+                        </a>
+                        {% elif user.requested_role in 'TEACHER,teacher' %}
+                        <a href="{% url 'portal:teacher_dashboard' %}" class="bg-gray-900 text-gray-300 hover:bg-gray-700
+                                        hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                            Teacher Portal
+                        </a>
+                        {% else %}
+                        <a href="{% url 'index_view' %}" class="bg-gray-900 text-gray-300 hover:bg-gray-700
                                         hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                             Dashboard
                         </a>
+                        {% endif %}
                         <a href="{% url account_urls.profile_complete %}" class="text-gray-300 hover:bg-gray-700
                             hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                             Profile

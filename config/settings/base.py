@@ -428,6 +428,7 @@ CKEDITOR_CONFIGS = {
 
 # STOP SENDING EMAIL FOR USER REGISTRATION
 ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_ADAPTER = 'django_school_management.accounts.adapters.AccountAdapter'
 
 # Django taggit.
 TAGGIT_CASE_INSENSITIVE = True

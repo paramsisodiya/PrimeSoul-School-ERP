@@ -11,11 +11,19 @@ from .editor import (
 from .basic import user_is_verified, user_is_teacher, user_is_student
 
 def user_is_admin(user):
-    if not user.is_authenticated:
+    if not user or not user.is_authenticated:
         return False
-    return user.is_superuser or (
-        user_is_verified(user) and user.requested_role in ['admin', 'SCHOOL_ADMIN', 'PLATFORM_SUPER_ADMIN']
-    )
+    if user.is_superuser:
+        return True
+    if not user_is_verified(user):
+        return False
+    role = (getattr(user, 'requested_role', '') or '').strip().upper()
+    admin_roles = {
+        'ADMIN', 'SCHOOL_ADMIN', 'PLATFORM_SUPER_ADMIN', 'PRINCIPAL',
+        'VICE_PRINCIPAL', 'ACADEMIC_COORDINATOR', 'ACCOUNTANT',
+        'RECEPTIONIST', 'TRANSPORT_MANAGER', 'LIBRARIAN'
+    }
+    return role in admin_roles or getattr(user, 'requested_role', '') == 'admin'
 
 def user_is_superuser(user):
     return user.is_superuser if user.is_authenticated else False

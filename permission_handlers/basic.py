@@ -26,31 +26,47 @@ def user_is_verified(user):
 
 
 def user_is_student(user):
-    return (
-        user_is_verified(user)
-        and user.requested_role in [AccountTypesEnum.student.value, 'STUDENT', 'student']
-        if user.is_authenticated
-        else False
-    )
+    if not user or not user.is_authenticated or not user_is_verified(user):
+        return False
+    role = (getattr(user, 'requested_role', '') or '').strip().upper()
+    return role == 'STUDENT' or getattr(user, 'requested_role', '') == AccountTypesEnum.student.value
 
 
 def user_is_teacher(user):
-    return (
-        user_is_verified(user)
-        and user.requested_role in [AccountTypesEnum.teacher.value, 'TEACHER', 'teacher']
-        if user.is_authenticated
-        else False
-    )
+    if not user or not user.is_authenticated or not user_is_verified(user):
+        return False
+    role = (getattr(user, 'requested_role', '') or '').strip().upper()
+    return role == 'TEACHER' or getattr(user, 'requested_role', '') == AccountTypesEnum.teacher.value
+
+
+def user_is_parent(user):
+    if not user or not user.is_authenticated or not user_is_verified(user):
+        return False
+    role = (getattr(user, 'requested_role', '') or '').strip().upper()
+    return role == 'PARENT'
 
 
 def can_access_dashboard(user: User):
-    if not user.is_authenticated:
+    """
+    Checks if a user is authorized to access the Admin ERP Dashboard.
+    Self-service portal users (Student, Parent, Teacher) and Subscribers
+    must NEVER be granted Admin ERP dashboard access.
+    """
+    if not user or not user.is_authenticated:
         return False
     if user.is_superuser:
         return True
-    restricted_roles = [AccountTypesEnum.subscriber.value, 'subscriber']
-    if user.requested_role in restricted_roles:
+    if user.approval_status not in [ProfileApprovalStatusEnum.approved.value, 'a', 'approved']:
         return False
-    if user.approval_status not in [ProfileApprovalStatusEnum.approved.value, 'a']:
+
+    role = (getattr(user, 'requested_role', '') or '').strip().upper()
+    portal_and_restricted_roles = {
+        'STUDENT', 'PARENT', 'TEACHER', 'SUBSCRIBER',
+        AccountTypesEnum.student.value.upper(),
+        AccountTypesEnum.teacher.value.upper(),
+        AccountTypesEnum.subscriber.value.upper(),
+    }
+    if role in portal_and_restricted_roles:
         return False
+
     return True

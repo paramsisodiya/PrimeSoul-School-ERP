@@ -327,6 +327,9 @@ def monthly_attendance_summary_view(request):
         messages.error(request, "Tenant school required.")
         return redirect('index_view')
 
+    if user_has_role(request.user, Role.STUDENT, Role.PARENT):
+        raise PermissionDenied("You do not have permission to view class monthly attendance summary.")
+
     current_year = AcademicYear.objects.filter(school=school, is_current=True).first()
     today = timezone.localdate()
     

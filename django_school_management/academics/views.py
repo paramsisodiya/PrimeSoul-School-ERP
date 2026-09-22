@@ -128,7 +128,7 @@ def set_academic_session_current(request, pk):
     return redirect(AcademicsURLConstants.academic_sessions)
 
 
-@user_passes_test(user_is_verified)
+@user_passes_test(user_is_admin_su_editor_or_ac_officer)
 def departments(request):
     """
     Responsible for department list view

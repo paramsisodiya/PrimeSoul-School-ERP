@@ -55,7 +55,7 @@ def add_teacher_view(request):
     return render(request, 'teachers/add_teacher.html', context)
 
 
-@user_passes_test(user_is_verified)
+@user_passes_test(user_is_teacher_or_administrative)
 def teacher_detail_view(request, pk):
     teacher = get_object_or_404(Teacher, pk=pk)
     context = {'teacher': teacher}
@@ -116,7 +116,7 @@ class designation_list_view(LoginRequiredNoPermissionMixin, UserPassesTestMixin,
 
     def test_func(self):
         user = self.request.user
-        return user_is_verified(user)
+        return user_editor_admin_or_su(user)
 
 
 @user_passes_test(user_is_teacher)

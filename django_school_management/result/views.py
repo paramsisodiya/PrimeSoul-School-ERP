@@ -13,7 +13,7 @@ from permission_handlers.basic import user_is_verified
 from permission_handlers.administrative import user_is_teacher_or_administrative
 
 
-@user_passes_test(user_is_verified)
+@user_passes_test(user_is_teacher_or_administrative)
 def result_view(request):
     if not request.GET:
         qs = Result.objects.none()
@@ -24,7 +24,7 @@ def result_view(request):
     return render(request, 'result/result_filter.html', ctx)
 
 
-@user_passes_test(user_is_verified)
+@user_passes_test(user_is_teacher_or_administrative)
 def result_detail_view(request, student_pk):
     student = get_object_or_404(Student, pk=student_pk)
     student_results = student.results.all()
@@ -199,7 +199,7 @@ def create_subject_group(request):
     return render(request, 'result/create_subject_groups.html', ctx)
 
 
-@user_passes_test(user_is_verified)
+@user_passes_test(user_is_teacher_or_administrative)
 def subject_group_list(request):
     subject_groups = SubjectGroup.objects.all()
     ctx = {

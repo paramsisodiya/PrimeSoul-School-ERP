@@ -37,7 +37,15 @@
                   </a>
                 </li>
                 <li class="nav-item">
-                  <a class="btn btn-singin" href="{% url account_urls.dashboard %}">Dashboard</a>
+                  {% if request.user.requested_role in 'STUDENT,student' %}
+                    <a class="btn btn-singin" href="{% url 'portal:student_dashboard' %}">Student Portal</a>
+                  {% elif request.user.requested_role in 'PARENT,parent' %}
+                    <a class="btn btn-singin" href="{% url 'portal:parent_dashboard' %}">Parent Portal</a>
+                  {% elif request.user.requested_role in 'TEACHER,teacher' %}
+                    <a class="btn btn-singin" href="{% url 'portal:teacher_dashboard' %}">Teacher Portal</a>
+                  {% else %}
+                    <a class="btn btn-singin" href="{% url 'index_view' %}">Dashboard</a>
+                  {% endif %}
                 </li>
 	            {% else %}
 	            <li class="nav-item">
