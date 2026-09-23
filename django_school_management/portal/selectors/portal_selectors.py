@@ -313,12 +313,16 @@ def get_teacher_portal_dashboard(user, school) -> Dict[str, Any]:
 
     # 1. Timetable today
     today_schedule = []
-    if teacher:
+    legacy_teacher = teacher if isinstance(teacher, Teacher) else None
+    if not legacy_teacher and user:
+        legacy_teacher = Teacher.objects.filter(email=user.email).first()
+
+    if legacy_teacher:
         ay = AcademicYear.objects.filter(school=school, is_current=True).first()
         today_schedule = list(
             TimetableEntry.objects.filter(
                 school=school,
-                teacher=teacher,
+                teacher=legacy_teacher,
                 working_day__weekday=today_weekday,
                 is_active=True
             ).select_related('subject', 'section', 'section__grade_level', 'room', 'time_slot')
@@ -326,13 +330,16 @@ def get_teacher_portal_dashboard(user, school) -> Dict[str, Any]:
         )
 
     # 2. Assigned sections
-    assigned_sections = []
-    if teacher:
+    assigned_sections = {
+        'class_teacher_sections': [],
+        'subject_assignments': [],
+    }
+    if legacy_teacher:
         # Class teacher assignments
-        ct_sections = list(Section.objects.filter(school=school, class_teacher=teacher, is_active=True).select_related('grade_level'))
+        ct_sections = list(Section.objects.filter(school=school, class_teacher=legacy_teacher, is_active=True).select_related('grade_level'))
         # Subject assignments
         subj_sections = list(
-            SubjectAssignment.objects.filter(school=school, teacher=teacher, is_active=True)
+            SubjectAssignment.objects.filter(school=school, teacher=legacy_teacher, is_active=True)
             .select_related('grade_level', 'section', 'subject')
         )
         assigned_sections = {
