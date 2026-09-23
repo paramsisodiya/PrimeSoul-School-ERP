@@ -15,7 +15,8 @@ CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=['http://localho
 # WhiteNoise compressed static storage with Django 5 STORAGES syntax
 if 'whitenoise.runserver_nostatic' not in DEFAULT_APPS:
     DEFAULT_APPS.insert(0, 'whitenoise.runserver_nostatic')
-INSTALLED_APPS = DEFAULT_APPS + LOCAL_APPS + THIRD_PARTY_APPS
+INSTALLED_APPS = [app for app in (DEFAULT_APPS + LOCAL_APPS + THIRD_PARTY_APPS) if app != 'debug_toolbar']
+MIDDLEWARE = [mw for mw in MIDDLEWARE if 'debug_toolbar' not in mw]
 
 if USE_S3 and AWS_STORAGE_BUCKET_NAME:
     STORAGES = {
@@ -46,6 +47,34 @@ else:
             "BACKEND": "django_school_management.utils.storage.ResilientCompressedManifestStaticFilesStorage",
         },
     }
+
+# Production Template Configuration (Cached Template Loader for low memory and high throughput)
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [str(BASE_DIR / "templates")],
+        "OPTIONS": {
+            "loaders": [
+                (
+                    "django.template.loaders.cached.Loader",
+                    [
+                        "django.template.loaders.filesystem.Loader",
+                        "django.template.loaders.app_directories.Loader",
+                    ],
+                ),
+            ],
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "context_processors.attach_resources.attach_institute_data_ctx_processor",
+                "context_processors.attach_resources.attach_urls_for_common_templates",
+                "context_processors.attach_resources.attach_dashboard_menu_items",
+            ],
+        },
+    },
+]
 
 # Allow WhiteNoise to skip missing optional third-party assets in vendor CSS without throwing 500
 WHITENOISE_MANIFEST_STRICT = env.bool('WHITENOISE_MANIFEST_STRICT', default=False)

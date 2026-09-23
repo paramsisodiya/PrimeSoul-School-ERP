@@ -12,31 +12,22 @@ from django_school_management.articles.models import Category
 
 
 def attach_institute_data_ctx_processor(request):
-    institute = None
     school = getattr(request, 'school', None) or getattr(request, 'tenant', None)
-    if hasattr(request, 'user') and request.user.is_authenticated:
-        institute = getattr(request.user, 'institute', None)
-        if not school:
-            school = getattr(request.user, 'school', None)
-    if not institute:
-        try:
-            if school:
-                institute = InstituteProfile.objects.filter(name=school.name).first()
-            if not institute:
-                institute = InstituteProfile.objects.filter(active=True).first()
-        except Exception:
-            institute = None
-    if not school and institute:
+    institute = getattr(request.user, 'institute', None) if (hasattr(request, 'user') and request.user.is_authenticated) else None
+
+    if not school and hasattr(request, 'user') and request.user.is_authenticated:
+        school = getattr(request.user, 'school', None)
+
+    # Only query database if neither school nor institute is on request/user
+    if not institute and not school:
         try:
             from django_school_management.tenants.models import School
-            school = School.objects.filter(name=institute.name).first()
-            if not school:
-                school = School.objects.filter(is_active=True).first()
+            school = School.objects.filter(is_active=True).first()
         except Exception:
             school = None
-            
+
     is_demo_env = getattr(settings, 'IS_DEMO_ENV', False) or getattr(settings, 'DEBUG', False)
-    
+
     ctx = {
         "request_institute": institute,
         "school": school,

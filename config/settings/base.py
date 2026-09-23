@@ -19,7 +19,7 @@ BASE_DIR = Path(__file__).parent.parent.parent
 
 env = environ.Env(
     # set casting, default value
-    DEBUG=(bool, True),
+    DEBUG=(bool, False),
     USE_PAYMENT_OPTIONS=(bool, True),
     USE_SENTRY=(bool, False),
     USE_MAILCHIMP=(bool, False),
@@ -32,7 +32,7 @@ env.read_env(str(BASE_DIR / "envs/.env"))
 
 SECRET_KEY = env('SECRET_KEY', default='primesoul-insecure-dev-key-change-in-production-!@#$12345')
 
-DEBUG = env('DEBUG')
+DEBUG = env.bool('DEBUG', default=False)
 
 try:
     DJANGO_ADMIN_URL = env('DJANGO_ADMIN_URL')
@@ -169,7 +169,7 @@ if DATABASE_URL:
             engine='django_prometheus.db.backends.postgresql'
         )
     }
-    DATABASES['default']['CONN_MAX_AGE'] = env.int('CONN_MAX_AGE', default=600)
+    DATABASES['default']['CONN_MAX_AGE'] = env.int('CONN_MAX_AGE', default=60)
 elif DB_NAME:
     db_opts = {}
     db_sslmode = env('DB_SSLMODE', default='')
@@ -183,7 +183,7 @@ elif DB_NAME:
             'PASSWORD': env('DB_PASSWORD', default=''),
             'HOST': env('DB_HOST', default='localhost'),
             'PORT': env.int('DB_PORT', default=5432),
-            'CONN_MAX_AGE': env.int('CONN_MAX_AGE', default=600),
+            'CONN_MAX_AGE': env.int('CONN_MAX_AGE', default=60),
             'OPTIONS': db_opts,
         }
     }

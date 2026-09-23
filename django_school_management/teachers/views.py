@@ -23,34 +23,43 @@ from django_school_management.mixins.institute import get_user_institute
 @user_passes_test(user_is_teacher_or_administrative)
 def teachers_view(request):
     """
-    :param request:
-    :return: list of teachers to logged in user, login form instead.
+    List of teachers with eager loading to eliminate N+1 queries.
     """
+    school = getattr(request, 'school', None) or getattr(request.user, 'school', None)
     institute = get_user_institute(request.user)
-    teachers = Teacher.objects.filter(institute=institute) if institute else Teacher.objects.all()
+    if school:
+        teachers = Teacher.objects.filter(school=school).select_related('designation')
+    elif institute:
+        teachers = Teacher.objects.filter(institute=institute).select_related('designation')
+    else:
+        teachers = Teacher.objects.all().select_related('designation')
     context = {'teachers': teachers}
     return render(request, 'teachers/teacher_list.html', context)
 
 
-# TODO: Reduce duplicate queries.
 @user_passes_test(user_is_admin_or_su)
 def add_teacher_view(request):
     """
-    :param request:
-    :return: teacher add form
+    Teacher add form view with tenant designation filtering.
     """
+    school = getattr(request, 'school', None) or getattr(request.user, 'school', None)
+    institute = get_user_institute(request.user)
     if request.method == 'POST':
         form = TeacherForm(request.POST, request.FILES)
         if form.is_valid():
             teacher = form.save(commit=False)
-            teacher.institute = get_user_institute(request.user)
+            teacher.institute = institute
+            teacher.school = school
             teacher.created_by = request.user
             teacher.save()
             form.save_m2m()
+            messages.success(request, f"Teacher '{teacher.name}' added successfully.")
             return redirect('teachers:all_teacher')
         context = {'form': form}
         return render(request, 'teachers/add_teacher.html', context)
     form = TeacherForm()
+    if school:
+        form.fields['designation'].queryset = Designation.objects.filter(school=school)
     context = {'form': form}
     return render(request, 'teachers/add_teacher.html', context)
 

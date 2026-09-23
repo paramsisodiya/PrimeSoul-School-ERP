@@ -160,7 +160,7 @@ def dashboard(request):
 
         recent_payments = (
             PaymentTransaction.objects.filter(school=school)
-            .select_related('student', 'invoice')
+            .select_related('student', 'invoice', 'receipt')
             .order_by('-created_at')[:5]
         )
 
