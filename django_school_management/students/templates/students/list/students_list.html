@@ -24,6 +24,9 @@
     <p class="text-muted small mb-0">Enrolled student cohort and student information system profiles.</p>
   </div>
   <div class="mt-2 mt-sm-0">
+    <a href="{% url 'students:import_students_csv' %}" class="btn btn-outline-secondary font-weight-bold btn-sm mr-2">
+      <i class="fas fa-file-csv mr-1"></i> Import Students CSV
+    </a>
     <a href="{% url 'students:add_student' %}" class="btn btn-primary font-weight-bold btn-sm">
       <i class="fas fa-user-plus mr-1"></i> Add Student
     </a>

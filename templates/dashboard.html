@@ -108,41 +108,82 @@
               </div>
             </div>
 
-            <!-- FIRST LOGIN GUIDANCE (Visible when a new school has 0 students) -->
+            <!-- FIRST LOGIN / QUICK SETUP ROADMAP (Visible when a new school has 0 students) -->
             {% if total_students == 0 %}
               <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%); border-left: 5px solid #4f46e5 !important;">
                 <div class="card-body p-4">
-                  <div class="d-flex align-items-start justify-content-between flex-wrap">
-                    <div class="mb-3 mb-md-0">
+                  <div class="d-flex align-items-start justify-content-between flex-wrap mb-3">
+                    <div>
                       <div class="text-uppercase font-weight-bold text-primary small mb-1">
-                        <i class="fas fa-rocket mr-1"></i> Quick Start Onboarding
+                        <i class="fas fa-rocket mr-1"></i> Step-by-Step School Setup Roadmap
                       </div>
-                      <h4 class="font-weight-bold text-dark mb-2">Welcome to your new school portal!</h4>
-                      <p class="text-muted mb-3" style="max-width: 650px;">
-                        No students have been enrolled yet. Get your school up and running quickly by importing student admissions from CSV or registering them individually.
+                      <h4 class="font-weight-bold text-dark mb-1">Welcome to PrimeSoul School ERP!</h4>
+                      <p class="text-muted mb-0" style="max-width: 700px;">
+                        Follow these 4 simple steps to configure your school, import records, and start daily operations in minutes.
                       </p>
-                      <div class="d-flex flex-wrap gap-2">
-                        <a href="{% url 'students:import_students_csv' %}" class="btn btn-primary font-weight-bold shadow-sm mr-2 mb-2">
-                          <i class="fas fa-file-csv mr-1"></i> Bulk Import Students (CSV)
-                        </a>
-                        <a href="{% url 'students:add_student' %}" class="btn btn-light border font-weight-bold mr-2 mb-2">
-                          <i class="fas fa-user-plus text-primary mr-1"></i> Add First Student
-                        </a>
-                        <a href="{% url 'teachers:import_teachers_csv' %}" class="btn btn-outline-secondary font-weight-bold mb-2">
-                          <i class="fas fa-chalkboard-teacher mr-1"></i> Import Faculty (CSV)
-                        </a>
-                      </div>
                     </div>
-                    <div class="d-none d-lg-block text-right">
+                    <div class="mt-2 mt-md-0">
                       {% if school and school.is_active %}
                         <div class="badge badge-primary px-3 py-2" style="font-size: 0.85rem; border-radius: 20px;">
                           <i class="fas fa-shield-alt mr-1"></i> Tenant Active ({{ school.name }})
                         </div>
                       {% else %}
                         <div class="badge badge-secondary px-3 py-2" style="font-size: 0.85rem; border-radius: 20px;">
-                          <i class="fas fa-info-circle mr-1"></i> Onboarding Completed
+                          <i class="fas fa-info-circle mr-1"></i> Setup in Progress
                         </div>
                       {% endif %}
+                    </div>
+                  </div>
+
+                  <!-- 4 Step Setup Cards -->
+                  <div class="row pt-2">
+                    <div class="col-md-3 mb-3">
+                      <div class="p-3 bg-white border shadow-sm h-100" style="border-radius: 10px;">
+                        <div class="d-flex align-items-center mb-2">
+                          <span class="badge badge-primary rounded-circle mr-2" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;">1</span>
+                          <strong class="text-dark">Academic Setup</strong>
+                        </div>
+                        <p class="text-muted small mb-3">Configure academic session, classes, sections, and subjects.</p>
+                        <a href="{% url 'academics:academic_dashboard' %}" class="btn btn-outline-primary btn-sm btn-block font-weight-bold">
+                          <i class="fas fa-school mr-1"></i> Setup Academics
+                        </a>
+                      </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                      <div class="p-3 bg-white border shadow-sm h-100" style="border-radius: 10px;">
+                        <div class="d-flex align-items-center mb-2">
+                          <span class="badge badge-primary rounded-circle mr-2" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;">2</span>
+                          <strong class="text-dark">Faculty & Staff</strong>
+                        </div>
+                        <p class="text-muted small mb-3">Define teacher designations and import teachers or staff.</p>
+                        <a href="{% url 'teachers:import_teachers_csv' %}" class="btn btn-outline-primary btn-sm btn-block font-weight-bold">
+                          <i class="fas fa-chalkboard-teacher mr-1"></i> Import Faculty
+                        </a>
+                      </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                      <div class="p-3 bg-white border shadow-sm h-100" style="border-radius: 10px;">
+                        <div class="d-flex align-items-center mb-2">
+                          <span class="badge badge-primary rounded-circle mr-2" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;">3</span>
+                          <strong class="text-dark">Fee Structure</strong>
+                        </div>
+                        <p class="text-muted small mb-3">Create fee heads, quarterly slabs, and student fee rules.</p>
+                        <a href="{% url 'fees:fee_structures' %}" class="btn btn-outline-primary btn-sm btn-block font-weight-bold">
+                          <i class="fas fa-wallet mr-1"></i> Setup Fees
+                        </a>
+                      </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                      <div class="p-3 bg-white border shadow-sm h-100" style="border-radius: 10px;">
+                        <div class="d-flex align-items-center mb-2">
+                          <span class="badge badge-primary rounded-circle mr-2" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;">4</span>
+                          <strong class="text-dark">Admissions</strong>
+                        </div>
+                        <p class="text-muted small mb-3">Bulk import students via CSV or register individual admissions.</p>
+                        <a href="{% url 'students:import_students_csv' %}" class="btn btn-primary btn-sm btn-block font-weight-bold shadow-sm">
+                          <i class="fas fa-file-csv mr-1"></i> Import Students
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -347,6 +388,16 @@
                   </div>
                   <div class="card-body p-3">
                     <div class="d-flex flex-column" style="gap: 10px;">
+                      <a href="{% url 'attendance:mark_daily' %}" class="quick-action-card">
+                        <div class="quick-action-icon" style="background: #e0f2fe; color: #0284c7;">
+                          <i class="fas fa-check-double"></i>
+                        </div>
+                        <div>
+                          <div class="font-weight-bold" style="font-size: 0.88rem;">Mark Daily Attendance</div>
+                          <div class="text-muted" style="font-size: 0.76rem;">Fast class-wise roll call recording</div>
+                        </div>
+                      </a>
+
                       <a href="{% url 'fees:payments' %}" class="quick-action-card">
                         <div class="quick-action-icon" style="background: #ecfdf5; color: #059669;">
                           <i class="fas fa-cash-register"></i>
@@ -354,6 +405,16 @@
                         <div>
                           <div class="font-weight-bold" style="font-size: 0.88rem;">Collect Counter Payment</div>
                           <div class="text-muted" style="font-size: 0.76rem;">Offline fee recording (Cash/UPI/Cheque)</div>
+                        </div>
+                      </a>
+
+                      <a href="{% url 'examinations:marks_entry' %}" class="quick-action-card">
+                        <div class="quick-action-icon" style="background: #fdf2f8; color: #db2777;">
+                          <i class="fas fa-edit"></i>
+                        </div>
+                        <div>
+                          <div class="font-weight-bold" style="font-size: 0.88rem;">Enter Exam Marks</div>
+                          <div class="text-muted" style="font-size: 0.76rem;">Record student scores & publish results</div>
                         </div>
                       </a>
 
@@ -367,23 +428,13 @@
                         </div>
                       </a>
 
-                      <a href="{% url 'fees:student_fees' %}" class="quick-action-card">
-                        <div class="quick-action-icon" style="background: #f0f9ff; color: #0284c7;">
-                          <i class="fas fa-user-tag"></i>
-                        </div>
-                        <div>
-                          <div class="font-weight-bold" style="font-size: 0.88rem;">Assign Student Fees</div>
-                          <div class="text-muted" style="font-size: 0.76rem;">Map grade structures to students</div>
-                        </div>
-                      </a>
-
-                      <a href="{% url 'fees:fee_structures' %}" class="quick-action-card">
+                      <a href="{% url 'timetable:weekly' %}" class="quick-action-card">
                         <div class="quick-action-icon" style="background: #f5f3ff; color: #7c3aed;">
-                          <i class="fas fa-sitemap"></i>
+                          <i class="fas fa-calendar-alt"></i>
                         </div>
                         <div>
-                          <div class="font-weight-bold" style="font-size: 0.88rem;">Fee Structures Master</div>
-                          <div class="text-muted" style="font-size: 0.76rem;">Configure quarterly / annual slabs</div>
+                          <div class="font-weight-bold" style="font-size: 0.88rem;">Master Timetable</div>
+                          <div class="text-muted" style="font-size: 0.76rem;">Weekly class & teacher schedules</div>
                         </div>
                       </a>
                     </div>
