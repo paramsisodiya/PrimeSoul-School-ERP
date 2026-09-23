@@ -78,8 +78,13 @@
           </a>
           <ul class="sidebar-submenu" {% if '/teachers/' in request.path or '/hr/' in request.path %}style="display: block;"{% endif %}>
             <li class="submenu-item">
-              <a class="submenu-link {% if request.path == '/teachers/' %}active{% endif %}" href="{% url 'teachers:all_teacher' %}">
+              <a class="submenu-link {% if request.path == '/teachers/' or request.path == '/teachers/all/' %}active{% endif %}" href="{% url 'teachers:all_teacher' %}">
                 <i class="fas fa-id-badge mr-2"></i> Teachers Roster
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/teachers/designations/' in request.path or '/teachers/create/designation/' in request.path %}active{% endif %}" href="{% url 'teachers:designations' %}">
+                <i class="fas fa-tags mr-2"></i> Teacher Designations
               </a>
             </li>
             <li class="submenu-item">
@@ -88,7 +93,12 @@
               </a>
             </li>
             <li class="submenu-item">
-              <a class="submenu-link {% if '/hr/' in request.path and '/hr/employees/' not in request.path %}active{% endif %}" href="{% url 'hr:dashboard' %}">
+              <a class="submenu-link {% if '/hr/designations/' in request.path %}active{% endif %}" href="{% url 'hr:designations' %}">
+                <i class="fas fa-id-card-alt mr-2"></i> HR Designations
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a class="submenu-link {% if '/hr/' in request.path and '/hr/employees/' not in request.path and '/hr/designations/' not in request.path %}active{% endif %}" href="{% url 'hr:dashboard' %}">
                 <i class="fas fa-users-cog mr-2"></i> HR & Payroll
               </a>
             </li>

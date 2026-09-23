@@ -102,7 +102,11 @@ def create_designation(request):
     if request.method == 'POST':
         form = TeacherDesignationForm(request.POST)
         if form.is_valid():
-            form.save()
+            desig = form.save(commit=False)
+            if hasattr(request.user, 'school') and request.user.school:
+                desig.school = request.user.school
+            desig.save()
+            messages.success(request, f"Designation '{desig.title}' created successfully.")
             return redirect('teachers:designations')
     else:
         form = TeacherDesignationForm()
@@ -114,9 +118,15 @@ class designation_list_view(LoginRequiredNoPermissionMixin, UserPassesTestMixin,
     model = Designation
     template_name = 'teachers/designation_list.html'
 
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, 'school') and user.school:
+            return Designation.objects.filter(school=user.school)
+        return Designation.objects.all()
+
     def test_func(self):
         user = self.request.user
-        return user_editor_admin_or_su(user)
+        return user_is_admin_or_su(user)
 
 
 @user_passes_test(user_is_teacher)
