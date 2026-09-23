@@ -81,7 +81,7 @@
               {% endif %}
             </td>
             <td class="text-right pr-4">
-              {% if not conc.is_approved and user.requested_role in 'PRINCIPAL,SCHOOL_ADMIN,admin' or user.is_superuser %}
+              {% if not conc.is_approved and user.requested_role in 'SCHOOL_ADMIN,admin' or user.is_superuser or user.is_staff %}
                 <form method="post" action="{% url 'fees:concessions' %}" class="d-inline">
                   {% csrf_token %}
                   <input type="hidden" name="action" value="approve">

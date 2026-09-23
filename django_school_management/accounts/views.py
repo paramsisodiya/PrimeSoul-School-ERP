@@ -79,13 +79,12 @@ def dashboard(request):
     if not user.is_authenticated:
         return redirect('account_login')
 
-    # 1. Role-based routing for self-service portal users
-    role = (getattr(user, 'requested_role', '') or '').strip().upper()
-    if role == 'STUDENT' or getattr(user, 'requested_role', '') == AccountTypesEnum.student.value:
+    # 1. Canonical Role-based routing for self-service portals
+    from django_school_management.accounts.roles import get_user_portal, PortalType
+    portal = get_user_portal(user)
+    if portal == PortalType.STUDENT_PORTAL:
         return redirect('portal:student_dashboard')
-    elif role == 'PARENT':
-        return redirect('portal:parent_dashboard')
-    elif role == 'TEACHER' or getattr(user, 'requested_role', '') == AccountTypesEnum.teacher.value:
+    elif portal == PortalType.TEACHER_PORTAL:
         return redirect('portal:teacher_dashboard')
 
     # 2. Authorization check for Admin ERP dashboard

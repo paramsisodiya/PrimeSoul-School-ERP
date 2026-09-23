@@ -90,15 +90,10 @@
 
                 {% if user.is_authenticated %}
                     {% if user.approval_status == 'a' %}
-                        {% if user.requested_role in 'STUDENT,student' %}
+                        {% if user.requested_role in 'STUDENT,student,PARENT,parent' %}
                         <a href="{% url 'portal:student_dashboard' %}" class="bg-gray-900 text-gray-300 hover:bg-gray-700
                                         hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                             Student Portal
-                        </a>
-                        {% elif user.requested_role in 'PARENT,parent' %}
-                        <a href="{% url 'portal:parent_dashboard' %}" class="bg-gray-900 text-gray-300 hover:bg-gray-700
-                                        hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                            Parent Portal
                         </a>
                         {% elif user.requested_role in 'TEACHER,teacher' %}
                         <a href="{% url 'portal:teacher_dashboard' %}" class="bg-gray-900 text-gray-300 hover:bg-gray-700

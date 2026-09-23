@@ -75,7 +75,7 @@ def role_required(*allowed_roles):
 # Canonical 3 Product Role Decorators
 school_admin_required = role_required(Role.SCHOOL_ADMIN)
 teacher_required = role_required(Role.SCHOOL_ADMIN, Role.TEACHER)
-student_or_guardian_required = role_required(Role.SCHOOL_ADMIN, Role.TEACHER, Role.STUDENT, Role.PARENT)
+student_or_guardian_required = role_required(Role.SCHOOL_ADMIN, Role.TEACHER, Role.STUDENT)
 
 # Backward compatibility aliases
 platform_super_admin_required = school_admin_required

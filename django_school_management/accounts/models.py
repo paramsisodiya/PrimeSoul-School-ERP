@@ -14,25 +14,9 @@ from .utils import model_help_texts
 
 class User(ExportModelOperationsMixin('user'), AbstractUser):
     REQUESTED_ACCOUNT_TYPE_CHOICES = (
-        ('PLATFORM_SUPER_ADMIN', 'Platform Super Admin'),
         ('SCHOOL_ADMIN', 'School Admin'),
-        ('PRINCIPAL', 'Principal'),
-        ('VICE_PRINCIPAL', 'Vice Principal'),
-        ('ACADEMIC_COORDINATOR', 'Academic Coordinator'),
-        ('TEACHER', 'Teacher'),
-        ('ACCOUNTANT', 'Accountant'),
-        ('RECEPTIONIST', 'Receptionist'),
-        ('TRANSPORT_MANAGER', 'Transport Manager'),
-        ('LIBRARIAN', 'Librarian'),
         ('STUDENT', 'Student'),
-        ('PARENT', 'Parent'),
-        # Legacy choice backwards compatibility
-        ('subscriber', 'Subscriber'),
-        ('student', 'Student (Legacy)'),
-        ('teacher', 'Teacher (Legacy)'),
-        ('editor', 'Editor (Legacy)'),
-        ('academic_officer', 'Academic Officer (Legacy)'),
-        ('admin', 'Admin (Legacy)'),
+        ('TEACHER', 'Teacher'),
     )
     APPROVAL_CHOICES = (
         ('n', 'Not Requested For Approval'),

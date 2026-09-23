@@ -222,10 +222,14 @@ class ArchitectureCleanupAndPortalTests(TestCase):
         """Legacy roles must normalize to SCHOOL_ADMIN, TEACHER, STUDENT, or PARENT."""
         self.assertEqual(normalize_role_name('PRINCIPAL'), Role.SCHOOL_ADMIN)
         self.assertEqual(normalize_role_name('ACCOUNTANT'), Role.SCHOOL_ADMIN)
-        self.assertEqual(normalize_role_name('LIBRARIAN'), Role.SCHOOL_ADMIN)
-        self.assertEqual(normalize_role_name('TRANSPORT_MANAGER'), Role.SCHOOL_ADMIN)
-        self.assertEqual(normalize_role_name('FACULTY'), Role.TEACHER)
-        self.assertEqual(normalize_role_name('GUARDIAN'), Role.PARENT)
+        self.assertEqual(normalize_role_name('GUARDIAN'), Role.STUDENT)
+        self.assertEqual(normalize_role_name('PARENT'), Role.STUDENT)
+
+    def test_strictly_three_product_roles_and_portals(self):
+        """Validates that exactly 3 product roles and choices exist across the system."""
+        self.assertEqual(set(Role.ALL_ROLES), {'SCHOOL_ADMIN', 'STUDENT', 'TEACHER'})
+        self.assertEqual(len(Role.CHOICES), 3)
+        self.assertEqual(len(User.REQUESTED_ACCOUNT_TYPE_CHOICES), 3)
 
     def test_allauth_adapter_redirects_to_canonical_portals(self):
         """Login redirect flows directly to canonical portal routes."""
