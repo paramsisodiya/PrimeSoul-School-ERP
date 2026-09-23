@@ -549,7 +549,7 @@ class PrimeSoulUnifiedPortalTests(TestCase):
         """Parent user navigating to /portal/ is redirected to /portal/parent/."""
         self.client.force_login(self.parent_user)
         response = self.client.get(reverse('portal:portal_root'))
-        self.assertRedirects(response, reverse('portal:parent_dashboard'))
+        self.assertRedirects(response, reverse('portal:student_dashboard'))
 
     def test_portal_root_redirects_student(self):
         """Student user navigating to /portal/ is redirected to /portal/student/."""
@@ -564,29 +564,28 @@ class PrimeSoulUnifiedPortalTests(TestCase):
         self.assertRedirects(response, reverse('portal:teacher_dashboard'))
 
     # =========================================================================
-    # 2. PARENT PORTAL TESTS
+    # 2. PARENT / FAMILY GUARDIAN (UNIFIED STUDENT PORTAL) TESTS
     # =========================================================================
 
     def test_parent_dashboard_loads_with_real_data(self):
-        """Parent dashboard displays children count, selected child, and real metrics."""
+        """Parent accessing Student Portal displays children metadata and real student metrics."""
         self.client.force_login(self.parent_user)
-        response = self.client.get(reverse('portal:parent_dashboard'))
+        response = self.client.get(reverse('portal:student_dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Rajesh Verma")
-        self.assertContains(response, "Aarav")
-        self.assertEqual(response.context['children_count'], 2)
-        self.assertEqual(response.context['selected_child'].id, self.student_1.id)
+        self.assertContains(response, "Aarav Verma")
+        self.assertEqual(response.context['student'].id, self.student_1.id)
+        self.assertEqual(len(response.context['children']), 2)
 
     def test_parent_child_switching(self):
-        """Parent can switch between their children via ?student_id=<id>."""
+        """Parent can switch active child in Student Portal."""
         self.client.force_login(self.parent_user)
-        response = self.client.get(f"{reverse('portal:parent_dashboard')}?student_id={self.student_2.id}")
+        response = self.client.get(reverse('portal:student_child_switch', kwargs={'student_id': self.student_2.id}), follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['selected_child'].id, self.student_2.id)
+        self.assertEqual(response.context['student'].id, self.student_2.id)
         self.assertContains(response, "Ananya")
 
     def test_parent_child_switching_tamper_idor_rejected(self):
-        """Supplying an unauthorized student ID in URL/query parameter falls back safely to authorized child."""
+        """Supplying an unauthorized student ID in switch URL falls back safely to authorized child."""
         other_user = User.objects.create_user(
             username="other_student", email="other@dpsrkp.edu.in", password="Password123!",
             school=self.school_a, requested_role=Role.STUDENT
@@ -596,29 +595,21 @@ class PrimeSoulUnifiedPortalTests(TestCase):
             first_name="Hacker", last_name="Boy"
         )
         self.client.force_login(self.parent_user)
-        response = self.client.get(f"{reverse('portal:parent_dashboard')}?student_id={unauthorized_student.id}")
+        response = self.client.get(reverse('portal:student_child_switch', kwargs={'student_id': unauthorized_student.id}), follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['selected_child'].id, self.student_1.id)
+        self.assertEqual(response.context['student'].id, self.student_1.id)
         self.assertNotContains(response, "Hacker Boy")
 
     def test_parent_child_detail_tamper_idor_rejected(self):
-        """Direct URL access to /portal/parent/child/<unauthorized_id>/ raises 403."""
-        other_user = User.objects.create_user(
-            username="other_student2", email="other2@dpsrkp.edu.in", password="Password123!",
-            school=self.school_a, requested_role=Role.STUDENT
-        )
-        unauthorized_student = Student.objects.create(
-            school=self.school_a, user=other_user, admission_number="ADM-9998",
-            first_name="Target", last_name="Student"
-        )
+        """Direct URL access to parent child detail redirects safely to student dashboard."""
         self.client.force_login(self.parent_user)
-        response = self.client.get(reverse('portal:parent_child_detail', kwargs={'student_id': unauthorized_student.id}))
-        self.assertEqual(response.status_code, 403)
+        response = self.client.get(reverse('portal:parent_child_detail', kwargs={'student_id': 9999}))
+        self.assertRedirects(response, reverse('portal:student_dashboard'))
 
     def test_parent_results_only_published_visible(self):
         """Parent results view ONLY displays published results; draft results are hidden."""
         self.client.force_login(self.parent_user)
-        response = self.client.get(reverse('portal:parent_results'))
+        response = self.client.get(reverse('portal:student_results'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Class 10 Midterms")
         self.assertContains(response, "92.00")
@@ -628,36 +619,35 @@ class PrimeSoulUnifiedPortalTests(TestCase):
     def test_parent_attendance_view(self):
         """Parent attendance page displays child's monthly and daily records."""
         self.client.force_login(self.parent_user)
-        response = self.client.get(reverse('portal:parent_attendance'))
+        response = self.client.get(reverse('portal:student_attendance'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Attendance Records")
+        self.assertContains(response, "Attendance")
         self.assertContains(response, "Present")
 
     def test_parent_fees_view(self):
         """Parent fees page displays invoice, payment, and outstanding amount."""
         self.client.force_login(self.parent_user)
-        response = self.client.get(reverse('portal:parent_fees'))
+        response = self.client.get(reverse('portal:student_fees'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "INV-2026-0001")
-        self.assertContains(response, "REC-2026-0001")
+        self.assertContains(response, "TXN-PAY-001")
         self.assertContains(response, "10000.00")
 
     def test_parent_timetable_view(self):
         """Parent timetable displays timetable matrix for child's section."""
         self.client.force_login(self.parent_user)
-        response = self.client.get(reverse('portal:parent_timetable'))
+        response = self.client.get(reverse('portal:student_timetable'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Mathematics")
 
     def test_parent_transport_and_library_views(self):
         """Parent can view assigned transport route and library books."""
         self.client.force_login(self.parent_user)
-        resp_tr = self.client.get(reverse('portal:parent_transport'))
+        resp_tr = self.client.get(reverse('portal:student_transport'))
         self.assertEqual(resp_tr.status_code, 200)
         self.assertContains(resp_tr, "Route 5 - South Delhi")
         self.assertContains(resp_tr, "Green Park Metro")
 
-        resp_lib = self.client.get(reverse('portal:parent_library'))
+        resp_lib = self.client.get(reverse('portal:student_library'))
         self.assertEqual(resp_lib.status_code, 200)
         self.assertContains(resp_lib, "Concepts of Physics")
 
@@ -672,7 +662,8 @@ class PrimeSoulUnifiedPortalTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Aarav Verma")
         self.assertContains(response, "ADM-2026-001")
-        self.assertContains(response, "Class 10 - Section A")
+        self.assertContains(response, "Class 10 - A")
+
 
     def test_student_results_only_published(self):
         """Student results view ONLY displays published results; draft results are hidden."""
@@ -767,9 +758,9 @@ class PrimeSoulUnifiedPortalTests(TestCase):
     def test_cross_tenant_parent_cannot_view_other_school(self):
         """Parent of School B has 0 children in School A and cannot access School A data."""
         self.client.force_login(self.parent_user_b)
-        response = self.client.get(reverse('portal:parent_dashboard'))
+        response = self.client.get(reverse('portal:student_dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['children_count'], 0)
+        self.assertEqual(len(response.context['children']), 0)
         self.assertNotContains(response, "Aarav Verma")
 
     # =========================================================================

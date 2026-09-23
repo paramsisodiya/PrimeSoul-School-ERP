@@ -1,6 +1,6 @@
 """
 PrimeSoul Unified Portal - Permissions, Context Resolvers & IDOR Guards
-Ensures strict multi-tenant and role-based data isolation for Parent, Student, and Teacher portals.
+Ensures strict multi-tenant and role-based data isolation for Student/Family and Teacher portals.
 """
 from functools import wraps
 from typing import Optional, List
@@ -26,7 +26,7 @@ def resolve_portal_school(request) -> Optional[School]:
         user_school = getattr(request.user, 'school', None)
         if user_school:
             return user_school
-    return School.objects.first()
+    return School.objects.filter(is_active=True).first()
 
 
 def resolve_student_placement(student: Optional[Student], school: Optional[School] = None) -> Optional[Student]:
@@ -72,11 +72,10 @@ def get_parent_children(user, school: Optional[School] = None):
     Enforces strict guardian relationship verification and consistent ordering.
     """
     if not user or not user.is_authenticated:
-        return Student.objects.none()
+        return []
 
     guardian = get_parent_profile(user, school)
     if not guardian:
-        # Check if parent user has direct relationship without ParentProfile model
         qs = Student.objects.filter(guardian_relationships__guardian__user=user)
     else:
         qs = Student.objects.filter(guardian_relationships__guardian=guardian)
@@ -92,7 +91,7 @@ def get_parent_children(user, school: Optional[School] = None):
 
 def get_parent_selected_child(request, school: Optional[School] = None, student_id: Optional[int] = None) -> Optional[Student]:
     """
-    Resolves and validates the active child for a parent portal session.
+    Resolves and validates the active child for a parent/guardian portal session.
     Server-side validation ensures IDOR prevention (cannot access other parents' children).
     """
     allowed_children = get_parent_children(request.user, school)
@@ -100,7 +99,6 @@ def get_parent_selected_child(request, school: Optional[School] = None, student_
         return None
 
     allowed_map = {c.id: c for c in allowed_children}
-
     has_session = hasattr(request, 'session') and request.session is not None
 
     # 1. If an explicit student_id is requested, validate it strictly
@@ -111,9 +109,6 @@ def get_parent_selected_child(request, school: Optional[School] = None, student_
                 if has_session:
                     request.session['portal_selected_student_id'] = sid
                 return allowed_map[sid]
-            else:
-                # Potential IDOR attempt or invalid child ID: Fallback safely to first child
-                pass
         except (ValueError, TypeError):
             pass
 
@@ -130,27 +125,36 @@ def get_parent_selected_child(request, school: Optional[School] = None, student_
     return default_child
 
 
-def get_student_for_user(user, school: Optional[School] = None) -> Optional[Student]:
-    """Resolves the Student record belonging to the authenticated student user."""
+def get_student_for_user(user, school: Optional[School] = None, request=None) -> Optional[Student]:
+    """Resolves the active Student record belonging to the authenticated student or guardian user."""
     if not user or not user.is_authenticated:
         return None
+
+    # 1. Direct Student user lookup
     st = getattr(user, 'student_profile', None)
     if st:
         if school and st.school and st.school.id != school.id:
             return None
         return resolve_student_placement(st, school)
+
     qs = Student.objects.filter(user=user)
     if school:
         qs = qs.filter(school=school)
     student = qs.select_related('grade_level', 'section', 'academic_year', 'school').first()
-    return resolve_student_placement(student, school)
+    if student:
+        return resolve_student_placement(student, school)
+
+    # 2. Guardian / Parent user access
+    if request:
+        return get_parent_selected_child(request, school)
+    children = get_parent_children(user, school)
+    return children[0] if children else None
 
 
 def get_teacher_for_user(user, school: Optional[School] = None) -> Optional[Teacher]:
     """Resolves Teacher instance for the authenticated faculty user."""
     if not user or not user.is_authenticated:
         return None
-    # Check TeacherProfile
     tp = getattr(user, 'teacher_profile', None)
     if tp:
         legacy = Teacher.objects.filter(school=school, email=user.email).first() or Teacher.objects.filter(email=user.email).first()
@@ -175,45 +179,28 @@ def get_employee_for_user(user, school: Optional[School] = None) -> Optional[Emp
 # VIEW DECORATORS
 # ─────────────────────────────────────────────────────────────
 
-def parent_portal_required(view_func):
-    """Restricts access to authenticated parents or system administrators."""
+def student_portal_required(view_func):
+    """Restricts access to authenticated students, family guardians, or school administrators."""
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect('account_login')
         if (
-            user_has_role(request.user, Role.PARENT) or
+            user_has_role(request.user, Role.STUDENT, Role.PARENT) or
+            get_student_for_user(request.user) or
             get_parent_profile(request.user) or
             bool(get_parent_children(request.user)) or
             request.user.is_superuser or
-            user_has_role(request.user, Role.SCHOOL_ADMIN, Role.PRINCIPAL)
+            user_has_role(request.user, Role.SCHOOL_ADMIN)
         ):
             return view_func(request, *args, **kwargs)
-        messages.error(request, "Access restricted to Parents.")
-        return redirect('portal:portal_root')
-    return _wrapped_view
-
-
-def student_portal_required(view_func):
-    """Restricts access to authenticated students or system administrators."""
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect('account_login')
-        if (
-            user_has_role(request.user, Role.STUDENT) or
-            get_student_for_user(request.user) or
-            request.user.is_superuser or
-            user_has_role(request.user, Role.SCHOOL_ADMIN, Role.PRINCIPAL)
-        ):
-            return view_func(request, *args, **kwargs)
-        messages.error(request, "Access restricted to Students.")
+        messages.error(request, "Access restricted to Students and Family Guardians.")
         return redirect('portal:portal_root')
     return _wrapped_view
 
 
 def teacher_portal_required(view_func):
-    """Restricts access to authenticated teachers/faculty or system administrators."""
+    """Restricts access to authenticated teachers/faculty or school administrators."""
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -223,7 +210,7 @@ def teacher_portal_required(view_func):
             get_teacher_for_user(request.user) or
             get_employee_for_user(request.user) or
             request.user.is_superuser or
-            user_has_role(request.user, Role.SCHOOL_ADMIN, Role.PRINCIPAL)
+            user_has_role(request.user, Role.SCHOOL_ADMIN)
         ):
             return view_func(request, *args, **kwargs)
         messages.error(request, "Access restricted to Faculty & Staff.")
@@ -231,33 +218,30 @@ def teacher_portal_required(view_func):
     return _wrapped_view
 
 
+# Backward compatibility alias
+parent_portal_required = student_portal_required
+
+
 # ─────────────────────────────────────────────────────────────
 # DRF PERMISSION CLASSES
 # ─────────────────────────────────────────────────────────────
 
-class IsPortalParent(permissions.BasePermission):
-    """DRF permission: Authenticated Parent."""
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        return (
-            user_has_role(request.user, Role.PARENT) or
-            get_parent_profile(request.user) is not None or
-            bool(get_parent_children(request.user)) or
-            request.user.is_superuser
-        )
-
-
 class IsPortalStudent(permissions.BasePermission):
-    """DRF permission: Authenticated Student."""
+    """DRF permission: Authenticated Student or Family Guardian."""
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
         return (
-            user_has_role(request.user, Role.STUDENT) or
+            user_has_role(request.user, Role.STUDENT, Role.PARENT) or
             get_student_for_user(request.user) is not None or
+            get_parent_profile(request.user) is not None or
             request.user.is_superuser
         )
+
+
+class IsPortalParent(IsPortalStudent):
+    """DRF permission alias: Authenticated Guardian/Parent."""
+    pass
 
 
 class IsPortalTeacher(permissions.BasePermission):

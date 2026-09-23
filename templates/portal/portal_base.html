@@ -200,28 +200,24 @@
     </div>
 
     <div class="d-flex align-items-center flex-shrink-0">
-      <!-- Child Switcher (Parent Portal Only) -->
-      {% if portal_role == 'Parent' and children %}
+      <!-- Child Switcher (For Family Guardians with multiple children) -->
+      {% if children %}
         <div class="dropdown mr-1 mr-sm-2">
           <button class="btn child-switcher-btn dropdown-toggle" type="button" id="childDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <i class="fas fa-child mr-1"></i>
-            <span class="d-none d-sm-inline">Child: </span><strong>{{ selected_child.first_name|default:selected_child.name|default:"Select" }}</strong>
+            <span class="d-none d-sm-inline">Student: </span><strong>{{ selected_child.first_name|default:selected_child.name|default:"Select" }}</strong>
           </button>
           <div class="dropdown-menu dropdown-menu-right shadow border-0" aria-labelledby="childDropdown" style="border-radius: 12px; min-width: 240px;">
-            <h6 class="dropdown-header text-uppercase font-weight-bold" style="font-size: 0.7rem;">Your Children</h6>
+            <h6 class="dropdown-header text-uppercase font-weight-bold" style="font-size: 0.7rem;">Linked Students</h6>
             {% for child in children %}
               <a class="dropdown-item d-flex justify-content-between align-items-center py-2 {% if selected_child.id == child.id %}font-weight-bold text-primary bg-light{% endif %}"
-                 href="{% url 'portal:parent_child_switch' child.id %}?next={{ request.path }}">
+                 href="{% url 'portal:student_child_switch' child.id %}?next={{ request.path }}">
                 <span>{{ child.name }} <small class="text-muted">({{ child.grade_level.name|default:"Class" }} - {{ child.section.name|default:"" }})</small></span>
                 {% if selected_child.id == child.id %}
                   <i class="fas fa-check text-primary small ml-2"></i>
                 {% endif %}
               </a>
             {% endfor %}
-            <div class="dropdown-divider"></div>
-            <a class="dropdown-item small text-muted py-2" href="{% url 'portal:parent_children' %}">
-              <i class="fas fa-users mr-1"></i> Manage All Children
-            </a>
           </div>
         </div>
       {% endif %}
@@ -262,101 +258,7 @@
   <nav class="portal-subnav d-none d-md-block">
     <div class="container-fluid px-0">
       <ul class="nav">
-        {% if portal_role == 'Parent' %}
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'parent_dashboard' %}active{% endif %}" href="{% url 'portal:parent_dashboard' %}">
-              <i class="fas fa-home mr-1.5"></i> Dashboard
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'parent_attendance' %}active{% endif %}" href="{% url 'portal:parent_attendance' %}">
-              <i class="fas fa-calendar-check mr-1.5"></i> Attendance
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'parent_fees' %}active{% endif %}" href="{% url 'portal:parent_fees' %}">
-              <i class="fas fa-receipt mr-1.5"></i> Fees & Payments
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'parent_results' %}active{% endif %}" href="{% url 'portal:parent_results' %}">
-              <i class="fas fa-award mr-1.5"></i> Results & Reports
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'parent_timetable' %}active{% endif %}" href="{% url 'portal:parent_timetable' %}">
-              <i class="fas fa-clock mr-1.5"></i> Timetable
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'parent_transport' %}active{% endif %}" href="{% url 'portal:parent_transport' %}">
-              <i class="fas fa-bus mr-1.5"></i> Transport
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'parent_library' %}active{% endif %}" href="{% url 'portal:parent_library' %}">
-              <i class="fas fa-book mr-1.5"></i> Library
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'parent_children' %}active{% endif %}" href="{% url 'portal:parent_children' %}">
-              <i class="fas fa-users mr-1.5"></i> Children
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'notices' or request.resolver_match.url_name == 'parent_notices' %}active{% endif %}" href="{% url 'portal:parent_notices' %}">
-              <i class="fas fa-bullhorn mr-1.5"></i> Notices
-            </a>
-          </li>
-
-        {% elif portal_role == 'Student' %}
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'student_dashboard' %}active{% endif %}" href="{% url 'portal:student_dashboard' %}">
-              <i class="fas fa-home mr-1.5"></i> Dashboard
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'student_attendance' %}active{% endif %}" href="{% url 'portal:student_attendance' %}">
-              <i class="fas fa-calendar-check mr-1.5"></i> My Attendance
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'student_results' %}active{% endif %}" href="{% url 'portal:student_results' %}">
-              <i class="fas fa-award mr-1.5"></i> Exams & Results
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'student_timetable' %}active{% endif %}" href="{% url 'portal:student_timetable' %}">
-              <i class="fas fa-clock mr-1.5"></i> Timetable
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'student_fees' %}active{% endif %}" href="{% url 'portal:student_fees' %}">
-              <i class="fas fa-receipt mr-1.5"></i> Fee Dues
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'student_transport' %}active{% endif %}" href="{% url 'portal:student_transport' %}">
-              <i class="fas fa-bus mr-1.5"></i> Transport
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'student_library' %}active{% endif %}" href="{% url 'portal:student_library' %}">
-              <i class="fas fa-book mr-1.5"></i> Library Pass
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'student_profile' %}active{% endif %}" href="{% url 'portal:student_profile' %}">
-              <i class="fas fa-id-card mr-1.5"></i> My Profile
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'notices' or request.resolver_match.url_name == 'student_notices' %}active{% endif %}" href="{% url 'portal:student_notices' %}">
-              <i class="fas fa-bullhorn mr-1.5"></i> Notices
-            </a>
-          </li>
-
-        {% elif portal_role == 'Teacher' %}
+        {% if portal_role == 'Teacher' %}
           <li class="nav-item">
             <a class="nav-link {% if request.resolver_match.url_name == 'teacher_dashboard' %}active{% endif %}" href="{% url 'portal:teacher_dashboard' %}">
               <i class="fas fa-home mr-1.5"></i> Dashboard
@@ -407,6 +309,54 @@
               <i class="fas fa-bullhorn mr-1.5"></i> Notices
             </a>
           </li>
+
+        {% else %}
+          {# CANONICAL STUDENT & FAMILY EXPERIENCE #}
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'student_dashboard' or request.resolver_match.url_name == 'parent_dashboard' %}active{% endif %}" href="{% url 'portal:student_dashboard' %}">
+              <i class="fas fa-home mr-1.5"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'student_attendance' or request.resolver_match.url_name == 'parent_attendance' %}active{% endif %}" href="{% url 'portal:student_attendance' %}">
+              <i class="fas fa-calendar-check mr-1.5"></i> Attendance
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'student_results' or request.resolver_match.url_name == 'parent_results' %}active{% endif %}" href="{% url 'portal:student_results' %}">
+              <i class="fas fa-award mr-1.5"></i> Exams & Results
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'student_timetable' or request.resolver_match.url_name == 'parent_timetable' %}active{% endif %}" href="{% url 'portal:student_timetable' %}">
+              <i class="fas fa-clock mr-1.5"></i> Timetable
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'student_fees' or request.resolver_match.url_name == 'parent_fees' %}active{% endif %}" href="{% url 'portal:student_fees' %}">
+              <i class="fas fa-receipt mr-1.5"></i> Fees & Dues
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'student_transport' or request.resolver_match.url_name == 'parent_transport' %}active{% endif %}" href="{% url 'portal:student_transport' %}">
+              <i class="fas fa-bus mr-1.5"></i> Transport
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'student_library' or request.resolver_match.url_name == 'parent_library' %}active{% endif %}" href="{% url 'portal:student_library' %}">
+              <i class="fas fa-book mr-1.5"></i> Library Pass
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'student_profile' or request.resolver_match.url_name == 'parent_profile' %}active{% endif %}" href="{% url 'portal:student_profile' %}">
+              <i class="fas fa-id-card mr-1.5"></i> Profile
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'notices' or request.resolver_match.url_name == 'student_notices' or request.resolver_match.url_name == 'parent_notices' %}active{% endif %}" href="{% url 'portal:student_notices' %}">
+              <i class="fas fa-bullhorn mr-1.5"></i> Notices
+            </a>
+          </li>
         {% endif %}
       </ul>
     </div>
@@ -432,59 +382,7 @@
        MOBILE STICKY BOTTOM APP NAVIGATION BAR (< 768px)
        ───────────────────────────────────────────────────────────── -->
   <nav class="portal-mobile-bottom-nav" aria-label="Mobile Navigation">
-    {% if portal_role == 'Student' %}
-      <a href="{% url 'portal:student_dashboard' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'student_dashboard' %}active{% endif %}">
-        <i class="fas fa-home"></i>
-        <span>Home</span>
-      </a>
-      <a href="{% url 'portal:student_attendance' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'student_attendance' %}active{% endif %}">
-        <i class="fas fa-calendar-check"></i>
-        <span>Attendance</span>
-      </a>
-      <a href="{% url 'portal:student_timetable' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'student_timetable' %}active{% endif %}">
-        <i class="fas fa-clock"></i>
-        <span>Schedule</span>
-      </a>
-      <a href="{% url 'portal:student_results' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'student_results' %}active{% endif %}">
-        <i class="fas fa-award"></i>
-        <span>Results</span>
-      </a>
-      <a href="{% url 'portal:student_fees' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'student_fees' %}active{% endif %}">
-        <i class="fas fa-receipt"></i>
-        <span>Fees</span>
-      </a>
-      <a href="javascript:void(0);" class="portal-bottom-nav-item" id="openPortalSheetBtn" aria-label="More Options">
-        <i class="fas fa-ellipsis-h"></i>
-        <span>More</span>
-      </a>
-
-    {% elif portal_role == 'Parent' %}
-      <a href="{% url 'portal:parent_dashboard' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'parent_dashboard' %}active{% endif %}">
-        <i class="fas fa-home"></i>
-        <span>Home</span>
-      </a>
-      <a href="{% url 'portal:parent_attendance' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'parent_attendance' %}active{% endif %}">
-        <i class="fas fa-calendar-check"></i>
-        <span>Attendance</span>
-      </a>
-      <a href="{% url 'portal:parent_fees' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'parent_fees' %}active{% endif %}">
-        <i class="fas fa-receipt"></i>
-        <span>Fees</span>
-      </a>
-      <a href="{% url 'portal:parent_results' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'parent_results' %}active{% endif %}">
-        <i class="fas fa-award"></i>
-        <span>Results</span>
-      </a>
-      <a href="{% url 'portal:parent_timetable' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'parent_timetable' %}active{% endif %}">
-        <i class="fas fa-clock"></i>
-        <span>Schedule</span>
-      </a>
-      <a href="javascript:void(0);" class="portal-bottom-nav-item" id="openPortalSheetBtn" aria-label="More Options">
-        <i class="fas fa-ellipsis-h"></i>
-        <span>More</span>
-      </a>
-
-    {% elif portal_role == 'Teacher' %}
+    {% if portal_role == 'Teacher' %}
       <a href="{% url 'portal:teacher_dashboard' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'teacher_dashboard' %}active{% endif %}">
         <i class="fas fa-home"></i>
         <span>Home</span>
@@ -509,6 +407,33 @@
         <i class="fas fa-ellipsis-h"></i>
         <span>More</span>
       </a>
+
+    {% else %}
+      {# CANONICAL STUDENT & FAMILY BOTTOM NAV #}
+      <a href="{% url 'portal:student_dashboard' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'student_dashboard' or request.resolver_match.url_name == 'parent_dashboard' %}active{% endif %}">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+      </a>
+      <a href="{% url 'portal:student_attendance' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'student_attendance' or request.resolver_match.url_name == 'parent_attendance' %}active{% endif %}">
+        <i class="fas fa-calendar-check"></i>
+        <span>Attendance</span>
+      </a>
+      <a href="{% url 'portal:student_timetable' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'student_timetable' or request.resolver_match.url_name == 'parent_timetable' %}active{% endif %}">
+        <i class="fas fa-clock"></i>
+        <span>Schedule</span>
+      </a>
+      <a href="{% url 'portal:student_results' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'student_results' or request.resolver_match.url_name == 'parent_results' %}active{% endif %}">
+        <i class="fas fa-award"></i>
+        <span>Results</span>
+      </a>
+      <a href="{% url 'portal:student_fees' %}" class="portal-bottom-nav-item {% if request.resolver_match.url_name == 'student_fees' or request.resolver_match.url_name == 'parent_fees' %}active{% endif %}">
+        <i class="fas fa-receipt"></i>
+        <span>Fees</span>
+      </a>
+      <a href="javascript:void(0);" class="portal-bottom-nav-item" id="openPortalSheetBtn" aria-label="More Options">
+        <i class="fas fa-ellipsis-h"></i>
+        <span>More</span>
+      </a>
     {% endif %}
   </nav>
 
@@ -526,61 +451,7 @@
     </div>
 
     <div class="portal-sheet-grid">
-      {% if portal_role == 'Student' %}
-        <a href="{% url 'portal:student_notices' %}" class="portal-sheet-item">
-          <i class="fas fa-bullhorn text-warning"></i>
-          <span>Notices</span>
-        </a>
-        <a href="{% url 'portal:student_transport' %}" class="portal-sheet-item">
-          <i class="fas fa-bus text-info"></i>
-          <span>Transport</span>
-        </a>
-        <a href="{% url 'portal:student_library' %}" class="portal-sheet-item">
-          <i class="fas fa-book text-primary"></i>
-          <span>Library</span>
-        </a>
-        <a href="{% url 'portal:student_profile' %}" class="portal-sheet-item">
-          <i class="fas fa-id-card text-success"></i>
-          <span>My Profile</span>
-        </a>
-        {% if request.user.is_staff or request.user.is_superuser %}
-          <a href="{% url 'index_view' %}" class="portal-sheet-item">
-            <i class="fas fa-tachometer-alt text-danger"></i>
-            <span>Staff ERP</span>
-          </a>
-        {% endif %}
-        <a href="{% url 'account_logout' %}" class="portal-sheet-item text-danger">
-          <i class="fas fa-sign-out-alt"></i>
-          <span>Sign Out</span>
-        </a>
-
-      {% elif portal_role == 'Parent' %}
-        <a href="{% url 'portal:parent_children' %}" class="portal-sheet-item">
-          <i class="fas fa-users text-primary"></i>
-          <span>Children</span>
-        </a>
-        <a href="{% url 'portal:parent_notices' %}" class="portal-sheet-item">
-          <i class="fas fa-bullhorn text-warning"></i>
-          <span>Notices</span>
-        </a>
-        <a href="{% url 'portal:parent_transport' %}" class="portal-sheet-item">
-          <i class="fas fa-bus text-info"></i>
-          <span>Transport</span>
-        </a>
-        <a href="{% url 'portal:parent_library' %}" class="portal-sheet-item">
-          <i class="fas fa-book text-success"></i>
-          <span>Library</span>
-        </a>
-        <a href="{% url 'portal:profile' %}" class="portal-sheet-item">
-          <i class="fas fa-id-card text-secondary"></i>
-          <span>Profile</span>
-        </a>
-        <a href="{% url 'account_logout' %}" class="portal-sheet-item text-danger">
-          <i class="fas fa-sign-out-alt"></i>
-          <span>Sign Out</span>
-        </a>
-
-      {% elif portal_role == 'Teacher' %}
+      {% if portal_role == 'Teacher' %}
         <a href="{% url 'portal:teacher_exams' %}" class="portal-sheet-item">
           <i class="fas fa-pen-nib text-primary"></i>
           <span>Exams</span>
@@ -615,9 +486,39 @@
           <i class="fas fa-sign-out-alt"></i>
           <span>Sign Out</span>
         </a>
+
+      {% else %}
+        {# STUDENT & FAMILY OPTIONS #}
+        <a href="{% url 'portal:student_notices' %}" class="portal-sheet-item">
+          <i class="fas fa-bullhorn text-warning"></i>
+          <span>Notices</span>
+        </a>
+        <a href="{% url 'portal:student_transport' %}" class="portal-sheet-item">
+          <i class="fas fa-bus text-info"></i>
+          <span>Transport</span>
+        </a>
+        <a href="{% url 'portal:student_library' %}" class="portal-sheet-item">
+          <i class="fas fa-book text-primary"></i>
+          <span>Library</span>
+        </a>
+        <a href="{% url 'portal:student_profile' %}" class="portal-sheet-item">
+          <i class="fas fa-id-card text-success"></i>
+          <span>My Profile</span>
+        </a>
+        {% if request.user.is_staff or request.user.is_superuser %}
+          <a href="{% url 'index_view' %}" class="portal-sheet-item">
+            <i class="fas fa-tachometer-alt text-danger"></i>
+            <span>Staff ERP</span>
+          </a>
+        {% endif %}
+        <a href="{% url 'account_logout' %}" class="portal-sheet-item text-danger">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Sign Out</span>
+        </a>
       {% endif %}
     </div>
   </div>
+
 
   <!-- Scripts -->
   <script src="{% static 'js/jquery-3.4.1.min.js' %}"></script>

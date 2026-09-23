@@ -37,13 +37,13 @@ class AccountAdapter(DefaultAccountAdapter):
         if user.approval_status not in ['a', 'approved', ProfileApprovalStatusEnum.approved.value]:
             return resolve_url('account:profile_complete')
 
-        # 3. Role-based routing for self-service portal users
-        role = (getattr(user, 'requested_role', '') or '').upper()
-        if role == 'STUDENT':
+        # 3. Canonical Role-based routing for portals
+        from django_school_management.accounts.roles import get_user_portal, PortalType
+
+        portal = get_user_portal(user)
+        if portal == PortalType.STUDENT_PORTAL:
             return resolve_url('portal:student_dashboard')
-        elif role == 'PARENT':
-            return resolve_url('portal:parent_dashboard')
-        elif role == 'TEACHER':
+        elif portal == PortalType.TEACHER_PORTAL:
             return resolve_url('portal:teacher_dashboard')
 
         # 4. School Admin and staff roles -> Admin ERP dashboard

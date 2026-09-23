@@ -10,17 +10,17 @@ from functools import wraps
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import redirect
-from .roles import Role, user_has_role
+from .roles import Role, user_has_role, get_user_portal, PortalType
 
 
 def require_school_access(user, school) -> bool:
     """
     Validates that a user has legitimate access to a specific school tenant.
-    Platform Super Admins have global access. All other users must match user.school.
+    Superusers have global access. All other users must match user.school.
     """
     if not user or not user.is_authenticated:
         return False
-    if user.is_superuser or user_has_role(user, Role.PLATFORM_SUPER_ADMIN):
+    if user.is_superuser:
         return True
     user_school = getattr(user, 'school', None)
     return user_school is not None and school is not None and user_school.pk == school.pk
@@ -32,7 +32,7 @@ def user_has_permission(user, permission_codename: str) -> bool:
     """
     if not user or not user.is_authenticated:
         return False
-    if user.is_superuser or user_has_role(user, Role.PLATFORM_SUPER_ADMIN):
+    if user.is_superuser:
         return True
     return user.has_perm(permission_codename)
 
@@ -51,7 +51,7 @@ def role_required(*allowed_roles):
                     return JsonResponse({"detail": "Authentication credentials were not provided."}, status=401)
                 return redirect('account_login')
 
-            if user.is_superuser or user_has_role(user, Role.PLATFORM_SUPER_ADMIN):
+            if user.is_superuser:
                 return view_func(request, *args, **kwargs)
 
             # Check tenant alignment
@@ -72,20 +72,14 @@ def role_required(*allowed_roles):
     return decorator
 
 
-# Convenience decorators
-platform_super_admin_required = role_required(Role.PLATFORM_SUPER_ADMIN)
-school_admin_required = role_required(Role.PLATFORM_SUPER_ADMIN, Role.SCHOOL_ADMIN, Role.PRINCIPAL)
-principal_required = role_required(Role.PLATFORM_SUPER_ADMIN, Role.SCHOOL_ADMIN, Role.PRINCIPAL, Role.VICE_PRINCIPAL)
-academic_staff_required = role_required(
-    Role.PLATFORM_SUPER_ADMIN, Role.SCHOOL_ADMIN, Role.PRINCIPAL,
-    Role.VICE_PRINCIPAL, Role.ACADEMIC_COORDINATOR, Role.TEACHER
-)
-teacher_required = role_required(
-    Role.PLATFORM_SUPER_ADMIN, Role.SCHOOL_ADMIN, Role.PRINCIPAL, Role.TEACHER
-)
-accountant_required = role_required(
-    Role.PLATFORM_SUPER_ADMIN, Role.SCHOOL_ADMIN, Role.PRINCIPAL, Role.ACCOUNTANT
-)
-student_or_parent_required = role_required(
-    Role.PLATFORM_SUPER_ADMIN, Role.SCHOOL_ADMIN, Role.TEACHER, Role.STUDENT, Role.PARENT
-)
+# Canonical 3 Product Role Decorators
+school_admin_required = role_required(Role.SCHOOL_ADMIN)
+teacher_required = role_required(Role.SCHOOL_ADMIN, Role.TEACHER)
+student_or_guardian_required = role_required(Role.SCHOOL_ADMIN, Role.TEACHER, Role.STUDENT, Role.PARENT)
+
+# Backward compatibility aliases
+platform_super_admin_required = school_admin_required
+principal_required = school_admin_required
+academic_staff_required = teacher_required
+accountant_required = school_admin_required
+student_or_parent_required = student_or_guardian_required

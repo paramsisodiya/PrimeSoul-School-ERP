@@ -1,8 +1,10 @@
 """
 PrimeSoul Unified Portal - Web Views
-Role-aware self-service controllers for Parent, Student, and Teacher portals.
-Delegates business logic strictly to existing domain services.
+Role-aware self-service controllers simplified into two canonical portals:
+1. STUDENT & FAMILY PORTAL (Single mobile-first experience for students and linked family guardians)
+2. TEACHER PORTAL (Focused teaching and academic workflow)
 """
+import datetime
 from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -10,9 +12,9 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.utils import timezone
 from django.urls import reverse
-
 from django.db.models import Sum
-from django_school_management.accounts.roles import Role, user_has_role
+
+from django_school_management.accounts.roles import Role, user_has_role, get_user_portal, PortalType
 from django_school_management.academics.models import AcademicYear, Section, GradeLevel, SubjectAssignment
 from django_school_management.students.models import Student
 from django_school_management.notices.models import Notice
@@ -35,293 +37,62 @@ from django_school_management.portal.permissions import (
     get_student_for_user,
     get_teacher_for_user,
     get_employee_for_user,
-    parent_portal_required,
     student_portal_required,
     teacher_portal_required,
+    parent_portal_required,
 )
 from django_school_management.portal.selectors import portal_selectors
 
 
 # ─────────────────────────────────────────────────────────────
-# 1. ROLE-AWARE PORTAL ROOT REDIRECT
+# 1. CANONICAL PORTAL ROOT REDIRECT
 # ─────────────────────────────────────────────────────────────
 
 @login_required
 def portal_root_redirect(request):
     """
-    Directs authenticated users to their corresponding self-service portal:
-    - Parent  -> /portal/parent/
-    - Student -> /portal/student/
+    Directs authenticated users to their canonical portal:
+    - Student / Family Guardian -> /portal/student/
     - Teacher -> /portal/teacher/
-    - Staff / Admin -> /dashboard/ (ERP dashboard)
+    - School Admin -> /dashboard/
     """
-    user = request.user
-    school = resolve_portal_school(request)
-
-    if user_has_role(user, Role.PARENT) or get_parent_profile(user, school):
-        return redirect('portal:parent_dashboard')
-
-    if user_has_role(user, Role.STUDENT) or get_student_for_user(user, school):
+    portal = get_user_portal(request.user)
+    if portal == PortalType.STUDENT_PORTAL:
         return redirect('portal:student_dashboard')
-
-    if user_has_role(user, Role.TEACHER) or get_teacher_for_user(user, school):
+    elif portal == PortalType.TEACHER_PORTAL:
         return redirect('portal:teacher_dashboard')
-
-    # School admin, Principal, Accountant, Receptionist, Librarian, Transport Manager
     return redirect('index_view')
 
 
 # ─────────────────────────────────────────────────────────────
-# 2. PARENT PORTAL VIEWS
+# 2. STUDENT & FAMILY PORTAL VIEWS
 # ─────────────────────────────────────────────────────────────
 
-@login_required
-@parent_portal_required
-def parent_dashboard(request):
-    """Parent dashboard displaying KPIs and recent activity for the active child."""
-    school = resolve_portal_school(request)
-    child = get_parent_selected_child(request, school, student_id=request.GET.get('student_id'))
-    data = portal_selectors.get_parent_portal_dashboard(request.user, school, child)
-
-    context = {
-        'school': school,
-        'portal_role': 'Parent',
-        'parent_profile': get_parent_profile(request.user, school),
-        **data,
-    }
-    return render(request, 'portal/parent/dashboard.html', context)
-
-
-@login_required
-@parent_portal_required
-def parent_children(request):
-    """Lists all children linked to the parent with quick switch options."""
-    school = resolve_portal_school(request)
+def _get_student_portal_context(request, school, student):
+    """Helper to attach child switcher and guardian metadata if applicable."""
     children = get_parent_children(request.user, school)
-    selected_child = get_parent_selected_child(request, school, student_id=request.GET.get('student_id'))
-
-    children_data = []
-    for c in children:
-        att = portal_selectors.get_student_portal_attendance(c, school)
-        fees = portal_selectors.get_student_portal_fees(c, school)
-        children_data.append({
-            'student': c,
-            'attendance_pct': att.get('percentage', 0.0),
-            'outstanding_fees': fees.get('total_outstanding', Decimal('0.00')),
-            'is_selected': bool(selected_child and selected_child.id == c.id),
-        })
-
-    context = {
+    is_guardian = bool(children and not getattr(request.user, 'student_profile', None))
+    return {
         'school': school,
-        'children_data': children_data,
+        'student': student,
+        'selected_child': student,
         'children': children,
-        'selected_child': selected_child,
+        'is_guardian_view': is_guardian,
         'parent_profile': get_parent_profile(request.user, school),
-        'portal_role': 'Parent',
+        'portal_role': 'Student',
     }
-    return render(request, 'portal/parent/children.html', context)
 
-
-@login_required
-@parent_portal_required
-def parent_child_switch(request, student_id):
-    """Switches the active child for the parent session with strict IDOR verification."""
-    school = resolve_portal_school(request)
-    # Server-side validation
-    valid_child = get_parent_selected_child(request, school, student_id=student_id)
-    if valid_child:
-        if hasattr(request, 'session') and request.session is not None:
-            request.session['portal_selected_student_id'] = valid_child.id
-        messages.success(request, f"Switched view to {valid_child.name}.")
-    else:
-        messages.error(request, "Invalid or unauthorized student selection.")
-
-    next_url = request.GET.get('next') or reverse('portal:parent_dashboard')
-    return redirect(next_url)
-
-
-@login_required
-@parent_portal_required
-def parent_child_detail(request, student_id):
-    """Detailed profile of a specific child with verified guardian linkage."""
-    school = resolve_portal_school(request)
-    allowed_children = {c.id: c for c in get_parent_children(request.user, school)}
-
-    if student_id not in allowed_children:
-        raise PermissionDenied("Unauthorized child access.")
-
-    child = allowed_children[student_id]
-    guardian_profile = get_parent_profile(request.user, school)
-
-    context = {
-        'school': school,
-        'child': child,
-        'children': list(allowed_children.values()),
-        'guardian_profile': guardian_profile,
-        'parent_profile': guardian_profile,
-        'selected_child': child,
-        'portal_role': 'Parent',
-    }
-    return render(request, 'portal/parent/child_detail.html', context)
-
-
-@login_required
-@parent_portal_required
-def parent_attendance(request):
-    """Attendance metrics and history for the active child."""
-    school = resolve_portal_school(request)
-    children = get_parent_children(request.user, school)
-    child = get_parent_selected_child(request, school, student_id=request.GET.get('student_id'))
-    att_data = portal_selectors.get_student_portal_attendance(child, school)
-
-    context = {
-        'school': school,
-        'children': children,
-        'selected_child': child,
-        'parent_profile': get_parent_profile(request.user, school),
-        'portal_role': 'Parent',
-        **att_data,
-    }
-    return render(request, 'portal/parent/attendance.html', context)
-
-
-@login_required
-@parent_portal_required
-def parent_fees(request):
-    """Fee statement, installments, invoices, and payment receipts for the active child."""
-    school = resolve_portal_school(request)
-    children = get_parent_children(request.user, school)
-    child = get_parent_selected_child(request, school, student_id=request.GET.get('student_id'))
-    fee_data = portal_selectors.get_student_portal_fees(child, school)
-
-    context = {
-        'school': school,
-        'children': children,
-        'selected_child': child,
-        'parent_profile': get_parent_profile(request.user, school),
-        'portal_role': 'Parent',
-        **fee_data,
-    }
-    return render(request, 'portal/parent/fees.html', context)
-
-
-@login_required
-@parent_portal_required
-def parent_results(request):
-    """Published exam results and report card links for the active child."""
-    school = resolve_portal_school(request)
-    children = get_parent_children(request.user, school)
-    child = get_parent_selected_child(request, school, student_id=request.GET.get('student_id'))
-    results = portal_selectors.get_student_portal_results(child, school)
-
-    context = {
-        'school': school,
-        'children': children,
-        'selected_child': child,
-        'parent_profile': get_parent_profile(request.user, school),
-        'portal_role': 'Parent',
-        'results': results,
-    }
-    return render(request, 'portal/parent/results.html', context)
-
-
-@login_required
-@parent_portal_required
-def parent_timetable(request):
-    """Class and section timetable matrix for the active child."""
-    school = resolve_portal_school(request)
-    children = get_parent_children(request.user, school)
-    child = get_parent_selected_child(request, school, student_id=request.GET.get('student_id'))
-    tt_data = portal_selectors.get_student_portal_timetable(child, school)
-
-    context = {
-        'school': school,
-        'children': children,
-        'selected_child': child,
-        'parent_profile': get_parent_profile(request.user, school),
-        'portal_role': 'Parent',
-        **tt_data,
-    }
-    return render(request, 'portal/parent/timetable.html', context)
-
-
-@login_required
-@parent_portal_required
-def parent_transport(request):
-    """Transport route, stop, vehicle, and driver contact for the active child."""
-    school = resolve_portal_school(request)
-    children = get_parent_children(request.user, school)
-    child = get_parent_selected_child(request, school, student_id=request.GET.get('student_id'))
-    transport_info = portal_selectors.get_student_portal_transport(child, school)
-
-    context = {
-        'school': school,
-        'children': children,
-        'selected_child': child,
-        'parent_profile': get_parent_profile(request.user, school),
-        'portal_role': 'Parent',
-        'transport': transport_info,
-    }
-    return render(request, 'portal/parent/transport.html', context)
-
-
-@login_required
-@parent_portal_required
-def parent_library(request):
-    """Library borrowings and fine status for the active child."""
-    school = resolve_portal_school(request)
-    children = get_parent_children(request.user, school)
-    child = get_parent_selected_child(request, school, student_id=request.GET.get('student_id'))
-    lib_info = portal_selectors.get_student_portal_library(child, school)
-
-    context = {
-        'school': school,
-        'children': children,
-        'selected_child': child,
-        'parent_profile': get_parent_profile(request.user, school),
-        'portal_role': 'Parent',
-        'library': lib_info,
-    }
-    return render(request, 'portal/parent/library.html', context)
-
-
-@login_required
-@parent_portal_required
-def parent_profile(request):
-    """Parent account and profile view."""
-    school = resolve_portal_school(request)
-    guardian = get_parent_profile(request.user, school)
-    children = get_parent_children(request.user, school)
-    selected_child = get_parent_selected_child(request, school)
-
-    context = {
-        'school': school,
-        'guardian': guardian,
-        'children': children,
-        'selected_child': selected_child,
-        'portal_role': 'Parent',
-    }
-    return render(request, 'portal/parent/profile.html', context)
-
-
-# ─────────────────────────────────────────────────────────────
-# 3. STUDENT PORTAL VIEWS
-# ─────────────────────────────────────────────────────────────
 
 @login_required
 @student_portal_required
 def student_dashboard(request):
-    """Student self-service dashboard."""
+    """Student & Family self-service dashboard."""
     school = resolve_portal_school(request)
-    student = get_student_for_user(request.user, school)
+    student = get_student_for_user(request.user, school, request=request)
     data = portal_selectors.get_student_portal_dashboard(student, school)
-
-    context = {
-        'school': school,
-        'portal_role': 'Student',
-        **data,
-    }
-    return render(request, 'portal/student/dashboard.html', context)
+    ctx = _get_student_portal_context(request, school, student)
+    ctx.update(data)
+    return render(request, 'portal/student/dashboard.html', ctx)
 
 
 @login_required
@@ -329,120 +100,102 @@ def student_dashboard(request):
 def student_profile(request):
     """Student academic placement and personal profile view."""
     school = resolve_portal_school(request)
-    student = get_student_for_user(request.user, school)
-
-    context = {
-        'school': school,
-        'student': student,
-        'portal_role': 'Student',
-    }
-    return render(request, 'portal/student/profile.html', context)
+    student = get_student_for_user(request.user, school, request=request)
+    ctx = _get_student_portal_context(request, school, student)
+    return render(request, 'portal/student/profile.html', ctx)
 
 
 @login_required
 @student_portal_required
 def student_attendance(request):
-    """Student attendance summary and record history."""
+    """Student attendance summary and monthly history."""
     school = resolve_portal_school(request)
-    student = get_student_for_user(request.user, school)
+    student = get_student_for_user(request.user, school, request=request)
     att_data = portal_selectors.get_student_portal_attendance(student, school)
-
-    context = {
-        'school': school,
-        'student': student,
-        'portal_role': 'Student',
-        **att_data,
-    }
-    return render(request, 'portal/student/attendance.html', context)
+    ctx = _get_student_portal_context(request, school, student)
+    ctx.update(att_data)
+    return render(request, 'portal/student/attendance.html', ctx)
 
 
 @login_required
 @student_portal_required
 def student_fees(request):
-    """Student fee summary, installments, and payment receipts."""
+    """Student fee summary, installments, and payment history."""
     school = resolve_portal_school(request)
-    student = get_student_for_user(request.user, school)
+    student = get_student_for_user(request.user, school, request=request)
     fee_data = portal_selectors.get_student_portal_fees(student, school)
-
-    context = {
-        'school': school,
-        'student': student,
-        'portal_role': 'Student',
-        **fee_data,
-    }
-    return render(request, 'portal/student/fees.html', context)
+    ctx = _get_student_portal_context(request, school, student)
+    ctx.update(fee_data)
+    return render(request, 'portal/student/fees.html', ctx)
 
 
 @login_required
 @student_portal_required
 def student_results(request):
-    """Published exam results and report cards for the student."""
+    """Published examination marks and report cards."""
     school = resolve_portal_school(request)
-    student = get_student_for_user(request.user, school)
+    student = get_student_for_user(request.user, school, request=request)
     results = portal_selectors.get_student_portal_results(student, school)
-
-    context = {
-        'school': school,
-        'student': student,
-        'portal_role': 'Student',
-        'results': results,
-    }
-    return render(request, 'portal/student/results.html', context)
+    ctx = _get_student_portal_context(request, school, student)
+    ctx['results'] = results
+    return render(request, 'portal/student/results.html', ctx)
 
 
 @login_required
 @student_portal_required
 def student_timetable(request):
-    """Daily and weekly class timetable schedule for the student."""
+    """Daily and weekly class timetable schedule."""
     school = resolve_portal_school(request)
-    student = get_student_for_user(request.user, school)
+    student = get_student_for_user(request.user, school, request=request)
     tt_data = portal_selectors.get_student_portal_timetable(student, school)
-
-    context = {
-        'school': school,
-        'student': student,
-        'portal_role': 'Student',
-        **tt_data,
-    }
-    return render(request, 'portal/student/timetable.html', context)
+    ctx = _get_student_portal_context(request, school, student)
+    ctx.update(tt_data)
+    return render(request, 'portal/student/timetable.html', ctx)
 
 
 @login_required
 @student_portal_required
 def student_transport(request):
-    """Transport allocation, route, and driver contact for the student."""
+    """Transport allocation, vehicle, route, and driver details."""
     school = resolve_portal_school(request)
-    student = get_student_for_user(request.user, school)
+    student = get_student_for_user(request.user, school, request=request)
     transport_info = portal_selectors.get_student_portal_transport(student, school)
-
-    context = {
-        'school': school,
-        'student': student,
-        'portal_role': 'Student',
-        'transport': transport_info,
-    }
-    return render(request, 'portal/student/transport.html', context)
+    ctx = _get_student_portal_context(request, school, student)
+    ctx['transport'] = transport_info
+    return render(request, 'portal/student/transport.html', ctx)
 
 
 @login_required
 @student_portal_required
 def student_library(request):
-    """Student's borrowed library books and fines."""
+    """Student's borrowed books and library fines status."""
     school = resolve_portal_school(request)
-    student = get_student_for_user(request.user, school)
+    student = get_student_for_user(request.user, school, request=request)
     lib_info = portal_selectors.get_student_portal_library(student, school)
+    ctx = _get_student_portal_context(request, school, student)
+    ctx['library'] = lib_info
+    return render(request, 'portal/student/library.html', ctx)
 
-    context = {
-        'school': school,
-        'student': student,
-        'portal_role': 'Student',
-        'library': lib_info,
-    }
-    return render(request, 'portal/student/library.html', context)
+
+@login_required
+@student_portal_required
+def student_child_switch(request, student_id):
+    """Switches the active student view for a guardian session."""
+    school = resolve_portal_school(request)
+    valid_child = get_parent_selected_child(request, school, student_id=student_id)
+    if valid_child:
+        if hasattr(request, 'session') and request.session is not None:
+            request.session['portal_selected_student_id'] = valid_child.id
+        messages.success(request, f"Viewing student: {valid_child.name}.")
+    else:
+        messages.error(request, "Invalid or unauthorized student selection.")
+
+    next_url = request.GET.get('next') or reverse('portal:student_dashboard')
+    return redirect(next_url)
 
 
 # ─────────────────────────────────────────────────────────────
-# 4. TEACHER PORTAL VIEWS
+# 3. TEACHER PORTAL VIEWS
 # ─────────────────────────────────────────────────────────────
 
 @login_required
@@ -451,7 +204,6 @@ def teacher_dashboard(request):
     """Teacher & faculty self-service dashboard."""
     school = resolve_portal_school(request)
     data = portal_selectors.get_teacher_portal_dashboard(request.user, school)
-
     context = {
         'school': school,
         'portal_role': 'Teacher',
@@ -467,7 +219,6 @@ def teacher_profile(request):
     school = resolve_portal_school(request)
     teacher = get_teacher_for_user(request.user, school)
     employee = get_employee_for_user(request.user, school)
-
     context = {
         'school': school,
         'teacher': teacher,
@@ -484,7 +235,6 @@ def teacher_timetable(request):
     school = resolve_portal_school(request)
     teacher = get_teacher_for_user(request.user, school)
     tt_data = portal_selectors.get_teacher_portal_timetable(teacher, school)
-
     context = {
         'school': school,
         'teacher': teacher,
@@ -501,7 +251,6 @@ def teacher_classes(request):
     school = resolve_portal_school(request)
     teacher = get_teacher_for_user(request.user, school)
     classes = portal_selectors.get_teacher_assigned_classes(teacher, school)
-
     context = {
         'school': school,
         'teacher': teacher,
@@ -520,7 +269,6 @@ def teacher_students(request):
     section_id = request.GET.get('section_id')
     roster = portal_selectors.get_teacher_assigned_students(teacher, school, section_id=section_id)
     classes = portal_selectors.get_teacher_assigned_classes(teacher, school)
-
     context = {
         'school': school,
         'teacher': teacher,
@@ -541,7 +289,6 @@ def teacher_attendance(request):
     pending = attendance_selectors.get_pending_attendance_sections(
         school=school, academic_year=None, target_date=today, teacher_user=request.user
     )
-
     context = {
         'school': school,
         'pending_sections': pending,
@@ -558,7 +305,6 @@ def teacher_attendance_mark(request, section_id):
     school = resolve_portal_school(request)
     section = get_object_or_404(Section, pk=section_id, school=school)
 
-    # Permission check via existing service
     if not attendance_service.can_user_mark_section(request.user, school, section):
         raise PermissionDenied("Unauthorized to mark attendance for this section.")
 
@@ -573,7 +319,6 @@ def teacher_attendance_mark(request, section_id):
     ay = section.academic_year or AcademicYear.objects.filter(school=school, is_current=True).first()
 
     if request.method == 'POST':
-        # Delegate to existing attendance_service
         try:
             records_data = []
             for key, val in request.POST.items():
@@ -626,7 +371,6 @@ def teacher_exams(request):
     school = resolve_portal_school(request)
     teacher = get_teacher_for_user(request.user, school)
 
-    # Fetch active exam subjects for teacher's assigned subjects/classes
     teacher_subjects = []
     if teacher:
         teacher_subjects = list(
@@ -684,7 +428,7 @@ def teacher_leave(request):
 @login_required
 @teacher_portal_required
 def teacher_leave_apply(request):
-    """Applies for leave via existing HR leave_service."""
+    """Applies for leave via HR leave_service."""
     school = resolve_portal_school(request)
     employee = get_employee_for_user(request.user, school)
     if not employee:
@@ -770,12 +514,12 @@ def teacher_library(request):
 
 
 # ─────────────────────────────────────────────────────────────
-# 5. SHARED VIEWS (NOTICES & PROFILE)
+# 4. SHARED PORTAL VIEWS (NOTICES & PROFILE)
 # ─────────────────────────────────────────────────────────────
 
 @login_required
 def portal_notices(request):
-    """Notices listing accessible across all portals."""
+    """Notices listing accessible across portals."""
     school = resolve_portal_school(request)
     notices = portal_selectors.get_portal_notices(school, request.user, limit=30)
     context = {
@@ -799,15 +543,58 @@ def portal_notice_detail(request, pk):
 
 @login_required
 def portal_profile(request):
-    """Redirects to user's role-specific profile."""
-    user = request.user
-    school = resolve_portal_school(request)
-
-    if user_has_role(user, Role.PARENT) or get_parent_profile(user, school):
-        return redirect('portal:parent_profile')
-    if user_has_role(user, Role.STUDENT) or get_student_for_user(user, school):
+    """Redirects to user's canonical portal profile."""
+    portal = get_user_portal(request.user)
+    if portal == PortalType.STUDENT_PORTAL:
         return redirect('portal:student_profile')
-    if user_has_role(user, Role.TEACHER) or get_teacher_for_user(user, school):
+    elif portal == PortalType.TEACHER_PORTAL:
         return redirect('portal:teacher_profile')
-
     return redirect('index_view')
+
+
+# ─────────────────────────────────────────────────────────────
+# 5. BACKWARD-COMPATIBLE PARENT REDIRECTS (TO STUDENT PORTAL)
+# ─────────────────────────────────────────────────────────────
+
+@login_required
+def parent_dashboard(request):
+    return redirect('portal:student_dashboard')
+
+@login_required
+def parent_children(request):
+    return redirect('portal:student_dashboard')
+
+@login_required
+def parent_child_detail(request, student_id=None):
+    return redirect('portal:student_dashboard')
+
+parent_child_switch = student_child_switch
+
+@login_required
+def parent_attendance(request):
+    return redirect('portal:student_attendance')
+
+@login_required
+def parent_fees(request):
+    return redirect('portal:student_fees')
+
+@login_required
+def parent_results(request):
+    return redirect('portal:student_results')
+
+@login_required
+def parent_timetable(request):
+    return redirect('portal:student_timetable')
+
+@login_required
+def parent_transport(request):
+    return redirect('portal:student_transport')
+
+@login_required
+def parent_library(request):
+    return redirect('portal:student_library')
+
+@login_required
+def parent_profile(request):
+    return redirect('portal:student_profile')
+

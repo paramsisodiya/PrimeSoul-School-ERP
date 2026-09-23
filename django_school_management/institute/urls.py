@@ -27,6 +27,10 @@ urlpatterns = [
         views.InstituteProfileConfigListView.as_view(),
         name='institute_profile_list'
     ),
+    path('profile/',
+        views.InstituteProfileConfigListView.as_view(),
+        name='institute_profile'
+    ),
     path('dashboard/settings/setup-school/',
         views.InstituteProfileSetupDashboard.as_view(),
         name='setup_school'

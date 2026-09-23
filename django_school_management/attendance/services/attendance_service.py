@@ -77,12 +77,13 @@ def can_user_mark_section(user, school, section: Section) -> bool:
         ):
             return True
 
+        is_legacy_teacher = isinstance(teacher, Teacher)
         # 2. Check ClassTeacherAssignment
         if ClassTeacherAssignment.objects.filter(
             school=school, section=section, is_active=True
         ).filter(
             models.Q(teacher__email__iexact=user.email) |
-            (models.Q(teacher=teacher) if teacher else models.Q(pk__in=[]))
+            (models.Q(teacher=teacher) if is_legacy_teacher else models.Q(pk__in=[]))
         ).exists():
             return True
 
@@ -93,7 +94,7 @@ def can_user_mark_section(user, school, section: Section) -> bool:
             models.Q(section=section) | (models.Q(section__isnull=True) & models.Q(grade_level=section.grade_level))
         ).filter(
             models.Q(teacher__email__iexact=user.email) |
-            (models.Q(teacher=teacher) if teacher else models.Q(pk__in=[]))
+            (models.Q(teacher=teacher) if is_legacy_teacher else models.Q(pk__in=[]))
         ).exists():
             return True
 

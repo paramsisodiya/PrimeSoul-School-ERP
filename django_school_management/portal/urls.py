@@ -24,8 +24,9 @@ urlpatterns = [
     path('parent/notices/', views.portal_notices, name='parent_notices'),
     path('parent/profile/', views.parent_profile, name='parent_profile'),
 
-    # Student Portal
+    # Student Portal (Canonical Student & Family Experience)
     path('student/', views.student_dashboard, name='student_dashboard'),
+    path('student/switch/<int:student_id>/', views.student_child_switch, name='student_child_switch'),
     path('student/profile/', views.student_profile, name='student_profile'),
     path('student/attendance/', views.student_attendance, name='student_attendance'),
     path('student/fees/', views.student_fees, name='student_fees'),
