@@ -53,13 +53,20 @@
         {% if student.emergency_contact_number %}
           <span class="badge badge-light border text-muted"><i class="fas fa-phone-alt mr-1"></i>{{ student.emergency_contact_number }}</span>
         {% endif %}
+        {% if student.user %}
+          <span class="badge badge-success border text-white font-weight-bold"><i class="fas fa-check-circle mr-1"></i>Login: @{{ student.user.username }}</span>
+        {% else %}
+          <a href="{% url 'account:add_user' %}?role=STUDENT&student_id={{ student.pk }}" class="badge badge-warning border text-dark font-weight-bold" title="Click to create student portal login">
+            <i class="fas fa-key mr-1"></i> Create Login
+          </a>
+        {% endif %}
       </div>
     </div>
     <div class="col-12 col-md-auto text-center text-md-right mt-2 mt-md-0">
       <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-md-end">
         {% if is_teacher_view %}<span class="badge badge-secondary p-2">Faculty View</span>{% endif %}
         {% for act in action_items %}
-          <a href="{{ act.url }}" class="btn btn-sm {% if act.danger %}btn-outline-danger{% else %}btn-outline-primary{% endif %} m-1 font-weight-bold" {% if act.danger %}onclick="return confirm('Delete this student?');"{% endif %}>
+          <a href="{{ act.url }}" class="btn btn-sm {% if act.danger %}btn-outline-danger{% elif act.primary %}btn-primary text-white shadow-sm{% else %}btn-outline-primary{% endif %} m-1 font-weight-bold" {% if act.danger %}onclick="return confirm('Delete this student?');"{% endif %}>
             <i class="{{ act.icon }} mr-1"></i> {{ act.label }}
           </a>
         {% endfor %}

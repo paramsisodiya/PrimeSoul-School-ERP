@@ -1,56 +1,243 @@
 {% extends 'dashboard.html' %}
 {% load crispy_forms_tags %}
+{% load static %}
 
 {% block dashboard-body %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{% url 'index_view' %}">Dashboard</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Add User</li>
+    <li class="breadcrumb-item"><a href="{% url 'account:all_accounts' %}">Accounts</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Create Login Account</li>
   </ol>
 </nav>
 
-<h4>Add User</h4>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="font-weight-bold text-dark mb-1">
+      <i class="fas fa-user-plus text-primary mr-2"></i>Create User Login Account
+    </h4>
+    <p class="text-muted small mb-0">
+      Create login credentials and link them directly to an existing student, faculty member, or school administrator.
+    </p>
+  </div>
+  <div>
+    <a href="{% url 'account:all_accounts' %}" class="btn btn-outline-secondary btn-sm font-weight-bold">
+      <i class="fas fa-arrow-left mr-1"></i> Back to Accounts
+    </a>
+  </div>
+</div>
 
-{% if user_form.errors %}
-    {% for field in user_form %}
-        {% for error in field.errors %}
-            <div class="alert alert-danger">
-                <strong>{{ error|escape }}</strong>
-            </div>
-        {% endfor %}
-    {% endfor %}
+{% if user_form.non_field_errors %}
+  <div class="alert alert-danger shadow-sm border-0">
+    <i class="fas fa-exclamation-circle mr-2"></i>
     {% for error in user_form.non_field_errors %}
-        <div class="alert alert-danger">
-            <strong>{{ error|escape }}</strong>
-        </div>
+      {{ error }}
     {% endfor %}
+  </div>
 {% endif %}
 
-<div class="card">
-  <div class="card-body">
-    <form action="." method="post" class="d-block">
-        {% csrf_token %}
-        <div class="row align-items-end">
-          <div class="col-6">
-            <h5>User Information</h5>
-            {{ user_form|crispy }}
-            <h5>Permission</h5>
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="user_role" id="admin-user" value="admin">
-                <label class="form-check-label" for="admin-user">
-                    User is admin
-                </label>
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+  <div class="card-body p-4">
+    <form action="." method="post" id="user-create-form">
+      {% csrf_token %}
+
+      <!-- Step 1: Account Role Selection -->
+      <div class="mb-4 pb-3 border-bottom">
+        <label class="font-weight-bold text-dark d-block mb-2" style="font-size: 1.05rem;">
+          1. Select Account Role
+        </label>
+        <div class="row">
+          {% for radio in user_form.requested_role %}
+            <div class="col-12 col-md-4 mb-2">
+              <label class="role-selector-card d-block p-3 border rounded text-center cursor-pointer {% if radio.is_checked %}border-primary bg-light shadow-sm{% endif %}" style="cursor: pointer; transition: all 0.2s;">
+                <div class="d-flex align-items-center justify-content-center">
+                  {{ radio.tag }}
+                  <span class="font-weight-bold ml-2 text-dark">
+                    {% if radio.data.value == 'STUDENT' %}
+                      <i class="fas fa-user-graduate text-success mr-1"></i> Student Login
+                    {% elif radio.data.value == 'TEACHER' %}
+                      <i class="fas fa-chalkboard-teacher text-primary mr-1"></i> Teacher / Faculty
+                    {% else %}
+                      <i class="fas fa-user-shield text-danger mr-1"></i> School Admin
+                    {% endif %}
+                  </span>
+                </div>
+              </label>
             </div>
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="user_role" id="staff-user" value="staff">
-                <label class="form-check-label" for="staff-user">
-                    User is staff
-                </label>
+          {% endfor %}
+        </div>
+        {% if user_form.requested_role.errors %}
+          <div class="text-danger small mt-1 font-weight-bold">{{ user_form.requested_role.errors|first }}</div>
+        {% endif %}
+      </div>
+
+      <!-- Step 2: Link Domain Record -->
+      <div id="student-selector-section" class="mb-4 pb-3 border-bottom role-section">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <label class="font-weight-bold text-dark mb-0" style="font-size: 1.05rem;">
+            2. Select Existing Onboarded Student
+          </label>
+          <span class="badge badge-light border text-muted">Tenant: {{ school.name|default:"Active School" }}</span>
+        </div>
+        
+        {% if initial_student %}
+          <div class="alert alert-primary d-flex align-items-center mb-3">
+            <i class="fas fa-id-card fa-2x mr-3 text-primary"></i>
+            <div>
+              <div class="font-weight-bold" style="font-size: 1.1rem;">{{ initial_student.get_full_name }}</div>
+              <div class="small text-dark">
+                Class: <strong>{{ initial_student.grade_level.name|default:"—" }} ({{ initial_student.section.name|default:"—" }})</strong>
+                {% if initial_student.admission_number %} | Admission No: <strong>{{ initial_student.admission_number }}</strong>{% endif %}
+                {% if initial_student.roll_number %} | Roll No: <strong>{{ initial_student.roll_number }}</strong>{% endif %}
+              </div>
             </div>
           </div>
+        {% endif %}
+
+        <div class="form-group mb-1">
+          {{ user_form.student }}
+          {% if user_form.student.help_text %}
+            <small class="form-text text-muted">{{ user_form.student.help_text }}</small>
+          {% endif %}
+          {% if user_form.student.errors %}
+            <div class="text-danger small mt-1 font-weight-bold">{{ user_form.student.errors|first }}</div>
+          {% endif %}
         </div>
-        <button type="submit" class="btn btn-primary">Add User</button>
+      </div>
+
+      <div id="teacher-selector-section" class="mb-4 pb-3 border-bottom role-section" style="display: none;">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <label class="font-weight-bold text-dark mb-0" style="font-size: 1.05rem;">
+            2. Select Existing Faculty / Teacher Record
+          </label>
+          <span class="badge badge-light border text-muted">Tenant: {{ school.name|default:"Active School" }}</span>
+        </div>
+
+        {% if initial_teacher %}
+          <div class="alert alert-info d-flex align-items-center mb-3">
+            <i class="fas fa-chalkboard-teacher fa-2x mr-3 text-info"></i>
+            <div>
+              <div class="font-weight-bold" style="font-size: 1.1rem;">{{ initial_teacher.get_full_name }}</div>
+              <div class="small text-dark">
+                Designation: <strong>{{ initial_teacher.designation.title|default:"Faculty" }}</strong>
+                {% if initial_teacher.employee_code %} | Code: <strong>{{ initial_teacher.employee_code }}</strong>{% endif %}
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="form-group mb-1">
+          {{ user_form.teacher }}
+          {% if user_form.teacher.help_text %}
+            <small class="form-text text-muted">{{ user_form.teacher.help_text }}</small>
+          {% endif %}
+          {% if user_form.teacher.errors %}
+            <div class="text-danger small mt-1 font-weight-bold">{{ user_form.teacher.errors|first }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Step 3: Login Credentials -->
+      <div class="mb-4">
+        <label class="font-weight-bold text-dark d-block mb-3" style="font-size: 1.05rem;">
+          3. Account Credentials
+        </label>
+        
+        <div class="row">
+          <div class="col-12 col-md-6 mb-3">
+            <label class="font-weight-bold small text-muted">Username / Login ID <span class="text-danger">*</span></label>
+            {{ user_form.username }}
+            {% if user_form.username.errors %}
+              <div class="text-danger small mt-1 font-weight-bold">{{ user_form.username.errors|first }}</div>
+            {% endif %}
+          </div>
+          <div class="col-12 col-md-6 mb-3">
+            <label class="font-weight-bold small text-muted">Email Address (Optional / Recovery)</label>
+            {{ user_form.email }}
+            {% if user_form.email.errors %}
+              <div class="text-danger small mt-1 font-weight-bold">{{ user_form.email.errors|first }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-12 col-md-6 mb-3">
+            <label class="font-weight-bold small text-muted">First Name</label>
+            {{ user_form.first_name }}
+          </div>
+          <div class="col-12 col-md-6 mb-3">
+            <label class="font-weight-bold small text-muted">Last Name</label>
+            {{ user_form.last_name }}
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-12 col-md-6 mb-3">
+            <label class="font-weight-bold small text-muted">Temporary Password <span class="text-danger">*</span></label>
+            {{ user_form.password1 }}
+            {% if user_form.password1.errors %}
+              <div class="text-danger small mt-1 font-weight-bold">{{ user_form.password1.errors|first }}</div>
+            {% endif %}
+          </div>
+          <div class="col-12 col-md-6 mb-3">
+            <label class="font-weight-bold small text-muted">Confirm Password <span class="text-danger">*</span></label>
+            {{ user_form.password2 }}
+            {% if user_form.password2.errors %}
+              <div class="text-danger small mt-1 font-weight-bold">{{ user_form.password2.errors|first }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+        <a href="{% url 'account:all_accounts' %}" class="btn btn-light font-weight-bold px-4 mr-2">Cancel</a>
+        <button type="submit" class="btn btn-primary font-weight-bold px-5 shadow-sm">
+          <i class="fas fa-check mr-2"></i> Create &amp; Link Account
+        </button>
+      </div>
     </form>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var roleRadios = document.querySelectorAll('input[name="requested_role"]');
+  var studentSection = document.getElementById('student-selector-section');
+  var teacherSection = document.getElementById('teacher-selector-section');
+
+  function updateRoleVisibility() {
+    var selectedRole = 'STUDENT';
+    roleRadios.forEach(function(r) {
+      var card = r.closest('.role-selector-card');
+      if (r.checked) {
+        selectedRole = r.value;
+        if (card) {
+          card.classList.add('border-primary', 'bg-light', 'shadow-sm');
+        }
+      } else {
+        if (card) {
+          card.classList.remove('border-primary', 'bg-light', 'shadow-sm');
+        }
+      }
+    });
+
+    if (selectedRole === 'STUDENT') {
+      studentSection.style.display = 'block';
+      teacherSection.style.display = 'none';
+    } else if (selectedRole === 'TEACHER') {
+      studentSection.style.display = 'none';
+      teacherSection.style.display = 'block';
+    } else {
+      studentSection.style.display = 'none';
+      teacherSection.style.display = 'none';
+    }
+  }
+
+  roleRadios.forEach(function(r) {
+    r.addEventListener('change', updateRoleVisibility);
+  });
+  updateRoleVisibility();
+});
+</script>
 {% endblock %}

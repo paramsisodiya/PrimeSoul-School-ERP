@@ -61,6 +61,35 @@ class User(ExportModelOperationsMixin('user'), AbstractUser):
             'articles:author_profile',
             args=[self.username,])
 
+    @property
+    def linked_profile_display(self):
+        """Returns human-readable linked domain record summary."""
+        st = getattr(self, 'student_profile', None)
+        if st:
+            class_sec = f"{st.grade_level.name if st.grade_level else ''} {st.section.name if st.section else ''}".strip()
+            adm = f"Adm: {st.admission_number}" if st.admission_number else f"ID: #{st.pk}"
+            roll = f"Roll: {st.roll_number}" if st.roll_number else ""
+            meta = ", ".join(filter(None, [adm, roll]))
+            return f"{st.get_full_name()}{f' — {class_sec}' if class_sec else ''} ({meta})"
+        tp = getattr(self, 'teacher_profile', None)
+        if tp:
+            desig = f" ({tp.designation.title})" if tp.designation else ""
+            code = f" [Code: {tp.employee_code}]" if tp.employee_code else ""
+            return f"{tp.get_full_name()}{desig}{code}"
+        if self.is_superuser:
+            return "Platform Super Admin"
+        if self.is_staff or self.requested_role == 'SCHOOL_ADMIN':
+            return "School Administrator"
+        return "Not Linked"
+
+    @property
+    def is_linked_to_profile(self):
+        if self.requested_role == 'STUDENT':
+            return hasattr(self, 'student_profile') and self.student_profile is not None
+        if self.requested_role == 'TEACHER':
+            return hasattr(self, 'teacher_profile') and self.teacher_profile is not None
+        return True
+
 
 
 class CustomGroup(ExportModelOperationsMixin('custom_group'), Group):

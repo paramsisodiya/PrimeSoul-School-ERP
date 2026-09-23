@@ -33,7 +33,7 @@ def resolve_student_placement(student: Optional[Student], school: Optional[Schoo
     """Ensures student has grade_level, section, academic_year and roll_number resolved from active enrollment if not directly set."""
     if not student:
         return None
-    if not student.grade_level or not student.section or not student.academic_year:
+    if not (student.grade_level and student.section and student.academic_year and student.roll_number):
         from django_school_management.academics.models import StudentEnrollment
         qs = StudentEnrollment.objects.filter(student=student, status='ACTIVE')
         if school:
@@ -151,16 +151,28 @@ def get_student_for_user(user, school: Optional[School] = None, request=None) ->
     return children[0] if children else None
 
 
-def get_teacher_for_user(user, school: Optional[School] = None) -> Optional[Teacher]:
-    """Resolves Teacher instance for the authenticated faculty user."""
+def get_teacher_for_user(user, school: Optional[School] = None):
+    """Resolves Teacher or TeacherProfile instance for the authenticated faculty user."""
     if not user or not user.is_authenticated:
         return None
     tp = getattr(user, 'teacher_profile', None)
     if tp:
-        legacy = Teacher.objects.filter(school=school, email=user.email).first() or Teacher.objects.filter(email=user.email).first()
-        if legacy:
-            return legacy
-    return Teacher.objects.filter(school=school, email=user.email).first() or Teacher.objects.filter(email=user.email).first()
+        if school and tp.school and tp.school.id != school.id:
+            return None
+        return tp
+
+    qs = TeacherProfile.objects.filter(user=user)
+    if school:
+        qs = qs.filter(school=school)
+    tp_obj = qs.select_related('designation', 'school').first()
+    if tp_obj:
+        return tp_obj
+
+    # Legacy fallback
+    legacy = Teacher.objects.filter(email=user.email)
+    if school:
+        legacy = legacy.filter(school=school)
+    return legacy.first()
 
 
 def get_employee_for_user(user, school: Optional[School] = None) -> Optional[Employee]:

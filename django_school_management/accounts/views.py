@@ -1,5 +1,4 @@
-import datetime
-from decimal import Decimal
+from django.db import models
 from django.utils import timezone
 from rolepermissions.roles import assign_role
 from django.http import JsonResponse
@@ -263,30 +262,106 @@ def user_approval_with_modification(request, pk):
 @login_required(login_url=AccountURLConstants.permission_error)
 @user_passes_test(user_is_admin_or_su, login_url=AccountURLConstants.permission_error)
 def add_user_view(request):
+    school = getattr(request, 'school', None) or getattr(request.user, 'school', None)
+    if not school:
+        from django_school_management.tenants.models import School
+        school = School.objects.filter(is_active=True).first()
+
+    student_id = request.GET.get('student_id')
+    teacher_id = request.GET.get('teacher_id')
+    role_param = request.GET.get('role', 'STUDENT')
+    initial_student = None
+    initial_teacher = None
+
+    if student_id:
+        try:
+            initial_student = Student.objects.filter(pk=student_id).select_related('grade_level', 'section', 'school').first()
+            if initial_student and initial_student.school:
+                school = initial_student.school
+        except (ValueError, TypeError):
+            pass
+
+    if teacher_id:
+        try:
+            from django_school_management.teachers.models import TeacherProfile
+            initial_teacher = TeacherProfile.objects.filter(pk=teacher_id).select_related('designation', 'school').first()
+            if initial_teacher and initial_teacher.school:
+                school = initial_teacher.school
+        except (ValueError, TypeError):
+            pass
+
     context = dict()
     if request.method == 'POST':
-        user_form = UserCreateFormDashboard(request.POST)
+        user_form = UserCreateFormDashboard(
+            request.POST,
+            school=school,
+            initial_student=initial_student,
+            initial_teacher=initial_teacher
+        )
         if user_form.is_valid():
-            user_form.save()
+            user = user_form.save()
+            role = user_form.cleaned_data.get('requested_role')
+            student = user_form.cleaned_data.get('student')
+            teacher = user_form.cleaned_data.get('teacher')
+
+            if role == 'STUDENT' and student:
+                messages.success(
+                    request,
+                    f"✓ Student login account '@{user.username}' created successfully and linked to {student.get_full_name()}."
+                )
+            elif role == 'TEACHER' and teacher:
+                messages.success(
+                    request,
+                    f"✓ Teacher login account '@{user.username}' created successfully and linked to {teacher.get_full_name()}."
+                )
+            else:
+                messages.success(
+                    request,
+                    f"✓ School Administrator login account '@{user.username}' created successfully."
+                )
             return redirect(AccountURLConstants.all_accounts)
         else:
             context['user_form'] = user_form
+            context['school'] = school
+            context['initial_student'] = initial_student
+            context['initial_teacher'] = initial_teacher
+            context['role_param'] = role_param
             return render(request, 'academics/add_user.html', context)
     else:
-        user_form = UserCreateFormDashboard()
+        user_form = UserCreateFormDashboard(
+            school=school,
+            initial_student=initial_student,
+            initial_teacher=initial_teacher
+        )
+        if role_param in ['STUDENT', 'TEACHER', 'SCHOOL_ADMIN'] and not initial_student and not initial_teacher:
+            user_form.fields['requested_role'].initial = role_param
+
         context['user_form'] = user_form
+        context['school'] = school
+        context['initial_student'] = initial_student
+        context['initial_teacher'] = initial_teacher
+        context['role_param'] = role_param
         return render(request, 'academics/add_user.html', context)
 
 
 class AccountListView(LoginRequiredNoPermissionMixin, UserPassesTestMixin, ListView):
     model = User
-    queryset = User.objects.exclude(is_superuser=True)
     template_name = 'account/dashboard/accounts_list.html'
     context_object_name = 'accounts'
 
     def test_func(self):
         user = self.request.user
         return user_is_admin_or_su(user)
+
+    def get_queryset(self):
+        school = getattr(self.request, 'school', None) or getattr(self.request.user, 'school', None)
+        qs = User.objects.exclude(is_superuser=True).select_related(
+            'school', 'student_profile__grade_level', 'student_profile__section',
+            'student_profile__academic_year', 'teacher_profile__designation'
+        )
+        if school and not self.request.user.is_superuser:
+            qs = qs.filter(models.Q(school=school) | models.Q(school__isnull=True))
+        return qs.order_by('-date_joined')
 
 
 class GroupListView(LoginRequiredNoPermissionMixin, UserPassesTestMixin, ListView):

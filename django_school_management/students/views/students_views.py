@@ -663,12 +663,21 @@ class StudentSISView(
 
     def _get_action_items(self, student):
         from django.urls import reverse
-        return [
+        items = []
+        if not getattr(student, 'user', None):
+            items.append({
+                "url": reverse("account:add_user") + f"?role=STUDENT&student_id={student.pk}",
+                "label": "Create Student Login",
+                "icon": "fas fa-key",
+                "primary": True
+            })
+        items.extend([
             {"url": reverse("students:update_student", kwargs={"pk": student.pk}), "label": "Edit profile", "icon": "fas fa-user-edit"},
             {"url": reverse("result:result_entry") + f"?student={student.pk}", "label": "Add / edit result", "icon": "fas fa-pen-fancy"},
             {"url": reverse("students:all_student"), "label": "Back to list", "icon": "fas fa-list"},
             {"url": reverse("students:delete_student", kwargs={"pk": student.pk}), "label": "Delete student", "icon": "fas fa-trash-alt", "danger": True},
-        ]
+        ])
+        return items
 
 
 class StudentDetailsView(
