@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from django.db import transaction
 from .models import CommonUserProfile, SocialLink
 from django_school_management.students.models import Student
-from django_school_management.teachers.models import TeacherProfile
+from django_school_management.teachers.models import Teacher, TeacherProfile
 
 User = get_user_model()
 
@@ -27,11 +27,12 @@ class StudentModelChoiceField(djform.ModelChoiceField):
 
 class TeacherModelChoiceField(djform.ModelChoiceField):
     def label_from_instance(self, obj):
-        name = obj.get_full_name()
+        name = getattr(obj, 'get_full_name', None)() if hasattr(obj, 'get_full_name') else getattr(obj, 'name', str(obj))
         desig = f" ({obj.designation.title})" if getattr(obj, 'designation', None) else ""
-        code = f" [Code: {obj.employee_code}]" if getattr(obj, 'employee_code', None) else ""
+        code = f" [ID: {obj.employee_id}]" if getattr(obj, 'employee_id', None) else (f" [Code: {obj.employee_code}]" if getattr(obj, 'employee_code', None) else "")
+        mobile = f" [Contact: {obj.mobile}]" if getattr(obj, 'mobile', None) else ""
         account_status = f" [Account: @{obj.user.username}]" if getattr(obj, 'user', None) else ""
-        return f"{name}{desig}{code}{account_status}"
+        return f"{name}{desig}{code}{mobile}{account_status}"
 
 
 class UserChangeForm(forms.UserChangeForm):
@@ -61,11 +62,11 @@ class UserCreateFormDashboard(forms.UserCreationForm):
         help_text=_("Choose the onboarded student record to link this login account to.")
     )
     teacher = TeacherModelChoiceField(
-        queryset=TeacherProfile.objects.none(),
+        queryset=Teacher.objects.none(),
         required=False,
         widget=djform.Select(attrs={'class': 'form-control select2'}),
         label=_("Select Existing Teacher / Faculty"),
-        help_text=_("Choose the faculty profile to link this login account to.")
+        help_text=_("Choose the onboarded faculty record to link this login account to.")
     )
     first_name = djform.CharField(max_length=150, required=False, widget=djform.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}))
     last_name = djform.CharField(max_length=150, required=False, widget=djform.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}))
@@ -89,11 +90,11 @@ class UserCreateFormDashboard(forms.UserCreationForm):
             st_qs = st_qs.filter(school=school)
         self.fields['student'].queryset = st_qs.order_by('grade_level__display_order', 'section__name', 'first_name', 'last_name')
 
-        # Teacher QuerySet - Scoped to tenant school
-        tp_qs = TeacherProfile.objects.select_related('designation', 'school', 'user')
+        # Teacher QuerySet - Scoped to tenant school (Query Teacher records)
+        t_qs = Teacher.objects.select_related('designation', 'school', 'user')
         if school:
-            tp_qs = tp_qs.filter(school=school)
-        self.fields['teacher'].queryset = tp_qs.order_by('first_name', 'last_name')
+            t_qs = t_qs.filter(school=school)
+        self.fields['teacher'].queryset = t_qs.order_by('name')
 
         if initial_student:
             self.fields['student'].initial = initial_student
@@ -110,10 +111,16 @@ class UserCreateFormDashboard(forms.UserCreationForm):
             self.fields['teacher'].initial = initial_teacher
             self.fields['requested_role'].initial = 'TEACHER'
             if not self.is_bound:
-                self.fields['first_name'].initial = initial_teacher.first_name
-                self.fields['last_name'].initial = initial_teacher.last_name
-                if initial_teacher.email:
+                initial_name = getattr(initial_teacher, 'get_full_name', None)() if hasattr(initial_teacher, 'get_full_name') else getattr(initial_teacher, 'name', '')
+                parts = initial_name.split(' ', 1)
+                self.fields['first_name'].initial = parts[0]
+                self.fields['last_name'].initial = parts[1] if len(parts) > 1 else ''
+                if getattr(initial_teacher, 'email', None):
                     self.fields['email'].initial = initial_teacher.email
+                if getattr(initial_teacher, 'employee_id', None):
+                    self.fields['username'].initial = initial_teacher.employee_id.lower().replace(' ', '_')
+                elif initial_name:
+                    self.fields['username'].initial = initial_name.lower().replace(' ', '_')
 
     def clean(self):
         cleaned_data = super().clean()
@@ -133,7 +140,8 @@ class UserCreateFormDashboard(forms.UserCreationForm):
             if not teacher and self.fields['teacher'].queryset.exists():
                 self.add_error('teacher', _("Please select an existing teacher/faculty record to link this account to."))
             elif teacher and getattr(teacher, 'user', None) and teacher.user != self.instance:
-                self.add_error('teacher', _(f"Teacher '{teacher.get_full_name()}' already has an active login account (@{teacher.user.username})."))
+                t_name = getattr(teacher, 'get_full_name', None)() if hasattr(teacher, 'get_full_name') else getattr(teacher, 'name', str(teacher))
+                self.add_error('teacher', _(f"Teacher '{t_name}' already has an active login account (@{teacher.user.username}). Duplicate accounts for the same teacher are not permitted."))
             elif teacher and self.school and teacher.school and teacher.school != self.school:
                 self.add_error('teacher', _("Selected teacher does not belong to the active school tenant."))
 
@@ -170,6 +178,23 @@ class UserCreateFormDashboard(forms.UserCreationForm):
             elif role == 'TEACHER' and teacher:
                 teacher.user = user
                 teacher.save(update_fields=['user'])
+                # Synchronize TeacherProfile so subsystems expecting TeacherProfile also resolve
+                t_name = getattr(teacher, 'name', '') or getattr(teacher, 'get_full_name', lambda: '')()
+                parts = t_name.split(' ', 1)
+                f_name = parts[0]
+                l_name = parts[1] if len(parts) > 1 else ''
+                TeacherProfile.objects.update_or_create(
+                    user=user,
+                    defaults={
+                        'school': teacher.school or self.school,
+                        'first_name': f_name,
+                        'last_name': l_name,
+                        'designation': teacher.designation,
+                        'employee_code': getattr(teacher, 'employee_id', '') or '',
+                        'mobile_number': getattr(teacher, 'mobile', '') or '',
+                        'email': getattr(teacher, 'email', '') or user.email or '',
+                    }
+                )
 
         return user
 

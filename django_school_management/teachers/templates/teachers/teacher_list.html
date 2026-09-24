@@ -34,18 +34,35 @@
                         <th scope="col">Name</th>
                         <th scope="col">Designation</th>
                         <th scope="col">Contact</th>
+                        <th scope="col">Login Account</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for teacher in teachers %}
                     <tr>
-                        <td>{{ teacher.name }}</td>
-                        <td>{{ teacher.designation }}</td>
-                        <td>{{ teacher.mobile|default_if_none:"" }}</td>
+                        <td>
+                            <strong>{{ teacher.name }}</strong>
+                            {% if teacher.employee_id %}
+                                <div class="small text-muted">ID: {{ teacher.employee_id }}</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ teacher.designation|default:"Faculty" }}</td>
+                        <td>{{ teacher.mobile|default_if_none:"—" }}</td>
+                        <td>
+                            {% if teacher.user %}
+                                <span class="badge badge-success border text-white font-weight-bold">
+                                    <i class="fas fa-check-circle mr-1"></i>Login: @{{ teacher.user.username }}
+                                </span>
+                            {% else %}
+                                <a href="{% url 'account:add_user' %}?role=TEACHER&teacher_id={{ teacher.pk }}" class="badge badge-warning border text-dark font-weight-bold" title="Click to create teacher portal login">
+                                    <i class="fas fa-key mr-1"></i> Create Login
+                                </a>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="3" class="text-center text-muted py-4">No teachers found.</td>
+                        <td colspan="4" class="text-center text-muted py-4">No teachers found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

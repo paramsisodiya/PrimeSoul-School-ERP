@@ -71,6 +71,11 @@ class User(ExportModelOperationsMixin('user'), AbstractUser):
             roll = f"Roll: {st.roll_number}" if st.roll_number else ""
             meta = ", ".join(filter(None, [adm, roll]))
             return f"{st.get_full_name()}{f' — {class_sec}' if class_sec else ''} ({meta})"
+        tr = getattr(self, 'teacher_record', None)
+        if tr:
+            desig = f" ({tr.designation.title})" if tr.designation else ""
+            code = f" [ID: {tr.employee_id}]" if tr.employee_id else ""
+            return f"{tr.name}{desig}{code}"
         tp = getattr(self, 'teacher_profile', None)
         if tp:
             desig = f" ({tp.designation.title})" if tp.designation else ""
@@ -87,7 +92,7 @@ class User(ExportModelOperationsMixin('user'), AbstractUser):
         if self.requested_role == 'STUDENT':
             return hasattr(self, 'student_profile') and self.student_profile is not None
         if self.requested_role == 'TEACHER':
-            return hasattr(self, 'teacher_profile') and self.teacher_profile is not None
+            return (hasattr(self, 'teacher_record') and self.teacher_record is not None) or (hasattr(self, 'teacher_profile') and self.teacher_profile is not None)
         return True
 
 

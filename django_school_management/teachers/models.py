@@ -90,7 +90,14 @@ class TeacherProfile(ExportModelOperationsMixin('teacher_profile'), TimeStampedM
 # ─────────────────────────────────────────────────────────────
 
 class Teacher(ExportModelOperationsMixin('teacher'), TimeStampedModel):
-    employee_id = models.CharField(max_length=50)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='teacher_record',
+        help_text="User login account associated with this teacher"
+    )
+    employee_id = models.CharField(max_length=50, blank=True)
     name = models.CharField(max_length=150)
     photo = models.ImageField(upload_to='teachers', default='teacheravatar.jpg')
     date_of_birth = models.DateField(blank=True, null=True)
@@ -126,3 +133,6 @@ class Teacher(ExportModelOperationsMixin('teacher'), TimeStampedModel):
 
     def __str__(self):
         return '{} ({})'.format(self.name, self.designation)
+
+    def get_full_name(self):
+        return self.name

@@ -155,24 +155,44 @@ def get_teacher_for_user(user, school: Optional[School] = None):
     """Resolves Teacher or TeacherProfile instance for the authenticated faculty user."""
     if not user or not user.is_authenticated:
         return None
+
+    # 1. Direct Teacher record
+    tr = getattr(user, 'teacher_record', None)
+    if tr:
+        if school and tr.school and tr.school.id != school.id:
+            return None
+        return tr
+
+    qs_t = Teacher.objects.filter(user=user)
+    if school:
+        qs_t = qs_t.filter(school=school)
+    tr_obj = qs_t.select_related('designation', 'school').first()
+    if tr_obj:
+        return tr_obj
+
+    # 2. TeacherProfile record
     tp = getattr(user, 'teacher_profile', None)
     if tp:
         if school and tp.school and tp.school.id != school.id:
             return None
         return tp
 
-    qs = TeacherProfile.objects.filter(user=user)
+    qs_tp = TeacherProfile.objects.filter(user=user)
     if school:
-        qs = qs.filter(school=school)
-    tp_obj = qs.select_related('designation', 'school').first()
+        qs_tp = qs_tp.filter(school=school)
+    tp_obj = qs_tp.select_related('designation', 'school').first()
     if tp_obj:
         return tp_obj
 
-    # Legacy fallback
-    legacy = Teacher.objects.filter(email=user.email)
-    if school:
-        legacy = legacy.filter(school=school)
-    return legacy.first()
+    # 3. Fallback matching by email
+    if user.email:
+        legacy = Teacher.objects.filter(email__iexact=user.email.strip())
+        if school:
+            legacy = legacy.filter(school=school)
+        if legacy.exists():
+            return legacy.first()
+
+    return None
 
 
 def get_employee_for_user(user, school: Optional[School] = None) -> Optional[Employee]:

@@ -285,8 +285,10 @@ def add_user_view(request):
 
     if teacher_id:
         try:
-            from django_school_management.teachers.models import TeacherProfile
-            initial_teacher = TeacherProfile.objects.filter(pk=teacher_id).select_related('designation', 'school').first()
+            from django_school_management.teachers.models import Teacher, TeacherProfile
+            initial_teacher = Teacher.objects.filter(pk=teacher_id).select_related('designation', 'school').first()
+            if not initial_teacher:
+                initial_teacher = TeacherProfile.objects.filter(pk=teacher_id).select_related('designation', 'school').first()
             if initial_teacher and initial_teacher.school:
                 school = initial_teacher.school
         except (ValueError, TypeError):
@@ -312,9 +314,10 @@ def add_user_view(request):
                     f"✓ Student login account '@{user.username}' created successfully and linked to {student.get_full_name()}."
                 )
             elif role == 'TEACHER' and teacher:
+                t_name = getattr(teacher, 'get_full_name', None)() if hasattr(teacher, 'get_full_name') else getattr(teacher, 'name', str(teacher))
                 messages.success(
                     request,
-                    f"✓ Teacher login account '@{user.username}' created successfully and linked to {teacher.get_full_name()}."
+                    f"✓ Teacher login account '@{user.username}' created successfully and linked to {t_name}."
                 )
             else:
                 messages.success(
@@ -359,7 +362,7 @@ class AccountListView(LoginRequiredNoPermissionMixin, UserPassesTestMixin, ListV
         school = getattr(self.request, 'school', None) or getattr(self.request.user, 'school', None)
         qs = User.objects.exclude(is_superuser=True).select_related(
             'school', 'student_profile__grade_level', 'student_profile__section',
-            'student_profile__academic_year', 'teacher_profile__designation'
+            'student_profile__academic_year', 'teacher_record__designation', 'teacher_profile__designation'
         )
         if school and not self.request.user.is_superuser:
             qs = qs.filter(models.Q(school=school) | models.Q(school__isnull=True))

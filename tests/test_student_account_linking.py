@@ -19,7 +19,7 @@ from django.contrib.auth import get_user_model
 from django_school_management.tenants.models import School
 from django_school_management.academics.models import AcademicYear, GradeLevel, Section, StudentEnrollment, Subject
 from django_school_management.students.models import Student
-from django_school_management.teachers.models import TeacherProfile, Designation
+from django_school_management.teachers.models import Teacher, TeacherProfile, Designation
 from django_school_management.attendance.models import AttendanceRecord
 from django_school_management.fees.models import FeeStructure, FeeInstallment, FeeHead
 from django_school_management.examinations.models import Exam, ExamSubject, StudentMark
@@ -133,6 +133,22 @@ class StudentAccountLinkingTests(TestCase):
             last_name="Sharma",
             employee_code="FAC-001",
             designation=self.desig_pgt
+        )
+        self.teacher_record = Teacher.objects.create(
+            user=self.teacher_user,
+            school=self.school_a,
+            name="Ramesh Sharma",
+            employee_id="FAC-001",
+            designation=self.desig_pgt,
+            email="sharma@delhi.primesoul.in"
+        )
+        self.unlinked_teacher = Teacher.objects.create(
+            school=self.school_a,
+            name="Param Sisodiya",
+            employee_id="TCH-002",
+            designation=self.desig_pgt,
+            mobile="8770404559",
+            email="param@delhi.primesoul.in"
         )
 
     def test_01_admin_creates_student_login_for_existing_student(self):
@@ -367,3 +383,41 @@ class StudentAccountLinkingTests(TestCase):
         self.assertEqual(get_user_portal(krishna_user), PortalType.STUDENT_PORTAL)
         self.assertEqual(get_user_portal(self.teacher_user), PortalType.TEACHER_PORTAL)
         self.assertEqual(get_user_portal(self.admin_user), PortalType.ADMIN_PORTAL)
+
+    def test_12_admin_creates_teacher_login_for_existing_teacher(self):
+        """Admin creates login account for existing onboarded teacher (Param Sisodiya)."""
+        form_data = {
+            'requested_role': 'TEACHER',
+            'teacher': self.unlinked_teacher.pk,
+            'username': 'param_teacher',
+            'first_name': 'Param',
+            'last_name': 'Sisodiya',
+            'email': 'param@delhi.primesoul.in',
+            'password1': 'TeacherPass123!',
+            'password2': 'TeacherPass123!',
+        }
+        form = UserCreateFormDashboard(data=form_data, school=self.school_a)
+        self.assertTrue(form.is_valid(), form.errors)
+        created_user = form.save()
+
+        # Verify User and Teacher linkage
+        self.assertEqual(created_user.username, 'param_teacher')
+        self.assertEqual(created_user.requested_role, 'TEACHER')
+        self.unlinked_teacher.refresh_from_db()
+        self.assertEqual(self.unlinked_teacher.user, created_user)
+        self.assertEqual(created_user.teacher_record, self.unlinked_teacher)
+        self.assertTrue(created_user.is_linked_to_profile)
+
+    def test_13_prevent_duplicate_teacher_account_creation(self):
+        """Validates that creating a second user for the same teacher is blocked."""
+        form_data = {
+            'requested_role': 'TEACHER',
+            'teacher': self.teacher_record.pk,  # Already linked to self.teacher_user
+            'username': 'sharma_duplicate',
+            'password1': 'TeacherPass123!',
+            'password2': 'TeacherPass123!',
+        }
+        form = UserCreateFormDashboard(data=form_data, school=self.school_a)
+        self.assertFalse(form.is_valid())
+        self.assertIn('teacher', form.errors)
+        self.assertIn("already has an active login account", form.errors['teacher'][0])
