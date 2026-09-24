@@ -196,15 +196,64 @@ def get_teacher_for_user(user, school: Optional[School] = None):
 
 
 def get_employee_for_user(user, school: Optional[School] = None) -> Optional[Employee]:
-    """Resolves HR Employee profile for the authenticated employee/teacher."""
+    """Resolves or provisions HR Employee profile for the authenticated employee/teacher."""
     if not user or not user.is_authenticated:
         return None
+
+    # 1. Direct user lookup
     qs = Employee.objects.filter(user=user)
     if school:
         emp = qs.filter(school=school).first()
         if emp:
             return emp
-    return qs.first()
+    emp = qs.first()
+    if emp:
+        return emp
+
+    # 2. Email matching within tenant
+    if user.email:
+        em_qs = Employee.objects.filter(email__iexact=user.email.strip())
+        if school:
+            em_qs = em_qs.filter(school=school)
+        emp_email = em_qs.first()
+        if emp_email:
+            if not emp_email.user:
+                emp_email.user = user
+                emp_email.save(update_fields=['user'])
+            return emp_email
+
+    # 3. Auto-provision from Teacher record or User account
+    tr = getattr(user, 'teacher_record', None) or Teacher.objects.filter(user=user).first()
+    if not tr and user.email:
+        tr = Teacher.objects.filter(email__iexact=user.email.strip()).first()
+
+    effective_school = school or getattr(user, 'school', None) or (tr.school if tr else None)
+    if not effective_school:
+        from django_school_management.tenants.models import School
+        effective_school = School.objects.filter(is_active=True).first()
+
+    if effective_school:
+        full_name = tr.name if tr else (user.get_full_name() or user.username)
+        code = (getattr(tr, 'employee_id', None) or f"EMP-{user.pk}").strip()
+        existing = Employee.objects.filter(school=effective_school, employee_code=code).first()
+        if existing:
+            if not existing.user:
+                existing.user = user
+                existing.save(update_fields=['user'])
+            return existing
+        else:
+            emp = Employee.objects.create(
+                school=effective_school,
+                user=user,
+                employee_code=code,
+                full_name=full_name,
+                email=user.email or (getattr(tr, 'email', '') or ''),
+                mobile=getattr(tr, 'mobile', '') or '',
+                status=Employee.STATUS_ACTIVE
+            )
+            return emp
+
+    return None
 
 
 # ─────────────────────────────────────────────────────────────

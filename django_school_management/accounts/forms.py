@@ -195,6 +195,20 @@ class UserCreateFormDashboard(forms.UserCreationForm):
                         'email': getattr(teacher, 'email', '') or user.email or '',
                     }
                 )
+                # Synchronize Employee profile so HR / leave / payroll works seamlessly
+                from django_school_management.hr.models import Employee
+                emp_code = (getattr(teacher, 'employee_id', '') or f"EMP-{user.pk}").strip()
+                Employee.objects.update_or_create(
+                    school=teacher.school or self.school,
+                    user=user,
+                    defaults={
+                        'employee_code': emp_code,
+                        'full_name': t_name or user.get_full_name() or user.username,
+                        'mobile': getattr(teacher, 'mobile', '') or '',
+                        'email': getattr(teacher, 'email', '') or user.email or '',
+                        'status': Employee.STATUS_ACTIVE,
+                    }
+                )
 
         return user
 
