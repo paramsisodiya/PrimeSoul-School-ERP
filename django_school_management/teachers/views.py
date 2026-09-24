@@ -89,11 +89,10 @@ from django.views.decorators.http import require_POST
 from django_school_management.accounts.permissions import school_admin_required
 
 
-@require_POST
 @user_passes_test(user_is_admin_or_su)
 def teacher_delete_view(request, pk):
     """
-    Safely delete a teacher record via POST only.
+    Delete a teacher record permanently from the database.
     Validates tenant ownership before deletion.
     """
     teacher = get_object_or_404(Teacher, pk=pk)
@@ -101,7 +100,15 @@ def teacher_delete_view(request, pk):
     if tenant and not request.user.is_superuser:
         if teacher.school and teacher.school != tenant:
             raise PermissionDenied("Cannot delete teacher from another school.")
+
+    teacher_name = teacher.name
+    # If teacher has a linked user account, unassign or clean up
+    if getattr(teacher, 'user', None):
+        teacher.user = None
+        teacher.save(update_fields=['user'])
+
     teacher.delete()
+    messages.success(request, f"✓ Teacher '{teacher_name}' has been permanently deleted from the database.")
     return redirect('teachers:all_teacher')
 
 
